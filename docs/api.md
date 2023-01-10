@@ -1,89 +1,87 @@
-cumulus-aggregator-node
-endpoint
+# cumulus-aggregator-node
 
-/:id/api
-URL segments
+### endpoint
+`/:id/api`
 
-    :id - The ID of the data subscription we are querying
+### URL segments
+- `:id` - The ID of the data subscription we are querying
 
-Query parameters
+### Query parameters
+- `column` - `string`, `required`; The name of the column we are requesting from the data table.
+    - Must be other than `"cnt"`!
+    - Must exist as a column in the table
+- `stratifier` - `string`, `optional`; The name of the column to stratify by.
+    - If provided, must be other than `"cnt"` and then the `column` parameter!
+    - If provided, must exist as a column in the table
+- `filter` - `string`, `optional`; Can be used multiple times. Each filter parameter represents a filter condition that is parsed and added to the WHERE clause of the SQL query. Each `filter` consist of 3 parts joined with `:` - `column:filterType:value`. The `column` part is a name of a column in the table. Supported `filterType` values are:
+    - strEq
+    - strContains
+    - strStartsWith
+    - strEndsWith
+    - matches
+    - strEqCI
+    - strContainsCI
+    - strStartsWithCI
+    - strEndsWithCI
+    - matchesCI
+    - strNotEq
+    - strNotContains
+    - strNotStartsWith
+    - strNotEndsWith
+    - notMatches
+    - strNotEqCI
+    - strNotContainsCI
+    - strNotStartsWithCI
+    - strNotEndsWithCI
+    - notMatchesCI
+    - sameDay
+    - sameMonth
+    - sameYear
+    - sameDayOrBefore
+    - sameMonthOrBefore
+    - sameYearOrBefore
+    - sameDayOrAfter
+    - sameMonthOrAfter
+    - sameYearOrAfter
+    - beforeDay
+    - beforeMonth
+    - beforeYear
+    - afterDay
+    - afterMonth
+    - afterYear
+    - isTrue
+    - isNotTrue
+    - isFalse
+    - isNotFalse
+    - isNull
+    - isNotNull
+    - eq
+    - ne
+    - gt
+    - gte
+    - lt
+    - lte
 
-    column - string, required; The name of the column we are requesting from the data table.
-        Must be other than "cnt"!
-        Must exist as a column in the table
-    stratifier - string, optional; The name of the column to stratify by.
-        If provided, must be other than "cnt" and then the column parameter!
-        If provided, must exist as a column in the table
-    filter - string, optional; Can be used multiple times. Each filter parameter represents a filter condition that is parsed and added to the WHERE clause of the SQL query. Each filter consist of 3 parts joined with : - column:filterType:value. The column part is a name of a column in the table. Supported filterType values are:
-        strEq
-        strContains
-        strStartsWith
-        strEndsWith
-        matches
-        strEqCI
-        strContainsCI
-        strStartsWithCI
-        strEndsWithCI
-        matchesCI
-        strNotEq
-        strNotContains
-        strNotStartsWith
-        strNotEndsWith
-        notMatches
-        strNotEqCI
-        strNotContainsCI
-        strNotStartsWithCI
-        strNotEndsWithCI
-        notMatchesCI
-        sameDay
-        sameMonth
-        sameYear
-        sameDayOrBefore
-        sameMonthOrBefore
-        sameYearOrBefore
-        sameDayOrAfter
-        sameMonthOrAfter
-        sameYearOrAfter
-        beforeDay
-        beforeMonth
-        beforeYear
-        afterDay
-        afterMonth
-        afterYear
-        isTrue
-        isNotTrue
-        isFalse
-        isNotFalse
-        isNull
-        isNotNull
-        eq
-        ne
-        gt
-        gte
-        lt
-        lte
+Multiple filter parameters can be joined with `AND` or with `OR`, depending on how they have been requested:
 
-Multiple filter parameters can be joined with AND or with OR, depending on how they have been requested:
+- `filter=gender:eq:male,age:gt:3` -> `gender = 'male' OR age > 3`
+- `filter=gender:eq:male&filter=age:gt:3` -> `gender = 'male' AND age > 3`
+- `filter=gender:eq:male,age:gt:3&filter=year:gt:2022` -> `(gender = 'male' OR age > 3) AND year > 2022`
 
-    filter=gender:eq:male,age:gt:3 -> gender = 'male' OR age > 3
-    filter=gender:eq:male&filter=age:gt:3 -> gender = 'male' AND age > 3
-    filter=gender:eq:male,age:gt:3&filter=year:gt:2022 -> (gender = 'male' OR age > 3) AND year > 2022
 
-Response format
-
+### Response format
 The response is a JSON object having the following properties
 
-    column - string, required; the column we have selected (same as the column query parameter)
-    stratifier - string, optional; the column we stratify by (same as the stratifier query parameter)
-    filters - string[], required; All filter params in an array (can be empty array)
-    totalCount - number, required; The total count of the table. (same as SELECT cnt FROM {the table} WHERE {everything other than cnt} IS NULL)
-    rowCount - number, required; count of result rows (regardless of stratifying)
-    data - array, required; See examples below
+- `column`     - `string`, `required`; the column we have selected (same as the `column` query parameter) 
+- `stratifier` - `string`, `optional`; the column we stratify by (same as the `stratifier` query parameter) 
+- `filters`    - `string[]`, `required`; All filter params in an array (can be empty array)
+- `totalCount` - `number`, `required`; The total count of the table. (same as `SELECT cnt FROM {the table} WHERE {everything other than cnt} IS NULL`)
+- `rowCount`   - `number`, `required`; count of result rows (regardless of stratifying)
+- `data`       - `array`, `required`; See examples below
 
-Caching
-
+### Caching
 This endpoint can be slow! It is important to have a reasonable caching to improve UX. Currently, the dashboard uses the following cache implementation, in which every variable that might change the end result is included in a hash that controls the cache behavior:
-
+```js
 const cacheKey = crypto.createHash("sha1").update([
     table,
     column,
@@ -104,20 +102,25 @@ if (ifNoneMatchValue && ifNoneMatchValue === cacheKey) {
 }
 
 // otherwise, continue as usual for first-time requests...
+```
 
-In this example table is the name of the database table we are querying, column, stratifier and filtersParams are coming from the query parameters, and subscription.completed is the timestamp when this table was last updated.
-How does it work?
+In this example `table` is the name of the database table we are querying, `column`, `stratifier` and `filtersParams` are coming from the query parameters, and `subscription.completed` is the timestamp when
+this table was last updated.
 
-The primary job of this endpoint is to build and execute an SQL SELECT query against the aggregate (CUBE-ed) table. The basic query looks like SELECT {column}, sum(cnt) FROM {table} WHERE {every column other than column and cnt} IS NULL. A real query might look like:
-
+### How does it work?
+The primary job of this endpoint is to build and execute an SQL SELECT query against the aggregate (CUBE-ed) table.
+The basic query looks like `SELECT {column}, sum(cnt) FROM {table} WHERE {every column other than column and cnt} IS NULL`. A real query might look like:
+```sql
 SELECT symptom, sum(cnt) FROM covid WHERE age IS NULL AND gender IS NULL GROUP BY symptom ORDER BY symptom
+```
 
-If a stratifier is requested, it is added to the list of selected columns (thus, removed from the list of non-null columns). The stratifier is also added to the group by list. Example:
-
+If a `stratifier` is requested, it is added to the list of selected columns (thus, removed from the list of non-null columns). The stratifier is also added to the group by list. Example:
+```sql
 SELECT symptom, gender, sum(cnt) FROM covid WHERE age IS NULL NULL GROUP BY gender, symptom
+```
 
-As a post-processing step, after the results are fetched from DB, if a stratifier is provided the data is "grouped" by it. An example response with stratifier could look like:
-
+As a post-processing step, after the results are fetched from DB, if a stratifier is provided the data is "grouped" by it. An example response with `stratifier` could look like:
+```js
 { 
     column: "enct_month",
     stratifier: "symptom_text",
@@ -144,9 +147,10 @@ As a post-processing step, after the results are fetched from DB, if a stratifie
         ...
     ]
 }
+```
 
 The same response without a stratifier would kook like:
-
+```js
 { 
     column: "enct_month",
     filters: ["enct_month:sameMonthOrBefore:2022-01-15", "enct_month:afterYear:2020-01-01"],
@@ -170,39 +174,4 @@ The same response without a stratifier would kook like:
         ]
     }]
 }
-
-About
-No description, website, or topics provided.
-Topics
-Resources
-Readme
-License
-Apache-2.0 license
-Stars
-0 stars
-Watchers
-2 watching
-Forks
-0 forks
-Releases
-No releases published
-Create a new release
-Packages
-No packages published
-Publish your first package
-Footer
-© 2023 GitHub, Inc.
-Footer navigation
-
-    Terms
-    Privacy
-    Security
-    Status
-    Docs
-    Contact GitHub
-    Pricing
-    API
-    Training
-    Blog
-    About
-
+```
