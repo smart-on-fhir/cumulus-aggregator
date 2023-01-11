@@ -1,0 +1,65 @@
+# This is the SAM template that represents the architecture of your serverless application
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
+
+# The AWSTemplateFormatVersion identifies the capabilities of the template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  cumulus-aggregator
+
+# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
+Transform:
+- AWS::Serverless-2016-10-31
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Resources:
+
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+
+  FetchUploadUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/fetch_upload_url.uploadUrlHandler
+      Runtime: python3.9
+      MemorySize: 128
+      Timeout: 100
+      Description: Generates a presigned URL for uploading files to S3
+      Environment:
+        Variables:
+          BUCKET_NAME: cumulus-aggregator
+      Events:
+        AddItem:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: ApiGateway
+            Path: /
+            Method: POST
+  LoadBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        cumulus-aggregator
+
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+
+# If you need to enable logging at the API Gateway level, uncomment this MethodSettings
+# node. This should be left disabled for production since it is noisy and not useful
+# for troubleshooting 95% of lambda issues.
+#      MethodSettings:
+#        - LoggingLevel: INFO
+#          MetricsEnabled: True
+#          ResourcePath: '/*' # allows for logging on any resource
+#          HttpMethod: '*' # allows for logging on any method
+
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
