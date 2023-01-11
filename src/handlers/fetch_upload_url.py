@@ -36,11 +36,12 @@ def create_presigned_post(
     except botocore.exceptions.ClientError as e:
         logging.error(e)
         return http_response(400, "Error occured presigning url")
-    return response
 
 
 def uploadUrlHandler(event, context):
-    name = json.loads(event["body"])["name"]
-    res = create_presigned_post("cumulus-aggregator", name)
-    print(res)
+    try:
+        name = json.loads(event["body"])["name"]
+        res = create_presigned_post("cumulus-aggregator", name)
+    except KeyError as e:
+        res = http_response(400, "Error occured presigning url")
     return res
