@@ -49,6 +49,9 @@ Resources:
     Properties:
       StageName: Prod
 
+# If you need to enable logging at the API Gateway level, uncomment this MethodSettings
+# node. This should be left disabled for production since it is noisy and not useful
+# for troubleshooting 95% of lambda issues.
 #      MethodSettings:
 #        - LoggingLevel: INFO
 #          MetricsEnabled: True
