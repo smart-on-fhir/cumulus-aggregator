@@ -1,13 +1,6 @@
 # cumulus-aggregator
 
-
-## BCH specific installation notes
-
-- Install the [BCH AWS Login](https://ccts3.aws.chboston.org/bchcloud/ccts-devops/bch-aws-login) utility
-- Auth with your username/pass with the command `bch-aws-login`
-- get the profile name create by the above script from the console, or ~/.aws/credentials
-- `sam-deploy --guided` will walk you through deploying to BCH AWS with the above profile
-
+AWS tooling for reading and combining data from the Cumulus ETL for use in the dashboard.
 
 
 # AWS `sam init` boilerplate subset
