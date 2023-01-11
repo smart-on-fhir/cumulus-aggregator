@@ -5,7 +5,7 @@ import requests
 import sys
 import json
 
-sys.path.insert(0, "/Users/mgarber/code/cumulus-aggregator/src/handlers")
+sys.path.insert(0, "../src/handlers")
 import fetch_upload_url
 
 # Generate a presigned S3 POST URL for this file

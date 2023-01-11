@@ -24,7 +24,6 @@ def create_presigned_post(
         config=boto3.session.Config(signature_version="s3v4"),
     )
     try:
-        print("generate_presigned_post")
         response_body = s3_client.generate_presigned_post(
             bucket_name,
             object_name,
