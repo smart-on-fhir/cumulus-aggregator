@@ -4,12 +4,11 @@ AWS tooling for reading and combining data from the Cumulus ETL for use in the d
 
 The aggregator aims to provide a serverless implementation that accomplish the following goals:
 - Allow external users to upload fully de-ID and binned study data from the [Cumulus ETL](https://github.com/smart-on-fhir/cumulus-etl) to an S3 bucket outside their organization
-- Combine de-IDed data from multiple locations into a single data set
+- Combine binned count data from multiple locations into a single data set
 - Provide this data for injestion by the [Cumulus Dashboard](https://github.com/smart-on-fhir/cumulus-app)
 
 ## Requirements
 
-Otherwise, you'll need:
 * AWS SAM CLI - [Install the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 * Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community) - for local development
 
