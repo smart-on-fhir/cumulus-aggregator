@@ -9,12 +9,9 @@ The aggregator aims to provide a serverless implementation that accomplish the f
 
 ## Requirements
 
-If you want to run this completely locally, you'll need to install the [Localstact CLI tools](https://github.com/localstack/localstack).
-
 Otherwise, you'll need:
 * AWS SAM CLI - [Install the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 * Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community) - for local development
-* LocalStack - [Installing LocalStack](https://github.com/localstack/localstack#installing) - for local development
 
 ## Working with the SAM CLI
 
@@ -38,14 +35,11 @@ Generally, you'll want to use SAM to build an image, and then use a specific lam
 sam build && sam local invoke FetchUploadUrlFunction --event events/event-fetch-upload-url.json
 ```
 
-TODO: Test & document running with LocalStack
-
-
 The AWS SAM CLI can also emulate your application's API. Use the `sam local start-api` command to run the API locally on port 3000.
 
 ```bash
-my-application$ sam local start-api
-my-application$ curl http://localhost:3000/
+sam local start-api
+curl http://localhost:3000/
 ```
 
 ### Cloud Development
