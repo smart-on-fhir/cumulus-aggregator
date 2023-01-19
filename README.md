@@ -2,51 +2,44 @@
 
 AWS tooling for reading and combining data from the Cumulus ETL for use in the dashboard.
 
+The aggregator aims to provide a serverless implementation that accomplish the following goals:
+- Allow external users to upload fully de-ID and binned study data from the [Cumulus ETL](https://github.com/smart-on-fhir/cumulus-etl) to an S3 bucket outside their organization
+- Combine de-IDed data from multiple locations into a single data set
+- Provide this data for injestion by the [Cumulus Dashboard](https://github.com/smart-on-fhir/cumulus-app)
 
-# AWS `sam init` boilerplate subset
+## Requirements
 
-## Deploy the sample application
+If you want to run this completely locally, you'll need to install the [Localstact CLI tools](https://github.com/localstack/localstack).
 
-To use the AWS SAM CLI, you need the following tools:
+Otherwise, you'll need:
+* AWS SAM CLI - [Install the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
+* Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community) - for local development
+* LocalStack - [Installing LocalStack](https://github.com/localstack/localstack#installing) - for local development
 
-* AWS SAM CLI - [Install the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html).
-* Node.js - [Install Node.js 16](https://nodejs.org/en/), including the npm package management tool.
-* Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community).
+## Working with the SAM CLI
 
-To build and deploy your application for the first time, run the following in your shell:
+### Deployment
+If you are just trying to deploy the aggregator into your AWS environment, run the following commands:
 
 ```bash
 sam build
 sam deploy --guided
 ```
 
-The first command will build the source of your application. The second command will package and deploy your application to AWS, with a series of prompts:
+The guided deploy will ask you several questions about your AWS environment, and then create a `samconfig.toml`. After that file has been created, you can optionally remove the `--guided` flag on future deploys - the SAM CLI will reference that file as part of the deploy process.
 
-* **Stack Name**: The name of the stack to deploy to CloudFormation. This should be unique to your account and region, and a good starting point would be something matching your project name.
-* **AWS Region**: The AWS region you want to deploy your app to.
-* **Confirm changes before deploy**: If set to yes, any change sets will be shown to you before execution for manual review. If set to no, the AWS SAM CLI will automatically deploy application changes.
-* **Allow SAM CLI IAM role creation**: Many AWS SAM templates, including this example, create AWS IAM roles required for the AWS Lambda function(s) included to access AWS services. By default, these are scoped down to minimum required permissions. To deploy an AWS CloudFormation stack which creates or modifies IAM roles, the `CAPABILITY_IAM` value for `capabilities` must be provided. If permission isn't provided through this prompt, to deploy this example you must explicitly pass `--capabilities CAPABILITY_IAM` to the `sam deploy` command.
-* **Save arguments to samconfig.toml**: If set to yes, your choices will be saved to a configuration file inside the project, so that in the future you can just re-run `sam deploy` without parameters to deploy changes to your application.
+### Local Development
 
-The API Gateway endpoint API will be displayed in the outputs when the deployment is complete.
+If you are working locally, first make sure that Docker is running.
 
-## Use the AWS SAM CLI to build and test locally
-
-Build your application by using the `sam build` command.
+Generally, you'll want to use SAM to build an image, and then use a specific lambda function with an event file to mimic the real traffic. The following one liner accomplishes this:
 
 ```bash
-my-application$ sam build
+sam build && sam local invoke FetchUploadUrlFunction --event events/event-fetch-upload-url.json
 ```
 
-The AWS SAM CLI installs dependencies that are defined in `package.json`, creates a deployment package, and saves it in the `.aws-sam/build` folder.
+TODO: Test & document running with LocalStack
 
-Test a single function by invoking it directly with a test event. An event is a JSON document that represents the input that the function receives from the event source. Test events are included in the `events` folder in this project.
-
-Run functions locally and invoke them with the `sam local invoke` command.
-
-```bash
-my-application$ sam local invoke FetchUploadUrlFunction --event events/event-fetch-upload-url.json
-```
 
 The AWS SAM CLI can also emulate your application's API. Use the `sam local start-api` command to run the API locally on port 3000.
 
@@ -55,38 +48,36 @@ my-application$ sam local start-api
 my-application$ curl http://localhost:3000/
 ```
 
-The AWS SAM CLI reads the application template to determine the API's routes and the functions that they invoke. The `Events` property on each function's definition includes the route and method for each path.
+### Cloud Development
 
-```yaml
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /
-            Method: GET
-```
+Assuming you have already generated a `samconfig.toml`, you can have the SAM CLI use this to hot deploy changes to AWS for live debugging/generating realistic event files. Make sure you're not pointed at prod! When in doubt, rerun `sam deploy --guided` to make sure, or you can edit your samconfig.toml directly.
 
-
-## Fetch, tail, and filter Lambda function logs
-
-To simplify troubleshooting, the AWS SAM CLI has a command called `sam logs`. `sam logs` lets you fetch logs that are generated by your Lambda function from the command line. In addition to printing the logs on the terminal, this command has several nifty features to help you quickly find the bug.
-
-**NOTE:** This command works for all Lambda functions, not just the ones you deploy using AWS SAM.
+To run the appplication in this mode, use the following command:
 
 ```bash
-my-application$ sam logs -n FetchUploadUrlFunction --stack-name cumulus-aggregator --tail
+sam sync --stack-name cumulus-aggregator --watch
 ```
 
-**NOTE:** This uses the logical name of the function within the stack. This is the correct name to use when searching logs inside an AWS Lambda function within a CloudFormation stack, even if the deployed function name varies due to CloudFormation's unique resource name generation.
+After the build completes, you should be able to test with real events, either using the contents of the `scripts/` directory, or via another means of your choosing.
 
-You can find more information and examples about filtering Lambda function logs in the [AWS SAM CLI documentation](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-logging.html).
+It might be more useful to live tail the logs, rather than waiting for the CloudFormation dashboard to update. To do this for a specific Lambda, for example, use the `sam logs` command:
 
+```bash
+sam logs -n PowersetMergeFunction --stack-name cumulus-aggregator --tail
+```
 
+There is more advanced log filtering available - see the [SAM Logs documentation](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-logs.html)
 
-## Cleanup
-
-To delete the sample application that you created, use the AWS CLI. Assuming you used your project name for the stack name, you can run the following:
+When you're finished, you can clean up your deployment with the following command:
 
 ```bash
 aws cloudformation delete-stack --stack-name cumulus-aggregator
 ```
+
+If your bucket has data in it, you need to delete the bucket contents before removing your deployment:
+
+```bash
+aws s3 rm s3://cumulus-aggregator --recursive && aws cloudformation delete-stack --stack-name cumulus-aggregator
+```
+
+### Unit Tests

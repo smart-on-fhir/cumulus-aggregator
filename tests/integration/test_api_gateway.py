@@ -6,8 +6,6 @@ from urllib import request
 import boto3
 import requests
 
-# TODO: this boilerplate needs to be made into a valid test case
-
 """
 Make sure env variable AWS_SAM_STACK_NAME exists with the name of the stack we are going to test. 
 """
