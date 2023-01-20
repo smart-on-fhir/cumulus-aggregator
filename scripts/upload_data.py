@@ -13,7 +13,7 @@ import fetch_upload_url
 object_name = "cube_simple_example.csv"
 for prefix in ["a_", "b_"]:
     response = fetch_upload_url.create_presigned_post(
-        "cumulus-aggregator", "site_uploads/" + prefix + object_name
+        "cumulus-aggregator-site-counts", "site_uploads/" + prefix + object_name
     )
     if response is None:
         exit(1)

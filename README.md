@@ -70,7 +70,7 @@ aws cloudformation delete-stack --stack-name cumulus-aggregator
 If your bucket has data in it, you need to delete the bucket contents before removing your deployment:
 
 ```bash
-aws s3 rm s3://cumulus-aggregator --recursive && aws cloudformation delete-stack --stack-name cumulus-aggregator
+aws s3 rm s3://cumulus-aggregator-site-counts --recursive && aws cloudformation delete-stack --stack-name cumulus-aggregator
 ```
 
 ### Unit Tests
