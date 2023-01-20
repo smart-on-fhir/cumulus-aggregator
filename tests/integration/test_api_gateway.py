@@ -55,8 +55,8 @@ class TestApiGateway(TestCase):
 
     @pytest.mark.skip(reason="refactor w/ moto")
     def test_fetch_upload_url(self):
-        #Call the API Gateway endpoint and check the response
-        
+        # Call the API Gateway endpoint and check the response
+
         response = requests.post(
             self.api_endpoint, data=json.dumps({"name": "St. Elsewhere"})
         )
@@ -66,4 +66,3 @@ class TestApiGateway(TestCase):
         response = requests.post(self.api_endpoint, data=json.dumps({}))
         print(response)
         self.assertEqual(response.status_code, 400)
-        """
