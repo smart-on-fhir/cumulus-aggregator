@@ -32,10 +32,6 @@ def mergePowersets(s3_client, s3_bucket_name, s3_prefix):
     # Creates an aggregate powerset from all files with a given s3 prefix
     # TODO: this should be memory profiled for large datasets. We can use
     # chunking to lower memory usage during merges.
-    aggregate_path = "s3://" + s3_bucket_name + "/" + s3_prefix + "/aggregate.csv"
-
-    # This except only happens the first time data is merged in a folder
-
     df = pandas.DataFrame()
     csv_list = awswrangler.s3.list_objects(
         "s3://" + s3_bucket_name + "/" + s3_prefix, suffix="csv"
@@ -48,6 +44,7 @@ def mergePowersets(s3_client, s3_bucket_name, s3_prefix):
             # we may want to have this be more flexible in the future.
             data_cols.remove("cnt")
             df = pandas.concat([df, site_df]).groupby(data_cols).sum().reset_index()
+    aggregate_path = "s3://" + s3_bucket_name + "/" + s3_prefix + "/aggregate.csv"
     awswrangler.s3.to_csv(df, aggregate_path)
 
 
