@@ -33,23 +33,21 @@ def mergePowersets(s3_client, s3_bucket_name, s3_prefix):
     # TODO: this should be memory profiled for large datasets. We can use
     # chunking to lower memory usage during merges.
     aggregate_path = "s3://" + s3_bucket_name + "/" + s3_prefix + "/aggregate.csv"
-    try:
-        awswrangler.s3.delete_objects(aggregate_path)
+
     # This except only happens the first time data is merged in a folder
-    except:
-        pass
+
     df = pandas.DataFrame()
     csv_list = awswrangler.s3.list_objects(
         "s3://" + s3_bucket_name + "/" + s3_prefix, suffix="csv"
     )
     for csv_file in csv_list:
-        site_df = awswrangler.s3.read_csv(csv_file, na_filter=False)
-        data_cols = list(site_df.columns)
-        # This is from the semantics of how the datasets are generated, but
-        # we may want to have this be more flexible in the future.
-        data_cols.remove("cnt")
-        df = pandas.concat([df, site_df]).groupby(data_cols).sum().reset_index()
-    print(df)
+        if not csv_file.endswith("aggregate.csv"):
+            site_df = awswrangler.s3.read_csv(csv_file, na_filter=False)
+            data_cols = list(site_df.columns)
+            # This is from the semantics of how the datasets are generated, but
+            # we may want to have this be more flexible in the future.
+            data_cols.remove("cnt")
+            df = pandas.concat([df, site_df]).groupby(data_cols).sum().reset_index()
     awswrangler.s3.to_csv(df, aggregate_path)
 
 
