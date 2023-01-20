@@ -1,9 +1,5 @@
 name: CI
 on: [push]
-
-name: CI
-on: [push]
-
 jobs:
   unittest:
     name: unit tests
