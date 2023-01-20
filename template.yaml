@@ -1,35 +1,27 @@
-# This is the SAM template that represents the architecture of your serverless application
-# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
-
-# The AWSTemplateFormatVersion identifies the capabilities of the template
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
-AWSTemplateFormatVersion: 2010-09-09
+AWSTemplateFormatVersion: '2010-09-09'
 Description: >-
   cumulus-aggregator
-
-# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
 Transform:
 - AWS::Serverless-2016-10-31
 
-# Resources declares the AWS resources that you want to include in the stack
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
-Resources:
+Parameters:
+  BucketNameParameter:
+    Type: String
+    Default: cumulus-aggregator-site-counts
 
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+Resources:
 
   FetchUploadUrlFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/handlers/fetch_upload_url.uploadUrlHandler
+      Handler: src/handlers/fetch_upload_url.upload_url_handler
       Runtime: python3.9
       MemorySize: 128
       Timeout: 100
       Description: Generates a presigned URL for uploading files to S3
       Environment:
         Variables:
-          BUCKET_NAME: cumulus-aggregator
+          BUCKET_NAME: !Sub '${BucketNameParameter}'
       Events:
         AddItem:
           Type: Api
@@ -38,11 +30,67 @@ Resources:
               Ref: ApiGateway
             Path: /
             Method: POST
-  LoadBucket:
-    Type: AWS::S3::Bucket
+
+  PowersetMergeFunction:
+    Type: AWS::Serverless::Function
     Properties:
-      BucketName:
-        cumulus-aggregator
+      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:1]
+      Handler: src/handlers/powerset_merge.powerset_merge_handler
+      Runtime: python3.9
+      MemorySize: 4096
+      Timeout: 800
+      Description: Merges and aggregates powerset count data
+      Policies: AmazonS3ObjectLambdaExecutionRolePolicy
+
+  PowersetMergeFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref PowersetMergeFunction
+      Principal: s3.amazonaws.com
+      #This can't be a ~Ref due to circular refs
+      SourceArn: !Sub 'arn:aws:s3:::${BucketNameParameter}'
+      SourceAccount: !Ref AWS::AccountId
+
+  AggregatorBucket:
+    Type: AWS::S3::Bucket
+    DependsOn:
+      - PowersetMergeFunctionPermission
+    Properties:
+      BucketName: !Sub '${BucketNameParameter}'
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:*
+            Function: !GetAtt PowersetMergeFunction.Arn
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: 'site_uploads/'
+
+  AggregatorBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AggregatorBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowListingObjects
+            Effect: Allow
+            Principal: "*"
+            Action:
+              - s3:ListBucket
+            Resource: !Sub "arn:aws:s3:::${AggregatorBucket}"
+          - Sid: AllowObjectModification
+            Effect: Allow
+            Principal: "*"
+            Action:
+              - s3:DeleteObject
+              - s3:PutObject
+              - s3:GetObject
+              - s3:GetObjectTagging
+            Resource: !Sub "arn:aws:s3:::${AggregatorBucket}/*"
+
 
   ApiGateway:
     Type: AWS::Serverless::Api

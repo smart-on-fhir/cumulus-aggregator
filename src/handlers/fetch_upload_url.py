@@ -1,23 +1,17 @@
-import boto3
+""" Lambda for generating pre-signed URLs for site upload """
 import json
 import logging
-import os
 
+import boto3
 import botocore.exceptions
 
-
-def http_response(status: int, body: str):
-    return {
-        "isBase64Encoded": False,
-        "statusCode": status,
-        "body": json.dumps(body),
-        "headers": {"Content-Type": "application/json"},
-    }
+from shared_functions import http_response
 
 
 def create_presigned_post(
     bucket_name: str, object_name: str, fields=None, conditions=None, expiration=3600
 ):
+    # Generates a secure URL for upload without AWS credentials
     s3_client = boto3.client(
         "s3",
         region_name="us-east-1",
@@ -37,10 +31,12 @@ def create_presigned_post(
         return http_response(400, "Error occured presigning url")
 
 
-def uploadUrlHandler(event, context):
+def upload_url_handler(event, context):  # pylint: disable=W0613
+    # Processes event from API Gateway
+    # TODO: route to folders based on study/institution
     try:
         name = json.loads(event["body"])["name"]
-        res = create_presigned_post("cumulus-aggregator", name)
-    except KeyError as e:
-        res = http_response(400, "Error occured presigning url")
+        res = create_presigned_post("cumulus-aggregator", "site_uploads/" + name)
+    except Exception:  # pylint: disable=W0703
+        res = http_response(500, "Error occured presigning url")
     return res

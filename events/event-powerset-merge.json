@@ -1,0 +1,38 @@
+{
+    "Records": [
+        {
+            "eventVersion": "2.1",
+            "eventSource": "aws:s3",
+            "awsRegion": "us-east-1",
+            "eventTime": "2023-01-18T14:38:23.302Z",
+            "eventName": "ObjectCreated:Post",
+            "userIdentity": {
+                "principalId": "AWS:AWS12345678:user@domain.edu"
+            },
+            "requestParameters": {
+                "sourceIPAddress": "10.0.0.10"
+            },
+            "responseElements": {
+                "x-amz-request-id": "NSTCMA1Y7GD9ZAM0",
+                "x-amz-id-2": "QAIpNs0Xuj3GP98nuBkAYA70yRR5PP9S8yQGZ7r+8SJuSpUVHZIgbfsmfxdu+4PXbcPADwFL/Mx8YjzwrP3pasekS0FGNhM7"
+            },
+            "s3": {
+                "s3SchemaVersion": "1.0",
+                "configurationId": "74a75ce1-8a87-4d7d-a735-8d59f665560a",
+                "bucket": {
+                    "name": "cumulus-aggregator",
+                    "ownerIdentity": {
+                        "principalId": "ABCDEF1236"
+                    },
+                    "arn": "arn:aws:s3:::cumulus-aggregator"
+                },
+                "object": {
+                    "key": "site_uploads/cube_simple_example.csv",
+                    "size": 450,
+                    "eTag": "95df988edffedcc62e22ce3fec64e017",
+                    "sequencer": "0063C8045F37A4A210"
+                }
+            }
+        }
+    ]
+}

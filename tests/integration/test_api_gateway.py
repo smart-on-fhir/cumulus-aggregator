@@ -5,14 +5,14 @@ import json
 from urllib import request
 import boto3
 import requests
-
-# TODO: this boilerplate needs to be made into a valid test case
+import pytest
 
 """
-Make sure env variable AWS_SAM_STACK_NAME exists with the name of the stack we are going to test. 
+Make sure env variable AWS_SAM_STACK_NAME exists with the name of the stack 
+we are going to test. 
 """
 
-
+# TODO: Refactor for moto
 class TestApiGateway(TestCase):
     api_endpoint: str
 
@@ -22,7 +22,8 @@ class TestApiGateway(TestCase):
         if not stack_name:
             raise Exception(
                 "Cannot find env var AWS_SAM_STACK_NAME. \n"
-                "Please setup this environment variable with the stack name where we are running integration tests."
+                "Please setup this environment variable with the stack name \
+                where we are running integration tests."
             )
 
         return stack_name
@@ -55,10 +56,10 @@ class TestApiGateway(TestCase):
 
         self.api_endpoint = api_outputs[0]["OutputValue"]
 
+    @pytest.mark.skip(reason="refactor w/ moto")
     def test_fetch_upload_url(self):
-        """
-        Call the API Gateway endpoint and check the response
-        """
+        # Call the API Gateway endpoint and check the response
+
         response = requests.post(
             self.api_endpoint, data=json.dumps({"name": "St. Elsewhere"})
         )
