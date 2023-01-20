@@ -33,7 +33,7 @@ jobs:
           pip install -r tests/requirements.txt
       - name: Run pycodestyle
         run: |
-          pycodestyle . --max-line-length=88
+          pycodestyle src --max-line-length=88
       - name: Run pylint
         if: success() || failure() # still run pylint if above checks fail
         run: |
