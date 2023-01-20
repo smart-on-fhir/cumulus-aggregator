@@ -4,6 +4,11 @@ Description: >-
 Transform:
 - AWS::Serverless-2016-10-31
 
+Parameters:
+  BucketNameParameter:
+    Type: String
+    Default: cumulus-aggregator-site-counts
+
 Resources:
 
   FetchUploadUrlFunction:
@@ -16,7 +21,7 @@ Resources:
       Description: Generates a presigned URL for uploading files to S3
       Environment:
         Variables:
-          BUCKET_NAME: cumulus-aggregator
+          BUCKET_NAME: !Sub '${BucketNameParameter}'
       Events:
         AddItem:
           Type: Api
@@ -43,7 +48,8 @@ Resources:
       Action: 'lambda:InvokeFunction'
       FunctionName: !Ref PowersetMergeFunction
       Principal: s3.amazonaws.com
-      SourceArn: 'arn:aws:s3:::cumulus-aggregator'
+      #This can't be a ~Ref due to circular refs
+      SourceArn: !Sub 'arn:aws:s3:::${BucketNameParameter}'
       SourceAccount: !Ref AWS::AccountId
 
   AggregatorBucket:
@@ -51,7 +57,7 @@ Resources:
     DependsOn:
       - PowersetMergeFunctionPermission
     Properties:
-      BucketName: cumulus-aggregator
+      BucketName: !Sub '${BucketNameParameter}'
       NotificationConfiguration:
         LambdaConfigurations:
           - Event: s3:ObjectCreated:*
