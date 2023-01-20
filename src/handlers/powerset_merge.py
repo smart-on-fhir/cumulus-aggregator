@@ -1,7 +1,6 @@
+""" Lambda for performing joins of site count data """
 import awswrangler
 import boto3
-import json
-import os
 import pandas
 
 from src.handlers.shared_functions import http_response
@@ -11,7 +10,7 @@ class S3UploadError(Exception):
     pass
 
 
-def processUpload(s3_client, s3_bucket_name, s3_key):
+def process_upload(s3_client, s3_bucket_name, s3_key):
     # Moves file from upload path to to powerset generation path
     # TODO: this should be replaced by a dedicated lambda that can handle
     # uploads from multiple sites, multiple studies and metadata logging
@@ -28,7 +27,7 @@ def processUpload(s3_client, s3_bucket_name, s3_key):
         raise S3UploadError
 
 
-def mergePowersets(s3_client, s3_bucket_name, s3_prefix):
+def merge_powersets(s3_bucket_name, s3_prefix):
     # Creates an aggregate powerset from all files with a given s3 prefix
     # TODO: this should be memory profiled for large datasets. We can use
     # chunking to lower memory usage during merges.
@@ -48,15 +47,15 @@ def mergePowersets(s3_client, s3_bucket_name, s3_prefix):
     awswrangler.s3.to_csv(df, aggregate_path)
 
 
-def powersetMergeHandler(event, context):
+def powerset_merge_handler(event, context):  # pylint: disable=W0613
     # manages event from S3, triggers file processing and merge
     try:
         s3_bucket = "cumulus-aggregator-site-counts"
         s3_client = boto3.client("s3")
         s3_key = event["Records"][0]["s3"]["object"]["key"]
-        processUpload(s3_client, s3_bucket, s3_key)
-        mergePowersets(s3_client, s3_bucket, "latest_data")
+        process_upload(s3_client, s3_bucket, s3_key)
+        merge_powersets(s3_bucket, "latest_data")
         res = http_response(200, "Merge successful")
-    except Exception as e:
+    except Exception:  # pylint: disable=W0703
         res = http_response(500, "Error processing file")
     return res

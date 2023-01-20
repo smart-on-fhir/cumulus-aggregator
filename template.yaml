@@ -14,7 +14,7 @@ Resources:
   FetchUploadUrlFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/handlers/fetch_upload_url.uploadUrlHandler
+      Handler: src/handlers/fetch_upload_url.upload_url_handler
       Runtime: python3.9
       MemorySize: 128
       Timeout: 100
@@ -35,7 +35,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:1]
-      Handler: src/handlers/powerset_merge.powersetMergeHandler
+      Handler: src/handlers/powerset_merge.powerset_merge_handler
       Runtime: python3.9
       MemorySize: 4096
       Timeout: 800

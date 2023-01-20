@@ -1,7 +1,8 @@
-import boto3
+""" Lambda for generating pre-signed URLs for site upload """
 import json
 import logging
-import os
+
+import boto3
 import botocore.exceptions
 
 from shared_functions import http_response
@@ -30,12 +31,12 @@ def create_presigned_post(
         return http_response(400, "Error occured presigning url")
 
 
-def uploadUrlHandler(event, context):
+def upload_url_handler(event, context):  # pylint: disable=W0613
     # Processes event from API Gateway
     # TODO: route to folders based on study/institution
     try:
         name = json.loads(event["body"])["name"]
         res = create_presigned_post("cumulus-aggregator", "site_uploads/" + name)
-    except KeyError as e:
-        res = http_response(400, "Error occured presigning url")
+    except Exception:  # pylint: disable=W0703
+        res = http_response(500, "Error occured presigning url")
     return res

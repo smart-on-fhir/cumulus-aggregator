@@ -1,6 +1,6 @@
 import boto3
 import unittest
-from src.handlers import powerset_merge
+from src.handlers.powerset_merge import powerset_merge_handler
 from moto import mock_s3
 
 
@@ -23,7 +23,7 @@ class TestPowersetMerge(unittest.TestCase):
 
     def test_process_upload(self):
         event = {"Records": [{"s3": {"object": {"key": "site_uploads/a_test.csv"}}}]}
-        res = powerset_merge.powersetMergeHandler(event, {})
+        res = powerset_merge_handler(event, {})
         assert res["statusCode"] == 200
         res = self.s3_client.list_objects_v2(Bucket=self.bucket_name)
         print(res["Contents"])
@@ -35,5 +35,5 @@ class TestPowersetMerge(unittest.TestCase):
         event = {
             "Records": [{"s3": {"object": {"key": "site_uploads/missing_file.csv"}}}]
         }
-        res = powerset_merge.powersetMergeHandler(event, {})
+        res = powerset_merge_handler(event, {})
         assert res["statusCode"] == 500
