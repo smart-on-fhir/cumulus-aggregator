@@ -8,10 +8,11 @@ import requests
 import pytest
 
 """
-Make sure env variable AWS_SAM_STACK_NAME exists with the name of the stack we are going to test. 
+Make sure env variable AWS_SAM_STACK_NAME exists with the name of the stack 
+we are going to test. 
 """
 
-
+# TODO: Refactor for moto
 class TestApiGateway(TestCase):
     api_endpoint: str
 
@@ -21,7 +22,8 @@ class TestApiGateway(TestCase):
         if not stack_name:
             raise Exception(
                 "Cannot find env var AWS_SAM_STACK_NAME. \n"
-                "Please setup this environment variable with the stack name where we are running integration tests."
+                "Please setup this environment variable with the stack name \
+                where we are running integration tests."
             )
 
         return stack_name

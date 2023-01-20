@@ -33,11 +33,11 @@ jobs:
           pip install -r tests/requirements.txt
       - name: Run pycodestyle
         run: |
-          pycodestyle . --exclude=test
+          pycodestyle . --max-line-length=88
       - name: Run pylint
         if: success() || failure() # still run pylint if above checks fail
         run: |
-          pylint cumulus tests
+          pylint src
       - name: Run bandit
         if: success() || failure() # still run bandit if above checks fail
         run: |
