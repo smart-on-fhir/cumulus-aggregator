@@ -1,11 +1,13 @@
 import boto3
-import unittest
-from src.handlers.powerset_merge import powerset_merge_handler
+
 from moto import mock_s3
+from unittest import TestCase
+
+from src.handlers.powerset_merge import powerset_merge_handler
 
 
 @mock_s3
-class TestPowersetMerge(unittest.TestCase):
+class TestPowersetMerge(TestCase):
     def setUp(self):
         self.bucket_name = "cumulus-aggregator-site-counts"
         self.s3_client = boto3.client("s3", region_name="us-east-1")

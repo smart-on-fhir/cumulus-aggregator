@@ -74,3 +74,5 @@ aws s3 rm s3://cumulus-aggregator-site-counts --recursive && aws cloudformation 
 ```
 
 ### Unit Tests
+
+Testing is done via `pytest` at the project root. You will need to `pip install -r tests/requirements.txt` to get the various local dependencies. These tests are also run via post-commit hooks.
