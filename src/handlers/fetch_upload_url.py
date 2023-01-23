@@ -5,7 +5,7 @@ import logging
 import boto3
 import botocore.exceptions
 
-from shared_functions import http_response
+from src.handlers.shared_functions import http_response
 
 
 def create_presigned_post(
@@ -36,7 +36,9 @@ def upload_url_handler(event, context):  # pylint: disable=W0613
     # TODO: route to folders based on study/institution
     try:
         name = json.loads(event["body"])["name"]
-        res = create_presigned_post("cumulus-aggregator", "site_uploads/" + name)
+        res = create_presigned_post(
+            "cumulus-aggregator-site-counts", "site_uploads/" + name
+        )
     except Exception:  # pylint: disable=W0703
         res = http_response(500, "Error occured presigning url")
     return res
