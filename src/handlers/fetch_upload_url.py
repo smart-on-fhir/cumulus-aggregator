@@ -33,11 +33,19 @@ def create_presigned_post(
 
 def upload_url_handler(event, context):  # pylint: disable=W0613
     # Processes event from API Gateway
-    # TODO: route to folders based on study/institution
+    user_db = json.load(open("src/handlers/sites.json"))
     try:
-        name = json.loads(event["body"])["name"]
+        user = event["headers"]["user"]
+        body = json.loads(event["body"])
+
         res = create_presigned_post(
-            "cumulus-aggregator-site-counts", "site_uploads/" + name
+            "cumulus-aggregator-site-counts",
+            "site_uploads/"
+            + body["study"]
+            + "/"
+            + user_db[user]["path"]
+            + "/"
+            + body["filename"],
         )
     except Exception:  # pylint: disable=W0703
         res = http_response(500, "Error occured presigning url")

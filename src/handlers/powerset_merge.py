@@ -14,7 +14,7 @@ def process_upload(s3_client, s3_bucket_name, s3_key):
     # Moves file from upload path to to powerset generation path
     # TODO: this should be replaced by a dedicated lambda that can handle
     # uploads from multiple sites, multiple studies and metadata logging
-    new_key = "latest_data/" + s3_key.split("/")[-1]
+    new_key = "latest_data/" + s3_key.split("/", 1)[1]
     source = {"Bucket": s3_bucket_name, "Key": s3_key}
     copy_response = s3_client.copy_object(
         CopySource=source, Bucket=s3_bucket_name, Key=new_key
@@ -53,8 +53,9 @@ def powerset_merge_handler(event, context):  # pylint: disable=W0613
         s3_bucket = "cumulus-aggregator-site-counts"
         s3_client = boto3.client("s3")
         s3_key = event["Records"][0]["s3"]["object"]["key"]
+        study = s3_key.split("/")[1]
         process_upload(s3_client, s3_bucket, s3_key)
-        merge_powersets(s3_bucket, "latest_data")
+        merge_powersets(s3_bucket, "latest_data/" + study)
         res = http_response(200, "Merge successful")
     except Exception:  # pylint: disable=W0703
         res = http_response(500, "Error processing file")

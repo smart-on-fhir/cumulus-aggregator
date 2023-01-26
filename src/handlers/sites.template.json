@@ -1,0 +1,6 @@
+{
+    "elsewhere": {
+        "secret": "secretval",
+        "path": "elsewhere"
+    }
+}

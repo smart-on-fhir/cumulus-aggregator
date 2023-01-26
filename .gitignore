@@ -1,6 +1,7 @@
 .aws-sam
 samconfig.toml
 data/
+sites.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
