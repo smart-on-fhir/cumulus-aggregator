@@ -15,8 +15,9 @@ class TestFetchUploadUrl(TestCase):
         self.s3_client.create_bucket(Bucket=self.bucket_name)
 
     def test_fetch_upload_url(self):
-        body = json.dumps({"name": "St. Elsewhere"})
-        response = upload_url_handler({"body": body}, None)
+        body = json.dumps({"study": "covid", "filename": "covid.csv"})
+        headers = {"user": "elsewhere"}
+        response = upload_url_handler({"body": body, "headers": headers}, None)
         print(response)
         self.assertEqual(response["statusCode"], 200)
 

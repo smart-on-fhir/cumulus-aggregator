@@ -1,0 +1,8 @@
+{
+    "general": {
+        "secret": "hashed_secretval"
+    },
+    "elsewhere": {
+        "secret": "hashed_otherval"
+    }
+}

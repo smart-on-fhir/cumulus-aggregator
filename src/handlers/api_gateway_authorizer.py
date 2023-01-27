@@ -1,28 +1,33 @@
-# The following is based on the AWS lambda authorizer blueprint with modifications
-# https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/master/blueprints/python/api-gateway-authorizer-python.py
+"""The following is based on the AWS lambda authorizer blueprint with modifications
+https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/d49eb6a1e2ae4a01688fb2bc861cd463d3ac5eb0/blueprints/python/api-gateway-authorizer-python.py
+"""
+
+# pylint: disable=invalid-name,pointless-string-statement
 from __future__ import print_function
 
-import bcrypt
-import re
 import json
+import re
+
+import bcrypt
 
 
-def lambda_handler(event, context):
-    user_db = json.load(open("src/handlers/sites.json"))
-    print(user_db)
-    print(event["headers"])
+def lambda_handler(event, context):  # pylint: disable=unused-argument
+    ### aggregator specific logic
+    with open("src/handlers/site_data/auth.json", encoding="utf-8") as auth:
+        user_db = json.load(auth)
     try:
         user_details = user_db[event["headers"]["user"]]
-        print(user_details)
         if not bcrypt.checkpw(
             event["headers"]["Authorization"].encode("utf-8"),
             user_details["secret"].encode("utf-8"),
         ):
             raise Exception
-    except Exception as e:
-        raise Exception("Unauthorized")
+    except Exception:
+        raise Exception("Unauthorized")  # pylint: disable=raise-missing-from
 
     principalId = event["headers"]["user"]
+
+    ### end aggregator specific logic
 
     tmp = event["methodArn"].split(":")
     apiGatewayArnTmp = tmp[5].split("/")
@@ -40,6 +45,11 @@ def lambda_handler(event, context):
     return authResponse
 
 
+# The remaining functions/methods are all part of the original blueprint linked above,
+# with accomodations for our linting, but should otherwise not be modified unless
+# you're dramatically changing the behavior for some reason
+
+
 class HttpVerb:
     GET = "GET"
     POST = "POST"
@@ -51,14 +61,13 @@ class HttpVerb:
     ALL = "*"
 
 
-class AuthPolicy(object):
+class AuthPolicy(object):  # pylint: disable=missing-class-docstring
     awsAccountId = ""
     """The AWS account id the policy will be generated for. This is used to create the method ARNs."""
     principalId = ""
-    """The principal used for the policy, this should be a unique identifier for the end user."""
     version = "2012-10-17"
     """The policy version used for the evaluation. This should always be '2012-10-17'"""
-    pathRegex = "^[/.a-zA-Z0-9-\*]+$"
+    pathRegex = "^[/.a-zA-Z0-9-\*]+$"  # pylint: disable=anomalous-backslash-in-string
     """The regular expression used to validate resource paths for the policy"""
 
     """these are the internal lists of allowed and denied methods. These are lists
@@ -70,19 +79,25 @@ class AuthPolicy(object):
     denyMethods = []
 
     restApiId = "<<restApiId>>"
-    """ Replace the placeholder value with a default API Gateway API id to be used in the policy. 
-    Beware of using '*' since it will not simply mean any API Gateway API id, because stars will greedily expand over '/' or other separators. 
-    See https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_resource.html for more details. """
+    """ Replace the placeholder value with a default API Gateway API id to be used in
+    the policy. Beware of using '*' since it will not simply mean any API Gateway API
+    id, because stars will greedily expand over '/' or other separators. See
+    https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_resource.html
+    for more details. """
 
     region = "<<region>>"
-    """ Replace the placeholder value with a default region to be used in the policy. 
-    Beware of using '*' since it will not simply mean any region, because stars will greedily expand over '/' or other separators. 
-    See https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_resource.html for more details. """
+    """ Replace the placeholder value with a default region to be used in the policy.
+    Beware of using '*' since it will not simply mean any region, because stars will
+    greedily expand over '/' or other separators. See
+    https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_resource.html
+    for more details. """
 
     stage = "<<stage>>"
-    """ Replace the placeholder value with a default stage to be used in the policy. 
-    Beware of using '*' since it will not simply mean any stage, because stars will greedily expand over '/' or other separators. 
-    See https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_resource.html for more details. """
+    """ Replace the placeholder value with a default stage to be used in the policy.
+    Beware of using '*' since it will not simply mean any stage, because stars will
+    greedily expand over '/' or other separators. See
+    https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_resource.html
+    for more details. """
 
     def __init__(self, principal, awsAccountId):
         self.awsAccountId = awsAccountId

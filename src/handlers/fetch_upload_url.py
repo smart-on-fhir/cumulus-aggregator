@@ -33,17 +33,17 @@ def create_presigned_post(
 
 def upload_url_handler(event, context):  # pylint: disable=W0613
     # Processes event from API Gateway
-    user_db = json.load(open("src/handlers/sites.json"))
+    with open("src/handlers/site_data/metadata.json", encoding="utf-8") as metadata:
+        metadata_db = json.load(metadata)
     try:
         user = event["headers"]["user"]
         body = json.loads(event["body"])
-
         res = create_presigned_post(
             "cumulus-aggregator-site-counts",
             "site_uploads/"
             + body["study"]
             + "/"
-            + user_db[user]["path"]
+            + metadata_db[user]["path"]
             + "/"
             + body["filename"],
         )
