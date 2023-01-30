@@ -14,7 +14,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from src.handlers import fetch_upload_url
 
 url_subdomain = "p8eb5jgrr3"
-url = "https://" + url_subdomain + ".execute-api.us-east-1.amazonaws.com/Prod/"
+url = f"https://{url_subdomain}.execute-api.us-east-1.amazonaws.com/Prod/"
 
 # Generate two presigned S3 POST URLs for this file for merge testing
 object_name = "cube_simple_example.csv"
