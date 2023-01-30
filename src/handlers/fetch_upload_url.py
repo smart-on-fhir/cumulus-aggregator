@@ -35,6 +35,8 @@ def upload_url_handler(event, context):  # pylint: disable=W0613
     # Processes event from API Gateway
     with open("src/handlers/site_data/metadata.json", encoding="utf-8") as metadata:
         metadata_db = json.load(metadata)
+        print(metadata)
+        print(metadata_db["test"]["path"])
     try:
         user = event["headers"]["user"]
         body = json.loads(event["body"])
@@ -47,6 +49,7 @@ def upload_url_handler(event, context):  # pylint: disable=W0613
             + "/"
             + body["filename"],
         )
-    except Exception:  # pylint: disable=W0703
+    except Exception as e:  # pylint: disable=broad-except
+        logging.error(e)
         res = http_response(500, "Error occured presigning url")
     return res

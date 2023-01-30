@@ -12,8 +12,9 @@ import bcrypt
 
 
 def lambda_handler(event, context):  # pylint: disable=unused-argument
-    ### aggregator specific logic
+    # ---- aggregator specific logic
     with open("src/handlers/site_data/auth.json", encoding="utf-8") as auth:
+        print(auth)
         user_db = json.load(auth)
     try:
         user_details = user_db[event["headers"]["user"]]
@@ -27,7 +28,7 @@ def lambda_handler(event, context):  # pylint: disable=unused-argument
 
     principalId = event["headers"]["user"]
 
-    ### end aggregator specific logic
+    # ---- end aggregator specific logic
 
     tmp = event["methodArn"].split(":")
     apiGatewayArnTmp = tmp[5].split("/")
@@ -63,11 +64,12 @@ class HttpVerb:
 
 class AuthPolicy(object):  # pylint: disable=missing-class-docstring
     awsAccountId = ""
-    """The AWS account id the policy will be generated for. This is used to create the method ARNs."""
+    """The AWS account id the policy will be generated for. This is used to
+    create the method ARNs."""
     principalId = ""
     version = "2012-10-17"
     """The policy version used for the evaluation. This should always be '2012-10-17'"""
-    pathRegex = "^[/.a-zA-Z0-9-\*]+$"  # pylint: disable=anomalous-backslash-in-string
+    pathRegex = r"^[/.a-zA-Z0-9-\*]+$"  # pylint: disable=anomalous-backslash-in-string
     """The regular expression used to validate resource paths for the policy"""
 
     """these are the internal lists of allowed and denied methods. These are lists
@@ -106,9 +108,9 @@ class AuthPolicy(object):  # pylint: disable=missing-class-docstring
         self.denyMethods = []
 
     def _addMethod(self, effect, verb, resource, conditions):
-        """Adds a method to the internal lists of allowed or denied methods. Each object in
-        the internal list contains a resource ARN and a condition statement. The condition
-        statement can be null."""
+        """Adds a method to the internal lists of allowed or denied methods. Each
+        object in the internal list contains a resource ARN and a condition statement.
+        The condition statement can be null."""
         if verb != "*" and not hasattr(HttpVerb, verb):
             raise NameError(
                 "Invalid HTTP verb " + verb + ". Allowed verbs in HttpVerb class"
@@ -150,8 +152,8 @@ class AuthPolicy(object):  # pylint: disable=missing-class-docstring
             )
 
     def _getEmptyStatement(self, effect):
-        """Returns an empty statement object prepopulated with the correct action and the
-        desired effect."""
+        """Returns an empty statement object prepopulated with the correct action and
+        the desired effect."""
         statement = {
             "Action": "execute-api:Invoke",
             "Effect": effect[:1].upper() + effect[1:].lower(),
@@ -182,7 +184,8 @@ class AuthPolicy(object):  # pylint: disable=missing-class-docstring
         return statements
 
     def allowAllMethods(self):
-        """Adds a '*' allow to the policy to authorize access to all methods of an API"""
+        """Adds a '*' allow to the policy to authorize access to all methods of
+        an API"""
         self._addMethod("Allow", HttpVerb.ALL, "*", [])
 
     def denyAllMethods(self):
@@ -202,19 +205,21 @@ class AuthPolicy(object):  # pylint: disable=missing-class-docstring
     def allowMethodWithConditions(self, verb, resource, conditions):
         """Adds an API Gateway method (Http verb + Resource path) to the list of allowed
         methods and includes a condition for the policy statement. More on AWS policy
-        conditions here: http://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements.html#Condition"""
+        conditions here:
+        http://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements.html#Condition"""  # noqa: E501
         self._addMethod("Allow", verb, resource, conditions)
 
     def denyMethodWithConditions(self, verb, resource, conditions):
         """Adds an API Gateway method (Http verb + Resource path) to the list of denied
         methods and includes a condition for the policy statement. More on AWS policy
-        conditions here: http://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements.html#Condition"""
+        conditions here:
+        http://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements.html#Condition"""  # noqa: E501
         self._addMethod("Deny", verb, resource, conditions)
 
     def build(self):
-        """Generates the policy document based on the internal lists of allowed and denied
-        conditions. This will generate a policy with two main statements for the effect:
-        one statement for Allow and one statement for Deny.
+        """Generates the policy document based on the internal lists of allowed and
+        denied conditions. This will generate a policy with two main statements for
+        the effect: one statement for Allow and one statement for Deny.
         Methods that includes conditions will have their own statement in the policy."""
         if (self.allowMethods is None or len(self.allowMethods) == 0) and (
             self.denyMethods is None or len(self.denyMethods) == 0

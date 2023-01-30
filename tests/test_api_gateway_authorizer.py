@@ -10,8 +10,7 @@ def mocker_site_json(mocker):
     mocked_site_json = mocker.mock_open(
         read_data="""{
             "test":{
-                "secret":"$2b$12$zUWNDX.zhLDcgTFpHMOZsuFJzVCHpZ8B8RqZTKAk8YhXKGsqcFZPm",
-                "path":"testpath"
+                "secret":"$2b$12$zUWNDX.zhLDcgTFpHMOZsuFJzVCHpZ8B8RqZTKAk8YhXKGsqcFZPm"
             }
         }"""
     )
