@@ -28,7 +28,6 @@ class TestPowersetMerge(TestCase):
         res = powerset_merge_handler(event, {})
         assert res["statusCode"] == 200
         res = self.s3_client.list_objects_v2(Bucket=self.bucket_name)
-        print(res["Contents"])
         assert len(res["Contents"]) == 3
         for item in res["Contents"]:
             assert item["Key"].startswith("latest_data") == True

@@ -1,0 +1,8 @@
+{
+    "general": {
+        "path": "general_hospital"
+    },
+    "elsewhere": {
+        "path": "st_elsewhere"
+    }
+}

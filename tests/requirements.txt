@@ -1,6 +1,7 @@
-pytest
-pytest-mock
+awswrangler
+bcrypt
 boto3
 moto[s3]
+pytest
+pytest-mock
 requests
-awswrangler
