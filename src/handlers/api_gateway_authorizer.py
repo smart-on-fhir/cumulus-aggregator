@@ -14,7 +14,6 @@ import bcrypt
 def lambda_handler(event, context):  # pylint: disable=unused-argument
     # ---- aggregator specific logic
     with open("src/handlers/site_data/auth.json", encoding="utf-8") as auth:
-        print(auth)
         user_db = json.load(auth)
     try:
         user_details = user_db[event["headers"]["user"]]

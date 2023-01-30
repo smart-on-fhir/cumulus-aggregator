@@ -32,7 +32,6 @@ class TestFetchUploadUrl(TestCase):
         body = json.dumps({"study": "covid", "filename": "covid.csv"})
         headers = {"user": "test"}
         response = upload_url_handler({"body": body, "headers": headers}, None)
-        print(response)
         self.assertEqual(response["statusCode"], 200)
 
         body = json.dumps({})

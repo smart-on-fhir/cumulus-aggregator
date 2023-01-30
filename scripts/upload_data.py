@@ -28,7 +28,6 @@ for site in ["elsewhere", "general"]:
     if response is None:
         exit(1)
     body = response.json()
-    print(response)
     # Uploading to S3 with requests
     with open(object_name, "rb") as f:
         files = {"file": (object_name, f)}

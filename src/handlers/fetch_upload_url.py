@@ -35,8 +35,6 @@ def upload_url_handler(event, context):  # pylint: disable=W0613
     # Processes event from API Gateway
     with open("src/handlers/site_data/metadata.json", encoding="utf-8") as metadata:
         metadata_db = json.load(metadata)
-        print(metadata)
-        print(metadata_db["test"]["path"])
     try:
         user = event["headers"]["user"]
         body = json.loads(event["body"])
