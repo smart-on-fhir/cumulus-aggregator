@@ -1,8 +1,10 @@
 """ Lambda for performing joins of site count data """
+import csv
+
 import awswrangler
 import boto3
 import pandas
-import csv
+
 
 from src.handlers.shared_functions import http_response
 
