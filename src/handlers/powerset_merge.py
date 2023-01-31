@@ -1,7 +1,10 @@
 """ Lambda for performing joins of site count data """
+import csv
+
 import awswrangler
 import boto3
 import pandas
+
 
 from src.handlers.shared_functions import http_response
 
@@ -44,7 +47,7 @@ def merge_powersets(s3_bucket_name, s3_prefix):
             data_cols.remove("cnt")
             df = pandas.concat([df, site_df]).groupby(data_cols).sum().reset_index()
     aggregate_path = "s3://" + s3_bucket_name + "/" + s3_prefix + "/aggregate.csv"
-    awswrangler.s3.to_csv(df, aggregate_path)
+    awswrangler.s3.to_csv(df, aggregate_path, index=False, quoting=csv.QUOTE_NONNUMERIC)
 
 
 def powerset_merge_handler(event, context):  # pylint: disable=W0613
