@@ -87,10 +87,16 @@ def merge_powersets(s3_client, s3_bucket_name, study):
                 f"{BucketPath.LATEST.value}/{study}/{site_specific_name}",
                 f"{BucketPath.ERROR.value}/{study}/{site_specific_name}",
             )
-            raise S3UploadError from e
-    aggregate_path = (
-        f"s3://{s3_bucket_name}/{BucketPath.AGGREGATE.value}/{study}/aggregate.csv"
-    )
+            # if a new file fails, we want to replace it with the last valid
+            # for purposes of aggregation
+            if any(x.endswith(site_specific_name) for x in last_valid_csv_list):
+                df = concat_sets(
+                    df,
+                    f"s3://{s3_bucket_name}/{BucketPath.LAST_VALID.value}"
+                    f"/{study}/{site_specific_name}",
+                )
+
+    aggregate_path = f"s3://{s3_bucket_name}/{BucketPath.AGGREGATE.value}/{study}/{study}_aggregate.csv"
     awswrangler.s3.to_csv(df, aggregate_path, index=False, quoting=csv.QUOTE_NONNUMERIC)
 
 
