@@ -16,6 +16,8 @@ class S3UploadError(Exception):
 
 
 def move_s3_file(s3_client, s3_bucket_name, old_key, new_key):
+    # Move file to differnt S3 location
+    # TODO: may need to go into shared_functions at some point.
     source = {"Bucket": s3_bucket_name, "Key": old_key}
     copy_response = s3_client.copy_object(
         CopySource=source, Bucket=s3_bucket_name, Key=new_key
@@ -50,6 +52,7 @@ def concat_sets(df, file_path):
 
 
 def get_site_filename_suffix(s3_path):
+    # Extracts site/filename data from s3 path
     return "/".join(s3_path.split("/")[5:])
 
 
