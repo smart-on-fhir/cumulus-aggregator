@@ -5,6 +5,7 @@ import logging
 import boto3
 import botocore.exceptions
 
+from src.handlers.enums import BucketPath
 from src.handlers.shared_functions import http_response
 
 
@@ -40,12 +41,8 @@ def upload_url_handler(event, context):  # pylint: disable=W0613
         body = json.loads(event["body"])
         res = create_presigned_post(
             "cumulus-aggregator-site-counts",
-            "site_uploads/"
-            + body["study"]
-            + "/"
-            + metadata_db[user]["path"]
-            + "/"
-            + body["filename"],
+            f"{BucketPath.UPLOAD.value}/{body['study']}/\
+            {metadata_db[user]['path']}/{body['filename']}",
         )
     except Exception as e:  # pylint: disable=broad-except
         logging.error(e)
