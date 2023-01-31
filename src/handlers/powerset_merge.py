@@ -32,7 +32,7 @@ def move_s3_file(s3_client, s3_bucket_name, old_key, new_key):
 def process_upload(s3_client, s3_bucket_name, s3_key):
     # Moves file from upload path to to powerset generation path
     # TODO: this should be updated to log file metadata
-    new_key = f"{BucketPath.LATEST.value}/{s3_key.split('/', 1)[1]}"
+    new_key = f"{BucketPath.LATEST.value}/{s3_key.split('/', 1)[-1]}"
     move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
 
 
@@ -40,15 +40,16 @@ def concat_sets(df, file_path):
     # concats a count dataset in a specified S3 location with the in memory dataframe
     site_df = awswrangler.s3.read_csv(file_path, na_filter=False)
     data_cols = list(site_df.columns)
-    # This is from the semantics of how the datasets are generated, but
-    # we may want to have this be more flexible in the future.
+    # There is a baked in assumption with the following line related to the powerset
+    # structures, which we will need to handle differently in the future:
+    # Specifically, we are assuming the bucket sizes are in a column labeled "cnt",
+    # but at some point, we may have different kinds of counts, like "cnt_encounter".
+    # We'll need to modify this once we know a bit more about the final design.
     data_cols.remove("cnt")
     return pandas.concat([df, site_df]).groupby(data_cols).sum().reset_index()
 
 
 def get_site_filename_suffix(s3_path):
-    # if s3_path.startswith('s3'):
-    #    return '/'.join(s3_path.split('/')[7:])
     return "/".join(s3_path.split("/")[5:])
 
 
@@ -65,10 +66,8 @@ def merge_powersets(s3_client, s3_bucket_name, study):
     )
     for s3_path in last_valid_csv_list:
         site_specific_name = get_site_filename_suffix(s3_path)
-        if (
-            len(list(filter(lambda x, n=site_specific_name: n in x, latest_csv_list)))
-            == 0
-        ):
+        # If the latest uploads don't include this site, we'll use the last-valid one instead
+        if not any(x.endswith(site_specific_name) for x in latest_csv_list):
             df = concat_sets(df, s3_path)
     for s3_path in latest_csv_list:
         try:
@@ -81,15 +80,14 @@ def merge_powersets(s3_client, s3_bucket_name, study):
                 f"{BucketPath.LAST_VALID.value}/{study}/{site_specific_name}",
             )
         except Exception as e:
-            logging.error("File %s failed to aggregate", s3_path)
-            logging.error(e)
+            logging.error("File %s failed to aggregate: %s", s3_path, str(e))
             move_s3_file(
                 s3_client,
                 s3_bucket_name,
                 f"{BucketPath.LATEST.value}/{study}/{site_specific_name}",
                 f"{BucketPath.ERROR.value}/{study}/{site_specific_name}",
             )
-            raise S3UploadError  # pylint: disable=raise-missing-from
+            raise S3UploadError from e
     aggregate_path = (
         f"s3://{s3_bucket_name}/{BucketPath.AGGREGATE.value}/{study}/aggregate.csv"
     )
@@ -107,6 +105,6 @@ def powerset_merge_handler(event, context):  # pylint: disable=W0613
         merge_powersets(s3_client, s3_bucket, study)
         res = http_response(200, "Merge successful")
     except Exception as e:  # pylint: disable=W0703
-        logging.error(e)
+        logging.error("Error processing file %s: %s", s3_key, str(e))
         res = http_response(500, "Error processing file")
     return res

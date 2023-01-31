@@ -41,8 +41,8 @@ def upload_url_handler(event, context):  # pylint: disable=W0613
         body = json.loads(event["body"])
         res = create_presigned_post(
             "cumulus-aggregator-site-counts",
-            f"{BucketPath.UPLOAD.value}/{body['study']}/\
-            {metadata_db[user]['path']}/{body['filename']}",
+            f"{BucketPath.UPLOAD.value}/{body['study']}/"
+            f"{metadata_db[user]['path']}/{body['filename']}",
         )
     except Exception as e:  # pylint: disable=broad-except
         logging.error(e)
