@@ -69,7 +69,8 @@ def merge_powersets(s3_client, s3_bucket_name, study):
     )
     for s3_path in last_valid_csv_list:
         site_specific_name = get_site_filename_suffix(s3_path)
-        # If the latest uploads don't include this site, we'll use the last-valid one instead
+        # If the latest uploads don't include this site, we'll use the last-valid
+        # one instead
         if not any(x.endswith(site_specific_name) for x in latest_csv_list):
             df = concat_sets(df, s3_path)
     for s3_path in latest_csv_list:
@@ -82,7 +83,7 @@ def merge_powersets(s3_client, s3_bucket_name, study):
                 f"{BucketPath.LATEST.value}/{study}/{site_specific_name}",
                 f"{BucketPath.LAST_VALID.value}/{study}/{site_specific_name}",
             )
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             logging.error("File %s failed to aggregate: %s", s3_path, str(e))
             move_s3_file(
                 s3_client,
@@ -99,7 +100,10 @@ def merge_powersets(s3_client, s3_bucket_name, study):
                     f"/{study}/{site_specific_name}",
                 )
 
-    aggregate_path = f"s3://{s3_bucket_name}/{BucketPath.AGGREGATE.value}/{study}/{study}_aggregate.csv"
+    aggregate_path = (
+        f"s3://{s3_bucket_name}/{BucketPath.AGGREGATE.value}/"
+        f"{study}/{study}_aggregate.csv"
+    )
     awswrangler.s3.to_csv(df, aggregate_path, index=False, quoting=csv.QUOTE_NONNUMERIC)
 
 
