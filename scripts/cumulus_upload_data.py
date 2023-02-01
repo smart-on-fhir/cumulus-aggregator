@@ -67,7 +67,6 @@ def upload_file(args):
 
 
 if __name__ == "__main__":
-    arg_names = ["file", "study", "auth", "studyname", "url", "profile"]
     parser = argparse.ArgumentParser(
         description="""Uploads de-ID counts data to a cumulus aggregator instance.
 
@@ -82,7 +81,6 @@ if __name__ == "__main__":
     parser.add_argument("-a", "--auth", help="the secret assigned to a site")
     parser.add_argument("-n", "--studyname", help="the name of the data's study")
     parser.add_argument("-u", "--url", help="the public URL of the aggregator")
-    parser.add_argument("-p", "--profile", help="the public URL of the aggregator")
     parser.add_argument(
         "-t",
         "--test",
@@ -92,8 +90,8 @@ if __name__ == "__main__":
     )
     args_dict = {}
     args = vars(parser.parse_args())
-    for name in arg_names:
-        args_dict[name] = os.getenv(f"CUMULUS_UPLOAD_{name.upper()}")
+    for key in args.keys():
+        args_dict[key] = os.getenv(f"CUMULUS_UPLOAD_{key.upper()}")
     if args["test"]:
         args_dict["site"] = "general"
         args_dict[
