@@ -11,6 +11,10 @@ import re
 import bcrypt
 
 
+class AuthError(Exception):
+    pass
+
+
 def lambda_handler(event, context):  # pylint: disable=unused-argument
     # ---- aggregator specific logic
     with open("src/handlers/site_data/auth.json", encoding="utf-8") as auth:
@@ -21,9 +25,9 @@ def lambda_handler(event, context):  # pylint: disable=unused-argument
             event["headers"]["Authorization"].encode("utf-8"),
             user_details["secret"].encode("utf-8"),
         ):
-            raise Exception
-    except Exception:
-        raise Exception("Unauthorized")  # pylint: disable=raise-missing-from
+            raise AuthError
+    except (AuthError, KeyError):
+        raise AuthError("Unauthorized")  # pylint: disable=raise-missing-from
 
     principalId = event["headers"]["user"]
 
