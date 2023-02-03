@@ -4,7 +4,7 @@ import pytest
 from moto import mock_s3
 from unittest import TestCase, mock
 
-from src.handlers.fetch_upload_url import upload_url_handler
+from src.handlers.site_upload.fetch_upload_url import upload_url_handler
 
 builtin_open = open
 
