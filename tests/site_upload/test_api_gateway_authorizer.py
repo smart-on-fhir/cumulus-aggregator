@@ -2,7 +2,7 @@ import pytest
 
 from contextlib import nullcontext as does_not_raise
 
-from src.handlers.api_gateway_authorizer import lambda_handler
+from src.handlers.site_upload.api_gateway_authorizer import lambda_handler
 
 
 @pytest.fixture

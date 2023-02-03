@@ -5,10 +5,10 @@ import logging
 import awswrangler
 import boto3
 import pandas
+from numpy import nan
 
-
-from src.handlers.enums import BucketPath
-from src.handlers.shared_functions import http_response
+from src.handlers.site_upload.enums import BucketPath
+from src.handlers.site_upload.shared_functions import http_response
 
 
 class S3UploadError(Exception):
@@ -104,7 +104,10 @@ def merge_powersets(s3_client, s3_bucket_name, study):
         f"s3://{s3_bucket_name}/{BucketPath.AGGREGATE.value}/"
         f"{study}/{study}_aggregate.csv"
     )
-    awswrangler.s3.to_csv(df, aggregate_path, index=False, quoting=csv.QUOTE_NONNUMERIC)
+    df = df.apply(lambda x: x.str.strip() if isinstance(x, str) else x).replace(
+        '""', nan
+    )
+    awswrangler.s3.to_csv(df, aggregate_path, index=False, quoting=csv.QUOTE_NONE)
 
 
 def powerset_merge_handler(event, context):  # pylint: disable=W0613

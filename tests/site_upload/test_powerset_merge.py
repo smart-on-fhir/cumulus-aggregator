@@ -3,8 +3,8 @@ import boto3
 from moto import mock_s3
 from unittest import TestCase
 
-from src.handlers.enums import BucketPath
-from src.handlers.powerset_merge import powerset_merge_handler
+from src.handlers.site_upload.enums import BucketPath
+from src.handlers.site_upload.powerset_merge import powerset_merge_handler
 
 
 @mock_s3
@@ -63,7 +63,7 @@ class TestPowersetMerge(TestCase):
 
     def test_invalid_dataset(self):
         self.s3_client.upload_file(
-            "./tests/test_powerset_merge.py",
+            "./tests/site_upload/test_powerset_merge.py",
             self.bucket_name,
             f"{BucketPath.UPLOAD.value}/covid/elsewhere/b_test.csv",
         )
