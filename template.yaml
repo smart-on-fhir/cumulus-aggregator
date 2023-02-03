@@ -13,11 +13,14 @@ Resources:
 
 ### Lambda Functions
 
+  # Data Processing
+
   FetchAuthorizerFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: CumulusAggFetchAuthorizer
       Layers: [arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p39-bcrypt:5]
-      Handler: src/handlers/api_gateway_authorizer.lambda_handler
+      Handler: src/handlers/site_upload/api_gateway_authorizer.lambda_handler
       Runtime: python3.9
       MemorySize: 128
       Timeout: 100
@@ -26,7 +29,8 @@ Resources:
   FetchUploadUrlFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/handlers/fetch_upload_url.upload_url_handler
+      FunctionName: CumulusAggFetchUploadUrl
+      Handler: src/handlers/site_upload/fetch_upload_url.upload_url_handler
       Runtime: python3.9
       MemorySize: 128
       Timeout: 100
@@ -38,8 +42,7 @@ Resources:
         AddItem:
           Type: Api
           Properties:
-            RestApiId:
-              Ref: SiteApiGateway
+            RestApiId: !Ref SiteApiGateway
             Path: /
             Method: POST
       Policies:
@@ -49,8 +52,9 @@ Resources:
   PowersetMergeFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: CumulusAggPowersetMerge
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:1]
-      Handler: src/handlers/powerset_merge.powerset_merge_handler
+      Handler: src/handlers/site_upload/powerset_merge.powerset_merge_handler
       Runtime: python3.9
       MemorySize: 4096
       Timeout: 800
@@ -87,7 +91,7 @@ Resources:
               S3Key:
                 Rules:
                   - Name: prefix
-                    Value: 'site_uploads/'
+                    Value: 'site_upload/'
 
 ### IAM Roles 
 
@@ -124,6 +128,7 @@ Resources:
             Identity:
               Headers: [Authorization,user]
         DefaultAuthorizer: FetchAuth
+      Name: CumulusAggregatorSiteAPI
 #      MethodSettings:
 #        - LoggingLevel: INFO
 #          MetricsEnabled: True
@@ -156,6 +161,6 @@ Resources:
 #          - 'arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
 
 Outputs:
-  WebEndpoint:
-    Description: "API Gateway endpoint URL for Prod stage"
+  SiteWebEndpoint:
+    Description: "Site API Gateway endpoint URL for Prod stage"
     Value: !Sub "https://${SiteApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
