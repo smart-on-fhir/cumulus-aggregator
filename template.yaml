@@ -63,6 +63,44 @@ Resources:
         - S3CrudPolicy:
             BucketName: !Ref BucketNameParameter
 
+  # Dashboard API
+
+  DashboardPocFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: CumulusAggDashboardPoc
+      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:1]
+      Handler: src/handlers/dashboard/poc.lambda_handler
+      Runtime: python3.9
+      MemorySize: 1024
+      Timeout: 100
+      Description: Test Endpoint
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}'
+      Events:
+        AddItem:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /poc/{subscription_id}
+            Method: GET
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref BucketNameParameter
+        - Statement:
+          - Sid: GluePermissionsPolicy
+            Effect: Allow
+            Action:
+            - glue:*
+            Resource: '*'
+        - Statement:
+          - Sid: AthenaPermissionsPolicy
+            Effect: Allow
+            Action:
+            - athena:*
+            Resource: '*'
+
 ### Lambda permissions
 
   PowersetMergeFunctionPermission:
@@ -75,7 +113,17 @@ Resources:
       SourceArn: !Sub 'arn:aws:s3:::${BucketNameParameter}'
       SourceAccount: !Ref AWS::AccountId
 
-# S3 Buckets
+  DashboardPocFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref DashboardPocFunction
+      Principal: s3.amazonaws.com
+      #This can't be a !Ref due to circular refs
+      SourceArn: !Sub 'arn:aws:s3:::${BucketNameParameter}'
+      SourceAccount: !Ref AWS::AccountId
+
+### S3 Buckets
 
   AggregatorBucket:
     Type: AWS::S3::Bucket
@@ -93,6 +141,31 @@ Resources:
                   - Name: prefix
                     Value: 'site_upload/'
 
+### Glue Resources
+
+  GlueDB:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Name: cumulus-aggregator
+
+  GlueCrawler:
+    Type: AWS::Glue::Crawler
+    Properties:
+      Name: cumulus-aggregator
+      DatabaseName: !Ref GlueDB
+      Role: !GetAtt CrawlerRole.Arn
+      RecrawlPolicy:
+        RecrawlBehavior: CRAWL_EVERYTHING
+      SchemaChangePolicy:
+        DeleteBehavior: DEPRECATE_IN_DATABASE
+        UpdateBehavior: UPDATE_IN_DATABASE
+      Targets:
+        S3Targets:
+          - Path: !Sub "s3://${BucketNameParameter}/aggregates/"
+
+
 ### IAM Roles 
 
   FetchAuthorizerRole:
@@ -108,6 +181,48 @@ Resources:
                 - apigateway.amazonaws.com
             Action:
               - sts:AssumeRole
+
+  CrawlerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - glue.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
+        - arn:aws:iam::aws:policy/AmazonAthenaFullAccess
+      Policies:
+        - PolicyName: S3BucketAccessPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Sub "arn:aws:s3:::${BucketNameParameter}/aggregates/*"
+
+  PocRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+                - apigateway.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonAthenaFullAccess
 
 ### API Gateways
 
@@ -160,7 +275,18 @@ Resources:
 #        ManagedPolicyArns:
 #          - 'arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
 
+  DashboardApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Name: CumulusAggregatorDashboardAPI
+
+
 Outputs:
   SiteWebEndpoint:
     Description: "Site API Gateway endpoint URL for Prod stage"
     Value: !Sub "https://${SiteApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+
+  DashboardWebEndpoint:
+    Description: "Dashboard API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${DashboardApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/"

@@ -34,7 +34,9 @@ def create_presigned_post(
 
 def upload_url_handler(event, context):  # pylint: disable=W0613
     # Processes event from API Gateway
-    with open("src/handlers/site_data/metadata.json", encoding="utf-8") as metadata:
+    with open(
+        "src/handlers/site_upload/site_data/metadata.json", encoding="utf-8"
+    ) as metadata:
         metadata_db = json.load(metadata)
     try:
         user = event["headers"]["user"]

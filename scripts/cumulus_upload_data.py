@@ -15,7 +15,7 @@ import boto3
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from src.handlers import fetch_upload_url
+from src.handlers.site_upload import fetch_upload_url
 
 
 def upload_file(args):
