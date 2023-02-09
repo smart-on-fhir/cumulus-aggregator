@@ -101,5 +101,4 @@ def test_build_query(query_params, filters, path_params, query_str):
 def test_format_payload(query_params, filters, expected_payload):
     df = mock_data_frame(filters)
     payload = get_chart_data._format_payload(df, query_params, filters)
-    print(payload)
     assert payload == expected_payload

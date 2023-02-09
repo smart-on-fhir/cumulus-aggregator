@@ -206,22 +206,6 @@ Resources:
                   - s3:PutObject
                 Resource: !Sub "arn:aws:s3:::${BucketNameParameter}/aggregates/*"
 
-  PocRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-                - apigateway.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonAthenaFullAccess
-
 ### API Gateways
 
 # If you need to enable logging at the API Gateway level, uncomment the nodes 
