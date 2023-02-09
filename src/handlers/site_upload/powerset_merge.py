@@ -16,7 +16,7 @@ class S3UploadError(Exception):
 
 
 def move_s3_file(s3_client, s3_bucket_name, old_key, new_key):
-    # Move file to differnt S3 location
+    """Move file to differnt S3 location"""
     # TODO: may need to go into shared_functions at some point.
     source = {"Bucket": s3_bucket_name, "Key": old_key}
     copy_response = s3_client.copy_object(
@@ -32,14 +32,14 @@ def move_s3_file(s3_client, s3_bucket_name, old_key, new_key):
 
 
 def process_upload(s3_client, s3_bucket_name, s3_key):
-    # Moves file from upload path to to powerset generation path
+    """Moves file from upload path to to powerset generation path"""
     # TODO: this should be updated to log file metadata
     new_key = f"{BucketPath.LATEST.value}/{s3_key.split('/', 1)[-1]}"
     move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
 
 
 def concat_sets(df, file_path):
-    # concats a count dataset in a specified S3 location with the in memory dataframe
+    """concats a count dataset in a specified S3 location with the in memory dataframe"""
     site_df = awswrangler.s3.read_csv(file_path, na_filter=False)
     data_cols = list(site_df.columns)
     # There is a baked in assumption with the following line related to the powerset
@@ -57,7 +57,7 @@ def get_site_filename_suffix(s3_path):
 
 
 def merge_powersets(s3_client, s3_bucket_name, study):
-    # Creates an aggregate powerset from all files with a given s3 prefix
+    """Creates an aggregate powerset from all files with a given s3 prefix"""
     # TODO: this should be memory profiled for large datasets. We can use
     # chunking to lower memory usage during merges.
     df = pandas.DataFrame()
@@ -100,18 +100,26 @@ def merge_powersets(s3_client, s3_bucket_name, study):
                     f"/{study}/{site_specific_name}",
                 )
 
-    aggregate_path = (
-        f"s3://{s3_bucket_name}/{BucketPath.AGGREGATE.value}/"
+    csv_aggregate_path = (
+        f"s3://{s3_bucket_name}/{BucketPath.CSVAGGREGATE.value}/"
         f"{study}/{study}_aggregate.csv"
     )
     df = df.apply(lambda x: x.str.strip() if isinstance(x, str) else x).replace(
         '""', nan
     )
-    awswrangler.s3.to_csv(df, aggregate_path, index=False, quoting=csv.QUOTE_NONE)
+    awswrangler.s3.to_csv(df, csv_aggregate_path, index=False, quoting=csv.QUOTE_NONE)
+    aggregate_path = (
+        f"s3://{s3_bucket_name}/{BucketPath.AGGREGATE.value}/"
+        f"{study}/{study}_aggregate.parquet"
+    )
+    # Note: the to_parquet function is noted in the docs as potentially mutating the
+    # dataframe it's called on, so this should always be the last action applied
+    # to this dataframe, or a deep copy could be made (though mind memory overhead).
+    awswrangler.s3.to_parquet(df, aggregate_path)
 
 
 def powerset_merge_handler(event, context):  # pylint: disable=unused-argument
-    # manages event from S3, triggers file processing and merge
+    """manages event from S3, triggers file processing and merge"""
     try:
         s3_bucket = "cumulus-aggregator-site-counts"
         s3_client = boto3.client("s3")
@@ -120,7 +128,7 @@ def powerset_merge_handler(event, context):  # pylint: disable=unused-argument
         process_upload(s3_client, s3_bucket, s3_key)
         merge_powersets(s3_client, s3_bucket, study)
         res = http_response(200, "Merge successful")
-    except Exception as e:  # pylint: disable=W0703
+    except Exception as e:  # pylint: disable=broad-except
         logging.error("Error processing file %s: %s", s3_key, str(e))
         res = http_response(500, "Error processing file")
     return res

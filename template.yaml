@@ -161,6 +161,7 @@ Resources:
             - latest/**
             - last_valid/**
             - error/**
+            - csv_aggregates/**
 
 
 
@@ -265,7 +266,6 @@ Resources:
     Properties:
       StageName: Prod
       Name: CumulusAggregatorDashboardAPI
-
 
 Outputs:
   SiteWebEndpoint:
