@@ -39,7 +39,7 @@ def process_upload(s3_client, s3_bucket_name, s3_key):
 
 
 def concat_sets(df, file_path):
-    """concats a count dataset in a specified S3 location with the in memory dataframe"""
+    """concats a count dataset in a specified S3 location with in memory dataframe"""
     site_df = awswrangler.s3.read_csv(file_path, na_filter=False)
     data_cols = list(site_df.columns)
     # There is a baked in assumption with the following line related to the powerset
