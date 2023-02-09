@@ -110,7 +110,7 @@ def merge_powersets(s3_client, s3_bucket_name, study):
     awswrangler.s3.to_csv(df, aggregate_path, index=False, quoting=csv.QUOTE_NONE)
 
 
-def powerset_merge_handler(event, context):  # pylint: disable=W0613
+def powerset_merge_handler(event, context):  # pylint: disable=unused-argument
     # manages event from S3, triggers file processing and merge
     try:
         s3_bucket = "cumulus-aggregator-site-counts"

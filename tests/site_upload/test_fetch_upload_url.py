@@ -10,7 +10,7 @@ builtin_open = open
 
 
 def mock_open(*args, **kwargs):
-    if args[0] == "src/handlers/site_data/metadata.json":
+    if args[0] == "src/handlers/site_upload/site_data/metadata.json":
         return mock.mock_open()(*args, **kwargs)
     return builtin_open(*args, **kwargs)
 

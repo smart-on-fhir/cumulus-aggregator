@@ -1,0 +1,39 @@
+{
+    "column": "gender",
+    "filters": [
+        "gender:strEq:female"
+    ],
+    "rowCount": 5,
+    "totalCount": 33839,
+    "data": [
+        {
+            "rows": [
+                [
+                    16917,
+                    "female",
+                    ""
+                ],
+                [
+                    14105,
+                    "female",
+                    "White"
+                ],
+                [
+                    2055,
+                    "female",
+                    "Black or African American"
+                ],
+                [
+                    735,
+                    "female",
+                    "Asian"
+                ],
+                [
+                    27,
+                    "female",
+                    "American Indian or Alaska Native"
+                ]
+            ]
+        }
+    ]
+}
