@@ -43,7 +43,9 @@ _FILTER_MAP_TWO_PARAM = {
     "sameWeekOrAfter": (
         "date_trunc('week',DATE(%s)) " ">= date_trunc('week',DATE('%s'))"
     ),
-    "sameMonthOrAfter": "date_trunc('month',DATE(%s)) >= date_trunc('month',DATE('%s'))",
+    "sameMonthOrAfter": (
+        "date_trunc('month',DATE(%s)) >= date_trunc('month',DATE('%s'))"
+    ),
     "sameYearOrAfter": "date_trunc('year',DATE(%s)) >= date_trunc('year',DATE('%s'))",
     "beforeDay": "DATE(%s) < date_trunc('day',DATE('%s'))",
     "beforeWeek": "date_trunc('week',DATE(%s)) < date_trunc('week',DATE('%s'))",
