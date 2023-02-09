@@ -51,6 +51,12 @@ To run the appplication in this mode, use the following command:
 sam sync --stack-name cumulus-aggregator --watch
 ```
 
+If you'd rather sync on demand, just omit the --watch parameter.
+
+```bash
+sam sync --stack-name cumulus-aggregator
+```
+
 After the build completes, you should be able to test with real events, either using the contents of the `scripts/` directory, or via another means of your choosing.
 
 It might be more useful to live tail the logs, rather than waiting for the CloudFormation dashboard to update. To do this for a specific Lambda, for example, use the `sam logs` command:

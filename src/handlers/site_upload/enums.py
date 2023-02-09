@@ -3,7 +3,7 @@ from enum import Enum
 
 
 class BucketPath(Enum):
-    UPLOAD = "site_uploads"
+    UPLOAD = "site_upload"
     LATEST = "latest"
     LAST_VALID = "last_valid"
     ERROR = "error"

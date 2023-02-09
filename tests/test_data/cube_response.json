@@ -1,0 +1,87 @@
+{
+    "column": "gender",
+    "filters": [],
+    "rowCount": 15,
+    "totalCount": 151974,
+    "data": [
+        {
+            "rows": [
+                [
+                    37990,
+                    "",
+                    ""
+                ],
+                [
+                    32392,
+                    "",
+                    "White"
+                ],
+                [
+                    21073,
+                    "male",
+                    ""
+                ],
+                [
+                    18287,
+                    "male",
+                    "White"
+                ],
+                [
+                    16917,
+                    "female",
+                    ""
+                ],
+                [
+                    14105,
+                    "female",
+                    "White"
+                ],
+                [
+                    3870,
+                    "",
+                    "Black or African American"
+                ],
+                [
+                    2055,
+                    "female",
+                    "Black or African American"
+                ],
+                [
+                    1815,
+                    "male",
+                    "Black or African American"
+                ],
+                [
+                    1675,
+                    "",
+                    "Asian"
+                ],
+                [
+                    940,
+                    "male",
+                    "Asian"
+                ],
+                [
+                    735,
+                    "female",
+                    "Asian"
+                ],
+                [
+                    60,
+                    "",
+                    "American Indian or Alaska Native"
+                ],
+                [
+                    33,
+                    "male",
+                    "American Indian or Alaska Native"
+                ],
+                [
+                    27,
+                    "female",
+                    "American Indian or Alaska Native"
+                ]
+            ]
+        }
+    ]
+}

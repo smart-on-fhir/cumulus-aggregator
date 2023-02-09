@@ -1,0 +1,56 @@
+{
+    "column": "gender",
+    "filters": [
+        "gender:strEq:female"
+    ],
+    "rowCount": 5,
+    "totalCount": 33839,
+    "stratifier": "race",
+    "data": [
+        {
+            "stratifier": "",
+            "rows": [
+                [
+                    16917,
+                    "female"
+                ]
+            ]
+        },
+        {
+            "stratifier": "White",
+            "rows": [
+                [
+                    14105,
+                    "female"
+                ]
+            ]
+        },
+        {
+            "stratifier": "Black or African American",
+            "rows": [
+                [
+                    2055,
+                    "female"
+                ]
+            ]
+        },
+        {
+            "stratifier": "Asian",
+            "rows": [
+                [
+                    735,
+                    "female"
+                ]
+            ]
+        },
+        {
+            "stratifier": "American Indian or Alaska Native",
+            "rows": [
+                [
+                    27,
+                    "female"
+                ]
+            ]
+        }
+    ]
+}

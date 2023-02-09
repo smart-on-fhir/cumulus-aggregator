@@ -1,0 +1,141 @@
+{
+    "resource": "/poc/{subscription_id}",
+    "path": "/poc/106",
+    "httpMethod": "GET",
+    "headers": {
+        "Accept": "*/*",
+        "Accept-Encoding": "gzip, deflate, br",
+        "CloudFront-Forwarded-Proto": "https",
+        "CloudFront-Is-Desktop-Viewer": "true",
+        "CloudFront-Is-Mobile-Viewer": "false",
+        "CloudFront-Is-SmartTV-Viewer": "false",
+        "CloudFront-Is-Tablet-Viewer": "false",
+        "CloudFront-Viewer-ASN": "40127",
+        "CloudFront-Viewer-Country": "US",
+        "Host": "vnkfm60p0c.execute-api.us-east-1.amazonaws.com",
+        "Postman-Token": "54b34c48-90bc-4b65-9263-3697df3fa9b9",
+        "User-Agent": "PostmanRuntime/7.30.1",
+        "Via": "1.1 405b8ed0c1df92e14644e6db88a3af5a.cloudfront.net (CloudFront)",
+        "X-Amz-Cf-Id": "HgPndrLdHrunAoX3ZAG1KRZwjiYh-opniHaA0JBnoOQhmmcPAujdcw==",
+        "x-amz-date": "20230207T144804Z",
+        "X-Amz-Security-Token": "FwoGZXIvYXdzEDUaDBjGb+pyZw9caRguUSLxAS1GRd64gpBoHhS8TpHCC1lWZezzzzsMFIdoUxhLU4A5NYXS+c35U1fUqC6uJGNfvLFiPjcHf9vytHiuVDwMH5omfMO6n6LeWmNLMkLYgingdkmiAueVVO7G7og2VKA3+fVYf+9GPf4Odw/C89k5C+fDJXJLYOncqxV0xxc/9SyruTBt5fYZbz/2/+LuGmHDlb+8/8w4kJfpmnvIp0TaAA21B5CnV1n3IAZc27yRmSDrfbquH70E+VHrKAod9bukdsQiHZRo1qoWWLBVE4jfDiLRrzNzMgDyOK7YBqN//kjqdBLva2HWlsiLR9+IiS+nAu8oyN7xnQYyMlJUGImUNFjhQePDiSEPdnXx4Jp83bDyO3S8okQa0+9qpDoTMpmkYqrB69j5boWg5Gk+",
+        "X-Amzn-Trace-Id": "Root=1-63e264a5-12016be54cfd8ff21d2350a3",
+        "X-Forwarded-For": "134.174.21.171, 15.158.52.7",
+        "X-Forwarded-Port": "443",
+        "X-Forwarded-Proto": "https"
+    },
+    "multiValueHeaders": {
+        "Accept": [
+            "*/*"
+        ],
+        "Accept-Encoding": [
+            "gzip, deflate, br"
+        ],
+        "CloudFront-Forwarded-Proto": [
+            "https"
+        ],
+        "CloudFront-Is-Desktop-Viewer": [
+            "true"
+        ],
+        "CloudFront-Is-Mobile-Viewer": [
+            "false"
+        ],
+        "CloudFront-Is-SmartTV-Viewer": [
+            "false"
+        ],
+        "CloudFront-Is-Tablet-Viewer": [
+            "false"
+        ],
+        "CloudFront-Viewer-ASN": [
+            "40127"
+        ],
+        "CloudFront-Viewer-Country": [
+            "US"
+        ],
+        "Host": [
+            "vnkfm60p0c.execute-api.us-east-1.amazonaws.com"
+        ],
+        "Postman-Token": [
+            "54b34c48-90bc-4b65-9263-3697df3fa9b9"
+        ],
+        "User-Agent": [
+            "PostmanRuntime/7.30.1"
+        ],
+        "Via": [
+            "1.1 405b8ed0c1df92e14644e6db88a3af5a.cloudfront.net (CloudFront)"
+        ],
+        "X-Amz-Cf-Id": [
+            "HgPndrLdHrunAoX3ZAG1KRZwjiYh-opniHaA0JBnoOQhmmcPAujdcw=="
+        ],
+        "x-amz-date": [
+            "20230207T144804Z"
+        ],
+        "X-Amz-Security-Token": [
+            "FwoGZXIvYXdzEDUaDBjGb+pyZw9caRguUSLxAS1GRd64gpBoHhS8TpHCC1lWZezzzzsMFIdoUxhLU4A5NYXS+c35U1fUqC6uJGNfvLFiPjcHf9vytHiuVDwMH5omfMO6n6LeWmNLMkLYgingdkmiAueVVO7G7og2VKA3+fVYf+9GPf4Odw/C89k5C+fDJXJLYOncqxV0xxc/9SyruTBt5fYZbz/2/+LuGmHDlb+8/8w4kJfpmnvIp0TaAA21B5CnV1n3IAZc27yRmSDrfbquH70E+VHrKAod9bukdsQiHZRo1qoWWLBVE4jfDiLRrzNzMgDyOK7YBqN//kjqdBLva2HWlsiLR9+IiS+nAu8oyN7xnQYyMlJUGImUNFjhQePDiSEPdnXx4Jp83bDyO3S8okQa0+9qpDoTMpmkYqrB69j5boWg5Gk+"
+        ],
+        "X-Amzn-Trace-Id": [
+            "Root=1-63e264a5-12016be54cfd8ff21d2350a3"
+        ],
+        "X-Forwarded-For": [
+            "134.174.21.171, 15.158.52.7"
+        ],
+        "X-Forwarded-Port": [
+            "443"
+        ],
+        "X-Forwarded-Proto": [
+            "https"
+        ]
+    },
+    "queryStringParameters": {
+        "column": "age_group",
+        "filter": "age_group:lte:10",
+        "stratifier": "covid_pcr_result"
+    },
+    "multiValueQueryStringParameters": {
+        "column": [
+            "age_group"
+        ],
+        "filter": [
+            "age_group:lte:10"
+        ],
+        "stratifier": [
+            "covid_pcr_result"
+        ]
+    },
+    "pathParameters": {
+        "subscription_id": "106"
+    },
+    "stageVariables": "None",
+    "requestContext": {
+        "resourceId": "qqgokr",
+        "resourcePath": "/poc/{subscription_id}",
+        "httpMethod": "GET",
+        "extendedRequestId": "f-Sp0ExFoAMFcBw=",
+        "requestTime": "07/Feb/2023:14:48:05 +0000",
+        "path": "/Prod/poc/106",
+        "accountId": "316333106222",
+        "protocol": "HTTP/1.1",
+        "stage": "Prod",
+        "domainPrefix": "vnkfm60p0c",
+        "requestTimeEpoch": 1675781285028,
+        "requestId": "06509c3d-d51a-4291-bf67-de7c7270a4d8",
+        "identity": {
+            "cognitoIdentityPoolId": "None",
+            "accountId": "None",
+            "cognitoIdentityId": "None",
+            "caller": "None",
+            "sourceIp": "134.174.21.171",
+            "principalOrgId": "None",
+            "accessKey": "None",
+            "cognitoAuthenticationType": "None",
+            "cognitoAuthenticationProvider": "None",
+            "userArn": "None",
+            "userAgent": "PostmanRuntime/7.30.1",
+            "user": "None"
+        },
+        "domainName": "vnkfm60p0c.execute-api.us-east-1.amazonaws.com",
+        "apiId": "vnkfm60p0c"
+    },
+    "body": "None",
+    "isBase64Encoded": false
+}

@@ -1,4 +1,4 @@
-# cumulus-aggregator-node
+# Dashboard API definition spec
 
 ### endpoint
 `/:id/api`
