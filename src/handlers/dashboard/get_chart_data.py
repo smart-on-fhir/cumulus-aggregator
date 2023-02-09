@@ -2,7 +2,6 @@
 This is intended to provide an implementation of the logic described in docs/api.md
 """
 import logging
-import time
 
 from typing import List, Dict
 
