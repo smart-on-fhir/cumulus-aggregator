@@ -16,7 +16,7 @@ class S3UploadError(Exception):
 
 
 def move_s3_file(s3_client, s3_bucket_name, old_key, new_key):
-    """Move file to differnt S3 location"""
+    """Move file to different S3 location"""
     # TODO: may need to go into shared_functions at some point.
     source = {"Bucket": s3_bucket_name, "Key": old_key}
     copy_response = s3_client.copy_object(
@@ -115,7 +115,7 @@ def merge_powersets(s3_client, s3_bucket_name, study):
     # Note: the to_parquet function is noted in the docs as potentially mutating the
     # dataframe it's called on, so this should always be the last action applied
     # to this dataframe, or a deep copy could be made (though mind memory overhead).
-    awswrangler.s3.to_parquet(df, aggregate_path)
+    awswrangler.s3.to_parquet(df, aggregate_path, index=False)
 
 
 def powerset_merge_handler(event, context):  # pylint: disable=unused-argument
