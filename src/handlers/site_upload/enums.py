@@ -8,3 +8,4 @@ class BucketPath(Enum):
     LAST_VALID = "last_valid"
     ERROR = "error"
     AGGREGATE = "aggregates"
+    CSVAGGREGATE = "csv_aggregates"

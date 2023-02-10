@@ -39,12 +39,14 @@ class TestPowersetMerge(TestCase):
         res = powerset_merge_handler(event, {})
         assert res["statusCode"] == 200
         res = self.s3_client.list_objects_v2(Bucket=self.bucket_name)
-        assert len(res["Contents"]) == 3
+        assert len(res["Contents"]) == 4
         for item in res["Contents"]:
-            if not item["Key"].endswith("aggregate.csv"):
-                assert item["Key"].startswith(BucketPath.LAST_VALID.value) == True
-            else:
+            if item["Key"].endswith("aggregate.parquet"):
                 assert item["Key"].startswith(BucketPath.AGGREGATE.value) == True
+            elif item["Key"].endswith("aggregate.csv"):
+                assert item["Key"].startswith(BucketPath.CSVAGGREGATE.value) == True
+            else:
+                assert item["Key"].startswith(BucketPath.LAST_VALID.value) == True
 
     def test_file_not_found(self):
         event = {

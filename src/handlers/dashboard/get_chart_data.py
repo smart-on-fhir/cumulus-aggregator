@@ -93,6 +93,7 @@ def _format_payload(df: pandas.DataFrame, query_params: Dict, filters: List) -> 
 
 
 def chart_data_handler(event, context):  # pylint: disable=unused-argument
+    """manages event from dashboard api call and retrieves data"""
     query_params = event["queryStringParameters"]
     filters = event["multiValueQueryStringParameters"].get("filter", [])
     path_params = event["pathParameters"]
