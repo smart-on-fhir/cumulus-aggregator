@@ -1,6 +1,6 @@
 import boto3
 
-from datetime import datetime
+from datetime import datetime, timezone
 from moto import mock_s3
 from unittest import TestCase
 
@@ -32,8 +32,8 @@ class TestPowersetMerge(TestCase):
                 "elsewhere": {
                     "covid": {
                         "version": "1.0",
-                        "last_upload": str(datetime.now()),
-                        "last_data_update": str(datetime.now()),
+                        "last_upload": str(datetime.now(timezone.utc)),
+                        "last_data_update": str(datetime.now(timezone.utc)),
                         "last_aggregation": None,
                         "last_error": None,
                         "earliest_data": None,

@@ -2,7 +2,7 @@
 import csv
 import logging
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import awswrangler
 import boto3
@@ -46,7 +46,7 @@ def move_s3_file(s3_client, s3_bucket_name, old_key, new_key):
 
 
 def process_upload(s3_client, s3_bucket_name, s3_key):
-    # Moves file from upload path to to powerset generation path
+    """Moves file from upload path to powerset generation path"""
     last_uploaded_date = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_key)[
         "LastModified"
     ]
@@ -56,11 +56,9 @@ def process_upload(s3_client, s3_bucket_name, s3_key):
     site = path_params[2]
     new_key = f"{BucketPath.LATEST.value}/{s3_key.split('/', 1)[-1]}"
     move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
-    if site not in metadata.keys():
-        metadata[site] = {}
-    if study not in metadata[site].keys():
-        metadata[site][study] = STUDY_METADATA_TEMPLATE
-    metadata[site][study]["last_upload"] = str(last_uploaded_date)
+    site_metadata = metadata.setdefault(site, {})
+    study_metadata = site_metadata.setdefault(study, STUDY_METADATA_TEMPLATE)
+    study_metadata["last_upload"] = last_uploaded_date.isoformat()
     write_metadata(s3_client, s3_bucket_name, metadata)
 
 
@@ -101,7 +99,9 @@ def merge_powersets(s3_client, s3_bucket_name, study):
         # one instead
         if not any(x.endswith(site_specific_name) for x in latest_csv_list):
             df = concat_sets(df, s3_path)
-            metadata[site][study]["last_aggregation"] = str(datetime.now())
+            metadata[site][study]["last_aggregation"] = datetime.now(
+                timezone.utc
+            ).isoformat()
     for s3_path in latest_csv_list:
         site_specific_name = get_site_filename_suffix(s3_path)
         try:
@@ -113,7 +113,7 @@ def merge_powersets(s3_client, s3_bucket_name, study):
                 f"{BucketPath.LAST_VALID.value}/{study}/{site_specific_name}",
             )
             site = site_specific_name.split("/", maxsplit=1)[0]
-            date_str = str(datetime.now())
+            date_str = datetime.now(timezone.utc).isoformat()
             metadata[site][study]["last_data_update"] = date_str
             metadata[site][study]["last_aggregation"] = date_str
         except Exception as e:  # pylint: disable=broad-except
@@ -124,7 +124,7 @@ def merge_powersets(s3_client, s3_bucket_name, study):
                 f"{BucketPath.LATEST.value}/{study}/{site_specific_name}",
                 f"{BucketPath.ERROR.value}/{study}/{site_specific_name}",
             )
-            date_str = str(datetime.now())
+            date_str = datetime.now(timezone.utc).isoformat()
             metadata[site][study]["last_error"] = date_str
 
             # if a new file fails, we want to replace it with the last valid
