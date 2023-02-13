@@ -2,13 +2,27 @@
 import csv
 import logging
 
+from datetime import datetime
+
 import awswrangler
 import boto3
 import pandas
+
 from numpy import nan
 
-from src.handlers.site_upload.enums import BucketPath
-from src.handlers.site_upload.shared_functions import http_response
+from src.handlers.shared.enums import BucketPath
+from src.handlers.shared.functions import http_response, read_metadata, write_metadata
+
+STUDY_METADATA_TEMPLATE = {
+    "version": "1.0",
+    "last_upload": None,
+    "last_data_update": None,
+    "last_aggregation": None,
+    "last_error": None,
+    "earliest_data": None,
+    "latest_data": None,
+    "deleted": None,
+}
 
 
 class S3UploadError(Exception):
@@ -32,10 +46,22 @@ def move_s3_file(s3_client, s3_bucket_name, old_key, new_key):
 
 
 def process_upload(s3_client, s3_bucket_name, s3_key):
-    """Moves file from upload path to to powerset generation path"""
-    # TODO: this should be updated to log file metadata
+    # Moves file from upload path to to powerset generation path
+    last_uploaded_date = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_key)[
+        "LastModified"
+    ]
+    metadata = read_metadata(s3_client, s3_bucket_name)
+    path_params = s3_key.split("/")
+    study = path_params[1]
+    site = path_params[2]
     new_key = f"{BucketPath.LATEST.value}/{s3_key.split('/', 1)[-1]}"
     move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
+    if site not in metadata.keys():
+        metadata[site] = {}
+    if study not in metadata[site].keys():
+        metadata[site][study] = STUDY_METADATA_TEMPLATE
+    metadata[site][study]["last_upload"] = str(last_uploaded_date)
+    write_metadata(s3_client, s3_bucket_name, metadata)
 
 
 def concat_sets(df, file_path):
@@ -60,6 +86,7 @@ def merge_powersets(s3_client, s3_bucket_name, study):
     """Creates an aggregate powerset from all files with a given s3 prefix"""
     # TODO: this should be memory profiled for large datasets. We can use
     # chunking to lower memory usage during merges.
+    metadata = read_metadata(s3_client, s3_bucket_name)
     df = pandas.DataFrame()
     latest_csv_list = awswrangler.s3.list_objects(
         f"s3://{s3_bucket_name}/{BucketPath.LATEST.value}/{study}", suffix="csv"
@@ -69,13 +96,15 @@ def merge_powersets(s3_client, s3_bucket_name, study):
     )
     for s3_path in last_valid_csv_list:
         site_specific_name = get_site_filename_suffix(s3_path)
+        site = site_specific_name.split("/", maxsplit=1)[0]
         # If the latest uploads don't include this site, we'll use the last-valid
         # one instead
         if not any(x.endswith(site_specific_name) for x in latest_csv_list):
             df = concat_sets(df, s3_path)
+            metadata[site][study]["last_aggregation"] = str(datetime.now())
     for s3_path in latest_csv_list:
+        site_specific_name = get_site_filename_suffix(s3_path)
         try:
-            site_specific_name = get_site_filename_suffix(s3_path)
             df = concat_sets(df, s3_path)
             move_s3_file(
                 s3_client,
@@ -83,6 +112,10 @@ def merge_powersets(s3_client, s3_bucket_name, study):
                 f"{BucketPath.LATEST.value}/{study}/{site_specific_name}",
                 f"{BucketPath.LAST_VALID.value}/{study}/{site_specific_name}",
             )
+            site = site_specific_name.split("/", maxsplit=1)[0]
+            date_str = str(datetime.now())
+            metadata[site][study]["last_data_update"] = date_str
+            metadata[site][study]["last_aggregation"] = date_str
         except Exception as e:  # pylint: disable=broad-except
             logging.error("File %s failed to aggregate: %s", s3_path, str(e))
             move_s3_file(
@@ -91,6 +124,9 @@ def merge_powersets(s3_client, s3_bucket_name, study):
                 f"{BucketPath.LATEST.value}/{study}/{site_specific_name}",
                 f"{BucketPath.ERROR.value}/{study}/{site_specific_name}",
             )
+            date_str = str(datetime.now())
+            metadata[site][study]["last_error"] = date_str
+
             # if a new file fails, we want to replace it with the last valid
             # for purposes of aggregation
             if any(x.endswith(site_specific_name) for x in last_valid_csv_list):
@@ -99,6 +135,8 @@ def merge_powersets(s3_client, s3_bucket_name, study):
                     f"s3://{s3_bucket_name}/{BucketPath.LAST_VALID.value}"
                     f"/{study}/{site_specific_name}",
                 )
+                metadata[site][study]["last_aggregation"] = date_str
+    write_metadata(s3_client, s3_bucket_name, metadata)
 
     csv_aggregate_path = (
         f"s3://{s3_bucket_name}/{BucketPath.CSVAGGREGATE.value}/"
@@ -121,7 +159,7 @@ def merge_powersets(s3_client, s3_bucket_name, study):
 def powerset_merge_handler(event, context):  # pylint: disable=unused-argument
     """manages event from S3, triggers file processing and merge"""
     try:
-        s3_bucket = "cumulus-aggregator-site-counts"
+        s3_bucket = "cumulus-aggregator-site-counts"  # move this to env var
         s3_client = boto3.client("s3")
         s3_key = event["Records"][0]["s3"]["object"]["key"]
         study = s3_key.split("/")[1]

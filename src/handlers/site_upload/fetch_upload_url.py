@@ -5,8 +5,8 @@ import logging
 import boto3
 import botocore.exceptions
 
-from src.handlers.site_upload.enums import BucketPath
-from src.handlers.site_upload.shared_functions import http_response
+from src.handlers.shared.enums import BucketPath
+from src.handlers.shared.functions import http_response
 
 
 def create_presigned_post(

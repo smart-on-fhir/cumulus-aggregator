@@ -162,6 +162,7 @@ Resources:
             - last_valid/**
             - error/**
             - csv_aggregates/**
+            - metadata/**
 
 
 
