@@ -3,6 +3,7 @@ import csv
 import logging
 
 from datetime import datetime, timezone
+from typing import Dict
 
 import awswrangler
 import boto3
@@ -29,7 +30,7 @@ class S3UploadError(Exception):
     pass
 
 
-def move_s3_file(s3_client, s3_bucket_name, old_key, new_key):
+def move_s3_file(s3_client, s3_bucket_name: str, old_key: str, new_key: str) -> None:
     """Move file to different S3 location"""
     # TODO: may need to go into shared_functions at some point.
     source = {"Bucket": s3_bucket_name, "Key": old_key}
@@ -45,7 +46,7 @@ def move_s3_file(s3_client, s3_bucket_name, old_key, new_key):
         raise S3UploadError
 
 
-def process_upload(s3_client, s3_bucket_name, s3_key):
+def process_upload(s3_client, s3_bucket_name: str, s3_key: str) -> None:
     """Moves file from upload path to powerset generation path"""
     last_uploaded_date = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_key)[
         "LastModified"
@@ -62,10 +63,10 @@ def process_upload(s3_client, s3_bucket_name, s3_key):
     write_metadata(s3_client, s3_bucket_name, metadata)
 
 
-def concat_sets(df, file_path):
+def concat_sets(df: pandas.DataFrame, file_path: str) -> pandas.DataFrame:
     """concats a count dataset in a specified S3 location with in memory dataframe"""
     site_df = awswrangler.s3.read_csv(file_path, na_filter=False)
-    data_cols = list(site_df.columns)
+    data_cols = list(site_df.columns)  # type: ignore[union-attr]
     # There is a baked in assumption with the following line related to the powerset
     # structures, which we will need to handle differently in the future:
     # Specifically, we are assuming the bucket sizes are in a column labeled "cnt",
@@ -75,22 +76,23 @@ def concat_sets(df, file_path):
     return pandas.concat([df, site_df]).groupby(data_cols).sum().reset_index()
 
 
-def get_site_filename_suffix(s3_path):
+def get_site_filename_suffix(s3_path: str):
     # Extracts site/filename data from s3 path
     return "/".join(s3_path.split("/")[5:])
 
 
-def merge_powersets(s3_client, s3_bucket_name, study):
+def merge_powersets(s3_client, s3_bucket_name: str, study: str) -> None:
     """Creates an aggregate powerset from all files with a given s3 prefix"""
     # TODO: this should be memory profiled for large datasets. We can use
     # chunking to lower memory usage during merges.
     metadata = read_metadata(s3_client, s3_bucket_name)
     df = pandas.DataFrame()
-    latest_csv_list = awswrangler.s3.list_objects(
-        f"s3://{s3_bucket_name}/{BucketPath.LATEST.value}/{study}", suffix="csv"
+    latest_csv_list = awswrangler.s3.list_objects(  # type: ignore[call-overload]
+        path=f"s3://{s3_bucket_name}/{BucketPath.LATEST.value}/{study}", suffix="csv"
     )
-    last_valid_csv_list = awswrangler.s3.list_objects(
-        f"s3://{s3_bucket_name}/{BucketPath.LAST_VALID.value}/{study}", suffix="csv"
+    last_valid_csv_list = awswrangler.s3.list_objects(  # type: ignore[call-overload]
+        path=f"s3://{s3_bucket_name}/{BucketPath.LAST_VALID.value}/{study}",
+        suffix="csv",
     )
     for s3_path in last_valid_csv_list:
         site_specific_name = get_site_filename_suffix(s3_path)
@@ -142,9 +144,7 @@ def merge_powersets(s3_client, s3_bucket_name, study):
         f"s3://{s3_bucket_name}/{BucketPath.CSVAGGREGATE.value}/"
         f"{study}/{study}_aggregate.csv"
     )
-    df = df.apply(lambda x: x.str.strip() if isinstance(x, str) else x).replace(
-        '""', nan
-    )
+    df = df.apply(lambda x: x.strip() if isinstance(x, str) else x).replace('""', nan)
     awswrangler.s3.to_csv(df, csv_aggregate_path, index=False, quoting=csv.QUOTE_NONE)
     aggregate_path = (
         f"s3://{s3_bucket_name}/{BucketPath.AGGREGATE.value}/"

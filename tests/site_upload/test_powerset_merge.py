@@ -70,6 +70,7 @@ class TestPowersetMerge(TestCase):
                 assert item["Key"].startswith(BucketPath.META.value) == True
                 metadata = read_metadata(self.s3_client, self.bucket_name)
                 assert "general" in metadata.keys()
+                assert metadata["elsewhere"]["covid"]["last_aggregation"] != None
             else:
                 assert item["Key"].startswith(BucketPath.LAST_VALID.value) == True
 
