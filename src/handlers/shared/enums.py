@@ -9,3 +9,4 @@ class BucketPath(Enum):
     ERROR = "error"
     AGGREGATE = "aggregates"
     CSVAGGREGATE = "csv_aggregates"
+    META = "site_metadata"

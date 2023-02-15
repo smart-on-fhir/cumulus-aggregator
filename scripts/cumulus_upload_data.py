@@ -47,7 +47,7 @@ def upload_file(args):
     response = requests.post(
         url,
         headers=headers,
-        json={"study": "covid", "filename": f"{args['site']}_{object_name}"},
+        json={"study": args["studyname"], "filename": f"{args['site']}_{object_name}"},
     )
     if response is None:
         print(f"API at {url} not found")
