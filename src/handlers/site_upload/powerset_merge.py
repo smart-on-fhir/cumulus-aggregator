@@ -3,7 +3,6 @@ import csv
 import logging
 
 from datetime import datetime, timezone
-from typing import Dict
 
 import awswrangler
 import boto3
@@ -48,7 +47,7 @@ def move_s3_file(s3_client, s3_bucket_name: str, old_key: str, new_key: str) -> 
 
 def process_upload(s3_client, s3_bucket_name: str, s3_key: str) -> None:
     """Moves file from upload path to powerset generation path"""
-    last_uploaded_date = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_key)[
+    last_uploaded_date = s3_client.head_object(Bucket=s3_bucket_name, Key=s3_key)[
         "LastModified"
     ]
     metadata = read_metadata(s3_client, s3_bucket_name)
