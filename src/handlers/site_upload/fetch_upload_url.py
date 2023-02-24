@@ -12,7 +12,7 @@ from src.handlers.shared.functions import http_response
 def create_presigned_post(
     bucket_name: str, object_name: str, fields=None, conditions=None, expiration=3600
 ):
-    # Generates a secure URL for upload without AWS credentials
+    """Generates a secure URL for upload without AWS credentials"""
     s3_client = boto3.client(
         "s3",
         region_name="us-east-1",
@@ -32,8 +32,9 @@ def create_presigned_post(
         return http_response(400, "Error occured presigning url")
 
 
-def upload_url_handler(event, context):  # pylint: disable=W0613
-    # Processes event from API Gateway
+def upload_url_handler(event, context):
+    """Processes event from API Gateway"""
+    del context
     with open(
         "src/handlers/site_upload/site_data/metadata.json", encoding="utf-8"
     ) as metadata:

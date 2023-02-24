@@ -156,8 +156,9 @@ def merge_powersets(s3_client, s3_bucket_name: str, study: str) -> None:
     awswrangler.s3.to_parquet(df, aggregate_path, index=False)
 
 
-def powerset_merge_handler(event, context):  # pylint: disable=unused-argument
+def powerset_merge_handler(event, context):
     """manages event from S3, triggers file processing and merge"""
+    del context
     try:
         s3_bucket = os.environ.get("BUCKET_NAME")
         s3_client = boto3.client("s3")
