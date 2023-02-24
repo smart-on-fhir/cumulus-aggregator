@@ -8,6 +8,10 @@ Parameters:
   BucketNameParameter:
     Type: String
     Default: cumulus-aggregator-site-counts
+  GlueNameParameter:
+    Type: String
+    Default: cumulus-aggregator
+
 
 Resources:
 
@@ -39,7 +43,7 @@ Resources:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}'
       Events:
-        AddItem:
+        SiteUploadAPI:
           Type: Api
           Properties:
             RestApiId: !Ref SiteApiGateway
@@ -59,6 +63,9 @@ Resources:
       MemorySize: 4096
       Timeout: 800
       Description: Merges and aggregates powerset count data
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}'
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref BucketNameParameter
@@ -74,12 +81,12 @@ Resources:
       Runtime: python3.9
       MemorySize: 2048
       Timeout: 100
-      Description: Test Endpoint
+      Description: Retrieve data for chart display in Cumulus Dashboard
       Environment:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}'
       Events:
-        AddItem:
+        GetChartDataAPI:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
@@ -100,6 +107,42 @@ Resources:
             Action:
             - athena:*
             Resource: '*'
+
+  DashboardGetMetadataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: CumulusAggDashboardGetMetadata
+      Handler: src/handlers/dashboard/get_metadata.metadata_handler
+      Runtime: python3.9
+      MemorySize: 128
+      Timeout: 100
+      Description: Retrieve data about site uploads
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}'
+      Events:
+        GetMetadataAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /metadata/
+            Method: GET
+        GetMetadataSiteAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /metadata/{site}/
+            Method: GET
+        GetMetadataSiteStudyAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /metadata/{site}/{study}
+            Method: GET
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref BucketNameParameter
+
 
 ### Lambda permissions
 
@@ -138,13 +181,13 @@ Resources:
     Properties:
       CatalogId: !Ref AWS::AccountId
       DatabaseInput:
-        Name: cumulus-aggregator-db
+        Name: !Sub '${GlueNameParameter}-db'
         Description: Database for serving data to Cumulus Dashboard
 
   GlueCrawler:
     Type: AWS::Glue::Crawler
     Properties:
-      Name: cumulus-aggregator-crawler
+      Name: !Sub '${GlueNameParameter}-crawler'
       DatabaseName: !Ref GlueDB
       Role: !GetAtt CrawlerRole.Arn
       Configuration: "{\"Version\":1.0,\"Grouping\":{\"TableLevelConfiguration\":3}}"
