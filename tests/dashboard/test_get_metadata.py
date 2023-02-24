@@ -86,39 +86,3 @@ def test_get_metadata(params, status, expected):
     assert res["statusCode"] == status
     if status == 200:
         assert json.loads(res["body"]) == expected
-
-
-"""
-    def test_get_all_metadata(self):
-        event = {"pathParameters": None}
-
-        res = metadata_handler(event, {})
-        assert res["statusCode"] == 200
-        assert json.loads(res["body"]) == get_mock_metadata()
-
-    def test_get_site_metadata(self):
-        event = {"pathParameters": {"site": "general_hospital"}}
-
-        res = metadata_handler(event, {})
-        assert res["statusCode"] == 200
-        assert json.loads(res["body"]) == get_mock_metadata()["general_hospital"]
-
-    def test_get_study_metadata(self):
-        event = {"pathParameters": {"site": "general_hospital", "study": "covid"}}
-
-        res = metadata_handler(event, {})
-        assert res["statusCode"] == 200
-        assert json.loads(res["body"]) == get_mock_metadata()["general_hospital"]["covid"]
-
-    def test_get_invalid_site_metadata(self):
-        event = {"pathParameters": {"site": "chicago_hope", "study": "covid"}}
-
-        res = metadata_handler(event, {})
-        assert res["statusCode"] == 500
-
-    def test_get_invalid_study_metadata(self):
-        event = {"pathParameters": {"site": "general_hospital", "study": "flu"}}
-
-        res = metadata_handler(event, {})
-        assert res["statusCode"] == 500
-"""
