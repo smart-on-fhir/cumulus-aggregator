@@ -41,7 +41,7 @@ jobs:
       - name: Run bandit
         if: success() || failure() # still run bandit if above checks fail
         run: |
-          bandit -r . -x ./tests/
+          bandit -r src
       - name: Run black
         if: success() || failure() # still run black if above checks fails
         run: |

@@ -1,6 +1,7 @@
 """ Lambda for performing joins of site count data """
 import csv
 import logging
+import os
 
 from datetime import datetime, timezone
 
@@ -155,10 +156,11 @@ def merge_powersets(s3_client, s3_bucket_name: str, study: str) -> None:
     awswrangler.s3.to_parquet(df, aggregate_path, index=False)
 
 
-def powerset_merge_handler(event, context):  # pylint: disable=unused-argument
+def powerset_merge_handler(event, context):
     """manages event from S3, triggers file processing and merge"""
+    del context
     try:
-        s3_bucket = "cumulus-aggregator-site-counts"  # move this to env var
+        s3_bucket = os.environ.get("BUCKET_NAME")
         s3_client = boto3.client("s3")
         s3_key = event["Records"][0]["s3"]["object"]["key"]
         study = s3_key.split("/")[1]

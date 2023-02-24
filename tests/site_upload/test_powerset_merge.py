@@ -1,8 +1,9 @@
 import boto3
+import os
 
 from datetime import datetime, timezone
 from moto import mock_s3
-from unittest import TestCase
+from unittest import TestCase, mock
 
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import read_metadata, write_metadata
@@ -10,6 +11,7 @@ from src.handlers.site_upload.powerset_merge import powerset_merge_handler
 
 
 @mock_s3
+@mock.patch.dict(os.environ, {"BUCKET_NAME": "cumulus-aggregator-site-counts"})
 class TestPowersetMerge(TestCase):
     def setUp(self):
         self.bucket_name = "cumulus-aggregator-site-counts"
