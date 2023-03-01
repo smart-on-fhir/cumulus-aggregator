@@ -152,13 +152,13 @@ def merge_powersets(
 
     csv_aggregate_path = (
         f"s3://{s3_bucket_name}/{BucketPath.CSVAGGREGATE.value}/"
-        f"{study}/{subscription}/{study}_{subscription}_aggregate.csv"
+        f"{study}/{study}_{subscription}/{study}_{subscription}_aggregate.csv"
     )
     df = df.apply(lambda x: x.strip() if isinstance(x, str) else x).replace('""', nan)
     awswrangler.s3.to_csv(df, csv_aggregate_path, index=False, quoting=csv.QUOTE_NONE)
     aggregate_path = (
         f"s3://{s3_bucket_name}/{BucketPath.AGGREGATE.value}/"
-        f"{study}/{subscription}/{study}_{subscription}_aggregate.parquet"
+        f"{study}/{study}_{subscription}/{study}_{subscription}_aggregate.parquet"
     )
     # Note: the to_parquet function is noted in the docs as potentially mutating the
     # dataframe it's called on, so this should always be the last action applied
