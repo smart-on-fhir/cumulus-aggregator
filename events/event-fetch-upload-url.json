@@ -4,7 +4,8 @@
     "httpMethod": "POST",
     "headers": {
         "Accept": "*/*",
-        "Accept-Encoding": "gzip, deflate, br",
+        "Accept-Encoding": "gzip, deflate",
+        "Authorization": "Basic Insert_HTTP_AUTH",
         "CloudFront-Forwarded-Proto": "https",
         "CloudFront-Is-Desktop-Viewer": "true",
         "CloudFront-Is-Mobile-Viewer": "false",
@@ -13,13 +14,12 @@
         "CloudFront-Viewer-ASN": "40127",
         "CloudFront-Viewer-Country": "US",
         "Content-Type": "application/json",
-        "Host": "tk94wcoyp6.execute-api.us-east-1.amazonaws.com",
-        "Postman-Token": "9be1e580-79ad-492c-acf7-2b2e7bea4ea0",
-        "User-Agent": "PostmanRuntime/7.30.0",
-        "Via": "1.1 a9415b590b759977d54fa124c942d384.cloudfront.net (CloudFront)",
-        "X-Amz-Cf-Id": "kC9NKeVdtSeK6o9STU0ISEOZMQGJQuUbYv0_ReZaC0Eb1ZqtoN_DSg==",
-        "X-Amzn-Trace-Id": "Root=1-63bd8726-2ef223951e3c745112e95c06",
-        "X-Forwarded-For": "134.174.21.188, 15.158.52.114",
+        "Host": "w4jrw2taw0.execute-api.us-east-1.amazonaws.com",
+        "User-Agent": "python-requests/2.25.1",
+        "Via": "1.1 0a84f3fd72c51aed32833055c4b982d2.cloudfront.net (CloudFront)",
+        "X-Amz-Cf-Id": "R6lCZ3pjiSs2kZyFeCqX5t3CTuaVzx2FwZaX8kJEwWR7POvz-oxI5w==",
+        "X-Amzn-Trace-Id": "Root=1-63ff70a7-5e752e1101a6d6352d88b007",
+        "X-Forwarded-For": "134.174.21.27, 64.252.137.75",
         "X-Forwarded-Port": "443",
         "X-Forwarded-Proto": "https"
     },
@@ -28,7 +28,10 @@
             "*/*"
         ],
         "Accept-Encoding": [
-            "gzip, deflate, br"
+            "gzip, deflate"
+        ],
+        "Authorization": [
+            "Basic Insert_HTTP_AUTH"
         ],
         "CloudFront-Forwarded-Proto": [
             "https"
@@ -55,25 +58,22 @@
             "application/json"
         ],
         "Host": [
-            "tk94wcoyp6.execute-api.us-east-1.amazonaws.com"
-        ],
-        "Postman-Token": [
-            "9be1e580-79ad-492c-acf7-2b2e7bea4ea0"
+            "w4jrw2taw0.execute-api.us-east-1.amazonaws.com"
         ],
         "User-Agent": [
-            "PostmanRuntime/7.30.0"
+            "python-requests/2.25.1"
         ],
         "Via": [
-            "1.1 a9415b590b759977d54fa124c942d384.cloudfront.net (CloudFront)"
+            "1.1 0a84f3fd72c51aed32833055c4b982d2.cloudfront.net (CloudFront)"
         ],
         "X-Amz-Cf-Id": [
-            "kC9NKeVdtSeK6o9STU0ISEOZMQGJQuUbYv0_ReZaC0Eb1ZqtoN_DSg=="
+            "R6lCZ3pjiSs2kZyFeCqX5t3CTuaVzx2FwZaX8kJEwWR7POvz-oxI5w=="
         ],
         "X-Amzn-Trace-Id": [
-            "Root=1-63bd8726-2ef223951e3c745112e95c06"
+            "Root=1-63ff70a7-5e752e1101a6d6352d88b007"
         ],
         "X-Forwarded-For": [
-            "134.174.21.188, 15.158.52.114"
+            "134.174.21.27, 64.252.137.75"
         ],
         "X-Forwarded-Port": [
             "443"
@@ -87,35 +87,39 @@
     "pathParameters": "None",
     "stageVariables": "None",
     "requestContext": {
-        "resourceId": "61rlg90kud",
+        "resourceId": "bhult0gudl",
+        "authorizer": {
+            "principalId": "elsewhere",
+            "integrationLatency": 333
+        },
         "resourcePath": "/",
         "httpMethod": "POST",
-        "extendedRequestId": "eiIOAE4XIAMFx0Q=",
-        "requestTime": "10/Jan/2023:15:41:26 +0000",
-        "path": "/Prod",
+        "extendedRequestId": "BG6KNHuLoAMF5NQ=",
+        "requestTime": "01/Mar/2023:15:35:03 +0000",
+        "path": "/Prod/",
         "accountId": "316333106222",
         "protocol": "HTTP/1.1",
         "stage": "Prod",
-        "domainPrefix": "tk94wcoyp6",
-        "requestTimeEpoch": 1673365286275,
-        "requestId": "25c95409-fdbc-4eda-bdef-ab696e615aa0",
+        "domainPrefix": "w4jrw2taw0",
+        "requestTimeEpoch": 1677684903474,
+        "requestId": "c83ac226-0f9a-4c6f-ba99-6c955ce56886",
         "identity": {
             "cognitoIdentityPoolId": "None",
             "accountId": "None",
             "cognitoIdentityId": "None",
             "caller": "None",
-            "sourceIp": "134.174.21.188",
+            "sourceIp": "134.174.21.27",
             "principalOrgId": "None",
             "accessKey": "None",
             "cognitoAuthenticationType": "None",
             "cognitoAuthenticationProvider": "None",
             "userArn": "None",
-            "userAgent": "PostmanRuntime/7.30.0",
+            "userAgent": "python-requests/2.25.1",
             "user": "None"
         },
-        "domainName": "tk94wcoyp6.execute-api.us-east-1.amazonaws.com",
-        "apiId": "tk94wcoyp6"
+        "domainName": "w4jrw2taw0.execute-api.us-east-1.amazonaws.com",
+        "apiId": "w4jrw2taw0"
     },
-    "body": "{ \"name\":\"bch\"}",
+    "body": "{\"study\": \"covid\", \"subscription\": \"encounter\", \"filename\": \"elsewhere_cube_simple_example.csv\"}",
     "isBase64Encoded": false
 }

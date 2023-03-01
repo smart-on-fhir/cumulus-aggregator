@@ -16,36 +16,42 @@ def get_mock_metadata():
     return {
         "general_hospital": {
             "covid": {
-                "version": "1.0",
-                "last_upload": "2023-02-24T15:03:34+00:00",
-                "last_data_update": "2023-02-24T15:03:40.657583+00:00",
-                "last_aggregation": "2023-02-24T15:08:07.504595+00:00",
-                "last_error": None,
-                "earliest_data": None,
-                "latest_data": None,
-                "deleted": None,
+                "encounter": {
+                    "version": "1.0",
+                    "last_upload": "2023-02-24T15:03:34+00:00",
+                    "last_data_update": "2023-02-24T15:03:40.657583+00:00",
+                    "last_aggregation": "2023-02-24T15:08:07.504595+00:00",
+                    "last_error": None,
+                    "earliest_data": None,
+                    "latest_data": None,
+                    "deleted": None,
+                }
             },
             "lyme": {
-                "version": "1.0",
-                "last_upload": "2023-02-24T15:43:57+00:00",
-                "last_data_update": "2023-02-24T15:44:03.861574+00:00",
-                "last_aggregation": "2023-02-24T15:44:03.861574+00:00",
-                "last_error": None,
-                "earliest_data": None,
-                "latest_data": None,
-                "deleted": None,
+                "encounter": {
+                    "version": "1.0",
+                    "last_upload": "2023-02-24T15:43:57+00:00",
+                    "last_data_update": "2023-02-24T15:44:03.861574+00:00",
+                    "last_aggregation": "2023-02-24T15:44:03.861574+00:00",
+                    "last_error": None,
+                    "earliest_data": None,
+                    "latest_data": None,
+                    "deleted": None,
+                }
             },
         },
         "st_elsewhere": {
             "covid": {
-                "version": "1.0",
-                "last_upload": "2023-02-24T15:08:06+00:00",
-                "last_data_update": "2023-02-24T15:08:07.771080+00:00",
-                "last_aggregation": "2023-02-24T15:08:07.771080+00:00",
-                "last_error": None,
-                "earliest_data": None,
-                "latest_data": None,
-                "deleted": None,
+                "encounter": {
+                    "version": "1.0",
+                    "last_upload": "2023-02-24T15:08:06+00:00",
+                    "last_data_update": "2023-02-24T15:08:07.771080+00:00",
+                    "last_aggregation": "2023-02-24T15:08:07.771080+00:00",
+                    "last_error": None,
+                    "earliest_data": None,
+                    "latest_data": None,
+                    "deleted": None,
+                }
             }
         },
     }
@@ -74,6 +80,11 @@ def mock_bucket():
             {"site": "general_hospital", "study": "covid"},
             200,
             get_mock_metadata()["general_hospital"]["covid"],
+        ),
+        (
+            {"site": "general_hospital", "study": "covid", "subscription": "encounter"},
+            200,
+            get_mock_metadata()["general_hospital"]["covid"]["encounter"],
         ),
         ({"site": "chicago_hope", "study": "covid"}, 500, None),
         ({"site": "general_hospital", "study": "flu"}, 500, None),

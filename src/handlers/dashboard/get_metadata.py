@@ -20,6 +20,8 @@ def metadata_handler(event, context):
                 metadata = metadata[params["site"]]
             if "study" in params:
                 metadata = metadata[params["study"]]
+            if "subscription" in params:
+                metadata = metadata[params["subscription"]]
         res = http_response(200, metadata)
         return res
     except Exception as e:  # pylint: disable=broad-except

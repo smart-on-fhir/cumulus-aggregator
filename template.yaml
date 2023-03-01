@@ -23,7 +23,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: CumulusAggFetchAuthorizer
-      Layers: [arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p39-bcrypt:5]
       Handler: src/handlers/site_upload/api_gateway_authorizer.lambda_handler
       Runtime: python3.9
       MemorySize: 128
@@ -139,6 +138,12 @@ Resources:
             RestApiId: !Ref DashboardApiGateway
             Path: /metadata/{site}/{study}
             Method: GET
+        GetMetadataSiteStudySubscriptionAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /metadata/{site}/{study}/{subscription}
+            Method: GET
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref BucketNameParameter
@@ -190,7 +195,7 @@ Resources:
       Name: !Sub '${GlueNameParameter}-crawler'
       DatabaseName: !Ref GlueDB
       Role: !GetAtt CrawlerRole.Arn
-      Configuration: "{\"Version\":1.0,\"Grouping\":{\"TableLevelConfiguration\":3}}"
+      Configuration: "{\"Version\":1.0,\"Grouping\":{\"TableLevelConfiguration\":4}}"
       RecrawlPolicy:
         RecrawlBehavior: CRAWL_EVERYTHING
       SchemaChangePolicy:
@@ -268,7 +273,7 @@ Resources:
             FunctionPayloadType: REQUEST
             FunctionArn: !GetAtt FetchAuthorizerFunction.Arn
             Identity:
-              Headers: [Authorization,user]
+              Headers: [Authorization]
         DefaultAuthorizer: FetchAuth
       Name: CumulusAggregatorSiteAPI
 #      MethodSettings:

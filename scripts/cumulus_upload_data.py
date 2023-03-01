@@ -43,16 +43,21 @@ def upload_file(args):
     except:
         print("No filename provided for upload.")
         exit(1)
-    headers = {"user": args["site"], "authorization": args["auth"]}
     response = requests.post(
         url,
-        headers=headers,
-        json={"study": args["studyname"], "filename": f"{args['site']}_{object_name}"},
+        json={
+            "study": args["studyname"],
+            "subscription": args["subscription"],
+            "filename": f"{args['user']}_{object_name}",
+        },
+        auth=(args["user"], args["auth"]),
     )
     if response is None:
         print(f"API at {url} not found")
         exit(1)
     if response.status_code != 200:
+        print(response.request.headers)
+        print(response.text)
         print("Provided site/auth credentials are invalid.")
         exit(1)
     body = response.json()
@@ -62,7 +67,7 @@ def upload_file(args):
 
     # If successful, returns HTTP status code 204
     print(
-        f"{args['site']}_{object_name} upload HTTP status code: {http_response.status_code}"
+        f"{args['user']}_{object_name} upload HTTP status code: {http_response.status_code}"
     )
 
 
@@ -77,10 +82,13 @@ if __name__ == "__main__":
         used to try to connect to your AWS instance"""
     )
     parser.add_argument("-f", "--file", help="The data file to upload")
-    parser.add_argument("-s", "--site", help="the name of the site uploading data")
-    parser.add_argument("-a", "--auth", help="the secret assigned to a site")
+    parser.add_argument("-u", "--user", help="the name of the site uploading data")
+    parser.add_argument("-p", "--pass", help="the secret assigned to a site")
     parser.add_argument("-n", "--studyname", help="the name of the data's study")
-    parser.add_argument("-u", "--url", help="the public URL of the aggregator")
+    parser.add_argument(
+        "-s", "--subscription", help="the subscription name within the study"
+    )
+    parser.add_argument("-r", "--url", help="the public URL of the aggregator")
     parser.add_argument(
         "-t",
         "--test",
@@ -93,12 +101,14 @@ if __name__ == "__main__":
     for key in args.keys():
         args_dict[key] = os.getenv(f"CUMULUS_UPLOAD_{key.upper()}")
     if args["test"]:
-        args_dict["site"] = "general"
+        args_dict["user"] = "general"
         args_dict[
             "file"
         ] = f"{os.path.realpath(os.path.dirname(__file__))}/cube_simple_example.csv"
         args_dict["auth"] = "secretval"
         args_dict["studyname"] = "covid"
+        args_dict["subscription"] = "encounter"
+
     for key in args.keys():
         if args[key] is not None:
             args_dict[key] = args[key]

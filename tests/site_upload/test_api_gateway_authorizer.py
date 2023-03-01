@@ -9,8 +9,8 @@ from src.handlers.site_upload.api_gateway_authorizer import lambda_handler
 def mocker_site_json(mocker):
     mocked_site_json = mocker.mock_open(
         read_data="""{
-            "test":{
-                "secret":"$2b$12$zUWNDX.zhLDcgTFpHMOZsuFJzVCHpZ8B8RqZTKAk8YhXKGsqcFZPm"
+            "testauth":{
+                "site":"general"
             }
         }"""
     )
@@ -18,16 +18,15 @@ def mocker_site_json(mocker):
 
 
 @pytest.mark.parametrize(
-    "user,pw,expects",
+    "auth,expects",
     [
-        ("test", "testpw", does_not_raise()),
-        ("test", "testpw2", pytest.raises(Exception)),
-        ("test2", "testpw", pytest.raises(Exception)),
-        ("test2", None, pytest.raises(Exception)),
+        ("Basic testauth", does_not_raise()),
+        ("Basic testauth2", pytest.raises(Exception)),
+        (None, pytest.raises(Exception)),
     ],
 )
-def test_validate_pw(user, pw, expects, mocker_site_json):
-    mock_headers = {"user": user, "Authorization": pw}
+def test_validate_pw(auth, expects, mocker_site_json):
+    mock_headers = {"Authorization": auth}
     event = {
         "headers": mock_headers,
         "methodArn": "arn:aws:execute-api:us-east-1:11223:123/Prod/post/lambda",

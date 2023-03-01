@@ -40,11 +40,11 @@ def upload_url_handler(event, context):
     ) as metadata:
         metadata_db = json.load(metadata)
     try:
-        user = event["headers"]["user"]
+        user = event["requestContext"]["authorizer"]["principalId"]
         body = json.loads(event["body"])
         res = create_presigned_post(
             "cumulus-aggregator-site-counts",
-            f"{BucketPath.UPLOAD.value}/{body['study']}/"
+            f"{BucketPath.UPLOAD.value}/{body['study']}/{body['subscription']}/"
             f"{metadata_db[user]['path']}/{body['filename']}",
         )
     except Exception as e:  # pylint: disable=broad-except

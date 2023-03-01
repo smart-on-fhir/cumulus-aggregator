@@ -14,7 +14,7 @@ from numpy import nan
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import http_response, read_metadata, write_metadata
 
-STUDY_METADATA_TEMPLATE = {
+METADATA_TEMPLATE = {
     "version": "1.0",
     "last_upload": None,
     "last_data_update": None,
@@ -54,12 +54,14 @@ def process_upload(s3_client, s3_bucket_name: str, s3_key: str) -> None:
     metadata = read_metadata(s3_client, s3_bucket_name)
     path_params = s3_key.split("/")
     study = path_params[1]
-    site = path_params[2]
+    subscription = path_params[2]
+    site = path_params[3]
     new_key = f"{BucketPath.LATEST.value}/{s3_key.split('/', 1)[-1]}"
     move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
     site_metadata = metadata.setdefault(site, {})
-    study_metadata = site_metadata.setdefault(study, STUDY_METADATA_TEMPLATE)
-    study_metadata["last_upload"] = last_uploaded_date.isoformat()
+    study_metadata = site_metadata.setdefault(study, {})
+    subscription_metadata = study_metadata.setdefault(subscription, METADATA_TEMPLATE)
+    subscription_metadata["last_upload"] = last_uploaded_date.isoformat()
     write_metadata(s3_client, s3_bucket_name, metadata)
 
 
@@ -78,20 +80,24 @@ def concat_sets(df: pandas.DataFrame, file_path: str) -> pandas.DataFrame:
 
 def get_site_filename_suffix(s3_path: str):
     # Extracts site/filename data from s3 path
-    return "/".join(s3_path.split("/")[5:])
+    return "/".join(s3_path.split("/")[6:])
 
 
-def merge_powersets(s3_client, s3_bucket_name: str, study: str) -> None:
+def merge_powersets(
+    s3_client, s3_bucket_name: str, study: str, subscription: str
+) -> None:
     """Creates an aggregate powerset from all files with a given s3 prefix"""
     # TODO: this should be memory profiled for large datasets. We can use
     # chunking to lower memory usage during merges.
     metadata = read_metadata(s3_client, s3_bucket_name)
     df = pandas.DataFrame()
     latest_csv_list = awswrangler.s3.list_objects(  # type: ignore[call-overload]
-        path=f"s3://{s3_bucket_name}/{BucketPath.LATEST.value}/{study}", suffix="csv"
+        path=f"s3://{s3_bucket_name}/{BucketPath.LATEST.value}/{study}/{subscription}",
+        suffix="csv",
     )
     last_valid_csv_list = awswrangler.s3.list_objects(  # type: ignore[call-overload]
-        path=f"s3://{s3_bucket_name}/{BucketPath.LAST_VALID.value}/{study}",
+        path=f"s3://{s3_bucket_name}/{BucketPath.LAST_VALID.value}"
+        f"/{study}/{subscription}",
         suffix="csv",
     )
     for s3_path in last_valid_csv_list:
@@ -101,7 +107,7 @@ def merge_powersets(s3_client, s3_bucket_name: str, study: str) -> None:
         # one instead
         if not any(x.endswith(site_specific_name) for x in latest_csv_list):
             df = concat_sets(df, s3_path)
-            metadata[site][study]["last_aggregation"] = datetime.now(
+            metadata[site][study][subscription]["last_aggregation"] = datetime.now(
                 timezone.utc
             ).isoformat()
     for s3_path in latest_csv_list:
@@ -111,23 +117,27 @@ def merge_powersets(s3_client, s3_bucket_name: str, study: str) -> None:
             move_s3_file(
                 s3_client,
                 s3_bucket_name,
-                f"{BucketPath.LATEST.value}/{study}/{site_specific_name}",
-                f"{BucketPath.LAST_VALID.value}/{study}/{site_specific_name}",
+                f"{BucketPath.LATEST.value}/{study}/"
+                f"{subscription}/{site_specific_name}",
+                f"{BucketPath.LAST_VALID.value}/{study}/"
+                f"{subscription}/{site_specific_name}",
             )
             site = site_specific_name.split("/", maxsplit=1)[0]
             date_str = datetime.now(timezone.utc).isoformat()
-            metadata[site][study]["last_data_update"] = date_str
-            metadata[site][study]["last_aggregation"] = date_str
+            metadata[site][study][subscription]["last_data_update"] = date_str
+            metadata[site][study][subscription]["last_aggregation"] = date_str
         except Exception as e:  # pylint: disable=broad-except
             logging.error("File %s failed to aggregate: %s", s3_path, str(e))
             move_s3_file(
                 s3_client,
                 s3_bucket_name,
-                f"{BucketPath.LATEST.value}/{study}/{site_specific_name}",
-                f"{BucketPath.ERROR.value}/{study}/{site_specific_name}",
+                f"{BucketPath.LATEST.value}/{study}/"
+                f"{subscription}/{site_specific_name}",
+                f"{BucketPath.ERROR.value}/{study}/"
+                f"{subscription}/{site_specific_name}",
             )
             date_str = datetime.now(timezone.utc).isoformat()
-            metadata[site][study]["last_error"] = date_str
+            metadata[site][study][subscription]["last_error"] = date_str
 
             # if a new file fails, we want to replace it with the last valid
             # for purposes of aggregation
@@ -135,20 +145,20 @@ def merge_powersets(s3_client, s3_bucket_name: str, study: str) -> None:
                 df = concat_sets(
                     df,
                     f"s3://{s3_bucket_name}/{BucketPath.LAST_VALID.value}"
-                    f"/{study}/{site_specific_name}",
+                    f"/{study}/{subscription}/{site_specific_name}",
                 )
-                metadata[site][study]["last_aggregation"] = date_str
+                metadata[site][study][subscription]["last_aggregation"] = date_str
     write_metadata(s3_client, s3_bucket_name, metadata)
 
     csv_aggregate_path = (
         f"s3://{s3_bucket_name}/{BucketPath.CSVAGGREGATE.value}/"
-        f"{study}/{study}_aggregate.csv"
+        f"{study}/{subscription}/{study}_{subscription}_aggregate.csv"
     )
     df = df.apply(lambda x: x.strip() if isinstance(x, str) else x).replace('""', nan)
     awswrangler.s3.to_csv(df, csv_aggregate_path, index=False, quoting=csv.QUOTE_NONE)
     aggregate_path = (
         f"s3://{s3_bucket_name}/{BucketPath.AGGREGATE.value}/"
-        f"{study}/{study}_aggregate.parquet"
+        f"{study}/{subscription}/{study}_{subscription}_aggregate.parquet"
     )
     # Note: the to_parquet function is noted in the docs as potentially mutating the
     # dataframe it's called on, so this should always be the last action applied
@@ -163,9 +173,12 @@ def powerset_merge_handler(event, context):
         s3_bucket = os.environ.get("BUCKET_NAME")
         s3_client = boto3.client("s3")
         s3_key = event["Records"][0]["s3"]["object"]["key"]
-        study = s3_key.split("/")[1]
+        s3_key_array = s3_key.split("/")
+
+        study = s3_key_array[1]
+        subscription = s3_key_array[2]
         process_upload(s3_client, s3_bucket, s3_key)
-        merge_powersets(s3_client, s3_bucket, study)
+        merge_powersets(s3_client, s3_bucket, study, subscription)
         res = http_response(200, "Merge successful")
     except Exception as e:  # pylint: disable=broad-except
         logging.error("Error processing file %s: %s", s3_key, str(e))
