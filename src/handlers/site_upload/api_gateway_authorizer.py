@@ -8,28 +8,25 @@ from __future__ import print_function
 import json
 import re
 
-import bcrypt
-
 
 class AuthError(Exception):
     pass
 
 
-def lambda_handler(event, context):  # pylint: disable=unused-argument
+def lambda_handler(event, context):
+    del context
     # ---- aggregator specific logic
     with open("src/handlers/site_upload/site_data/auth.json", encoding="utf-8") as auth:
         user_db = json.load(auth)
     try:
-        user_details = user_db[event["headers"]["user"]]
-        if not bcrypt.checkpw(
-            event["headers"]["Authorization"].encode("utf-8"),
-            user_details["secret"].encode("utf-8"),
-        ):
+        auth_header = event["headers"]["Authorization"].split(" ")
+        auth_token = auth_header[1]
+        if auth_token not in user_db.keys() or auth_header[0] != "Basic":
             raise AuthError
     except (AuthError, KeyError):
-        raise AuthError("Unauthorized")  # pylint: disable=raise-missing-from
+        raise AuthError(event)  # pylint: disable=raise-missing-from
 
-    principalId = event["headers"]["user"]
+    principalId = user_db[auth_token]["site"]
 
     # ---- end aggregator specific logic
 

@@ -20,12 +20,12 @@ class TestPowersetMerge(TestCase):
         self.s3_client.upload_file(
             "./tests/test_data/cube_simple_example.csv",
             self.bucket_name,
-            f"{BucketPath.UPLOAD.value}/covid/general/a_test.csv",
+            f"{BucketPath.UPLOAD.value}/covid/encounter/general/a_test.csv",
         )
         self.s3_client.upload_file(
             "./tests/test_data/cube_simple_example.csv",
             self.bucket_name,
-            f"{BucketPath.LAST_VALID.value}/covid/elsewhere/b_test.csv",
+            f"{BucketPath.LAST_VALID.value}/covid/encounter/elsewhere/b_test.csv",
         )
         write_metadata(
             self.s3_client,
@@ -33,14 +33,16 @@ class TestPowersetMerge(TestCase):
             {
                 "elsewhere": {
                     "covid": {
-                        "version": "1.0",
-                        "last_upload": str(datetime.now(timezone.utc)),
-                        "last_data_update": str(datetime.now(timezone.utc)),
-                        "last_aggregation": None,
-                        "last_error": None,
-                        "earliest_data": None,
-                        "latest_data": None,
-                        "deleted": None,
+                        "encounter": {
+                            "version": "1.0",
+                            "last_upload": str(datetime.now(timezone.utc)),
+                            "last_data_update": str(datetime.now(timezone.utc)),
+                            "last_aggregation": None,
+                            "last_error": None,
+                            "earliest_data": None,
+                            "latest_data": None,
+                            "deleted": None,
+                        }
                     }
                 }
             },
@@ -52,7 +54,7 @@ class TestPowersetMerge(TestCase):
                 {
                     "s3": {
                         "object": {
-                            "key": f"{BucketPath.UPLOAD.value}/covid/general/a_test.csv"
+                            "key": f"{BucketPath.UPLOAD.value}/covid/encounter/general/a_test.csv"
                         }
                     }
                 }
@@ -72,7 +74,10 @@ class TestPowersetMerge(TestCase):
                 assert item["Key"].startswith(BucketPath.META.value) == True
                 metadata = read_metadata(self.s3_client, self.bucket_name)
                 assert "general" in metadata.keys()
-                assert metadata["elsewhere"]["covid"]["last_aggregation"] != None
+                assert (
+                    metadata["elsewhere"]["covid"]["encounter"]["last_aggregation"]
+                    != None
+                )
             else:
                 assert item["Key"].startswith(BucketPath.LAST_VALID.value) == True
 
@@ -82,7 +87,7 @@ class TestPowersetMerge(TestCase):
                 {
                     "s3": {
                         "object": {
-                            "key": f"{BucketPath.UPLOAD.value}/covid/general/missing_file.csv"
+                            "key": f"{BucketPath.UPLOAD.value}/covid/encounter/general/missing_file.csv"
                         }
                     }
                 }
@@ -95,14 +100,14 @@ class TestPowersetMerge(TestCase):
         self.s3_client.upload_file(
             "./tests/site_upload/test_powerset_merge.py",
             self.bucket_name,
-            f"{BucketPath.UPLOAD.value}/covid/elsewhere/b_test.csv",
+            f"{BucketPath.UPLOAD.value}/covid/encounter/elsewhere/b_test.csv",
         )
         event = {
             "Records": [
                 {
                     "s3": {
                         "object": {
-                            "key": f"{BucketPath.UPLOAD.value}/covid/elsewhere/b_test.csv"
+                            "key": f"{BucketPath.UPLOAD.value}/covid/encounter/elsewhere/b_test.csv"
                         }
                     }
                 }

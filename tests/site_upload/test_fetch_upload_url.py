@@ -16,7 +16,7 @@ def mock_open(*args, **kwargs):
 
 
 def mock_json_load(*args):
-    return {"test": {"path": "testpath"}}
+    return {"general": {"path": "s3://bucket/testpath"}}
 
 
 @mock_s3
@@ -29,9 +29,15 @@ class TestFetchUploadUrl(TestCase):
     @mock.patch("builtins.open", mock_open)
     @mock.patch("json.load", mock_json_load)
     def test_fetch_upload_url(self):
-        body = json.dumps({"study": "covid", "filename": "covid.csv"})
-        headers = {"user": "test"}
-        response = upload_url_handler({"body": body, "headers": headers}, None)
+        body = json.dumps(
+            {"study": "covid", "subscription": "encounter", "filename": "covid.csv"}
+        )
+        context = {
+            "authorizer": {
+                "principalId": "general",
+            }
+        }
+        response = upload_url_handler({"body": body, "requestContext": context}, None)
         self.assertEqual(response["statusCode"], 200)
 
         body = json.dumps({})
