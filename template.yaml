@@ -201,16 +201,20 @@ Resources:
       SchemaChangePolicy:
         DeleteBehavior: DEPRECATE_IN_DATABASE
         UpdateBehavior: UPDATE_IN_DATABASE
+      Schedule:
+        ScheduleExpression: "cron(0 22 ? * SUN *)"
       Targets:
         S3Targets:
           - Path: !Ref AggregatorBucket
           - Exclusions: 
-            - site_upload/**
-            - latest/**
-            - last_valid/**
-            - error/**
+            - aggregates/**
+            - athena/**
             - csv_aggregates/**
-            - metadata/**
+            - error/**
+            - last_valid/**
+            - latest/**
+            - site_metadata/**
+            - site_upload/**
 
 
 
