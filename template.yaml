@@ -11,7 +11,9 @@ Parameters:
   GlueNameParameter:
     Type: String
     Default: cumulus-aggregator
-
+  AthenaWorkgroupNameParameter:
+    Type: String
+    Default: primary
 
 Resources:
 
@@ -89,7 +91,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /chart_data/{subscription_id}
+            Path: /chart_data/{subscription_name}
             Method: GET
       Policies:
         - S3CrudPolicy:
@@ -98,14 +100,22 @@ Resources:
           - Sid: GluePermissionsPolicy
             Effect: Allow
             Action:
-            - glue:*
-            Resource: '*'
+              - glue:*Table*
+              - glue:*Partition*
+            Resource: 
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueNameParameter}-db'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueNameParameter}-db/*'
         - Statement:
-          - Sid: AthenaPermissionsPolicy
+          - Sid: AthenaExecuteQueryPermissionsPolicy
             Effect: Allow
             Action:
-            - athena:*
-            Resource: '*'
+              - athena:StartQueryExecution
+              - athena:GetQueryResults
+              - athena:GetWorkGroup
+              - athena:GetQueryExecution
+              - athena:StopQueryExecution
+            Resource: !Sub 'arn:aws:athena:*:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}'
 
   DashboardGetMetadataFunction:
     Type: AWS::Serverless::Function
