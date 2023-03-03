@@ -27,9 +27,10 @@ def _get_table_cols(table_name: str) -> List:
         f"{BucketPath.CSVAGGREGATE.value}/{table_name.split('_')[0]}"
         f"/{table_name}/{table_name}_aggregate.csv"
     )
-    print(s3_key)
     s3_client = boto3.client("s3")
-    s3_iter = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_key)["Body"].iter_lines()  # type: ignore[arg-type]
+    s3_iter = s3_client.get_object(
+        Bucket=s3_bucket_name, Key=s3_key  # type: ignore[arg-type]
+    )["Body"].iter_lines()
     return next(s3_iter).decode().split(",")
 
 

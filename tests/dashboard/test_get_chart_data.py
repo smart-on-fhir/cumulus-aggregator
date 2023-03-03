@@ -8,10 +8,6 @@ from unittest import mock
 from src.handlers.dashboard import get_chart_data
 
 
-def mock_get_table_name(name):
-    return "test"
-
-
 def mock_get_table_cols(name):
     return ["cnt", "gender", "race"]
 
@@ -26,33 +22,30 @@ def mock_data_frame(filter):
 @mock.patch(
     "src.handlers.dashboard.get_chart_data._get_table_cols", mock_get_table_cols
 )
-@mock.patch(
-    "src.handlers.dashboard.get_chart_data._get_table_name", mock_get_table_name
-)
 @pytest.mark.parametrize(
     "query_params,filters,path_params,query_str",
     [
         (
             {"column": "gender"},
             [],
-            {"subscription_id": "1"},
-            "SELECT gender, sum(cnt) as cnt FROM test "
+            {"subscription_name": "test_study"},
+            "SELECT gender, sum(cnt) as cnt FROM test_study "
             "WHERE COALESCE (race) = '' AND gender != ''  "
             "GROUP BY gender",
         ),
         (
             {"column": "gender", "stratifier": "race"},
             [],
-            {"subscription_id": "1"},
-            "SELECT race, gender, sum(cnt) as cnt FROM test "
+            {"subscription_name": "test_study"},
+            "SELECT race, gender, sum(cnt) as cnt FROM test_study "
             "WHERE gender != ''  "
             "GROUP BY race, gender",
         ),
         (
             {"column": "gender"},
             ["gender:strEq:female"],
-            {"subscription_id": "1"},
-            "SELECT gender, sum(cnt) as cnt FROM test "
+            {"subscription_name": "test_study"},
+            "SELECT gender, sum(cnt) as cnt FROM test_study "
             "WHERE COALESCE (race) = '' AND gender != '' "
             "AND gender LIKE 'female' "
             "GROUP BY gender",
@@ -60,8 +53,8 @@ def mock_data_frame(filter):
         (
             {"column": "gender", "stratifier": "race"},
             ["gender:strEq:female"],
-            {"subscription_id": "1"},
-            "SELECT race, gender, sum(cnt) as cnt FROM test "
+            {"subscription_name": "test_study"},
+            "SELECT race, gender, sum(cnt) as cnt FROM test_study "
             "WHERE gender != '' "
             "AND gender LIKE 'female' "
             "GROUP BY race, gender",
