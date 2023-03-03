@@ -2,6 +2,7 @@
 This is intended to provide an implementation of the logic described in docs/api.md
 """
 import logging
+import os
 
 from typing import List, Dict
 
@@ -10,36 +11,32 @@ import boto3
 import pandas
 
 from src.handlers.dashboard.filter_config import get_filter_string
+from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import http_response
 
 
-def _get_table_name(subscription_id: str) -> str:  # pylint: disable=unused-argument
-    """returns the table name associated with a subscription.
-    TODO: this is hard coded for now, pending creation of subscription persistence
-    """
-    return "covid"
+def _get_table_cols(table_name: str) -> List:
+    """Returns the columns associated with a table.
 
-
-def _get_table_cols(table_name: str) -> List:  # pylint: disable=unused-argument
-    """returns the columns associated with a table.
-    TODO: this is hard coded for now, pending creation of subscription persistence
+    Since running an athena query takes a decent amount of time due to queueing
+    a query with the execution engine, and we already have this data at the top
+    of a CSV, we're getting table cols directly from S3 for speed reasons.
     """
-    return [
-        "cnt",
-        "covid_icd10",
-        "covid_pcr_result",
-        "covid_symptom",
-        "symptom_icd10_display",
-        "variant_era",
-        "author_week",
-        "gender",
-        "age_group",
-    ]
+    s3_bucket_name = os.environ.get("BUCKET_NAME")
+    s3_key = (
+        f"{BucketPath.CSVAGGREGATE.value}/{table_name.split('_')[0]}"
+        f"/{table_name}/{table_name}_aggregate.csv"
+    )
+    s3_client = boto3.client("s3")
+    s3_iter = s3_client.get_object(
+        Bucket=s3_bucket_name, Key=s3_key  # type: ignore[arg-type]
+    )["Body"].iter_lines()
+    return next(s3_iter).decode().split(",")
 
 
 def _build_query(query_params: Dict, filters: List, path_params: Dict) -> str:
     """Creates a query from the dashboard API spec"""
-    table = _get_table_name(path_params["subscription_id"])
+    table = path_params["subscription_name"]
     columns = _get_table_cols(table)
     filter_str = get_filter_string(filters)
     if filter_str != "":
@@ -98,9 +95,9 @@ def chart_data_handler(event, context):
     query_params = event["queryStringParameters"]
     filters = event["multiValueQueryStringParameters"].get("filter", [])
     path_params = event["pathParameters"]
+    boto3.setup_default_session(region_name="us-east-1")
     query = _build_query(query_params, filters, path_params)
     try:
-        boto3.setup_default_session(region_name="us-east-1")
         df = awswrangler.athena.read_sql_query(
             query,
             database="cumulus-aggregator-db",
