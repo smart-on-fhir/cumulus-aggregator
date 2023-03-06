@@ -89,7 +89,7 @@ def _format_payload(df: pandas.DataFrame, query_params: Dict, filters: List) -> 
     return payload
 
 
-@generic_error_handler(msg="Error retrieving metadata")
+@generic_error_handler(msg="Error retrieving chart data")
 def chart_data_handler(event, context):
     """manages event from dashboard api call and retrieves data"""
     del context
