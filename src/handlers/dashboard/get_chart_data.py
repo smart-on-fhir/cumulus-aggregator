@@ -1,7 +1,6 @@
 """ Lambda for performing joins of site count data.
 This is intended to provide an implementation of the logic described in docs/api.md
 """
-import logging
 import os
 
 from typing import List, Dict
@@ -11,6 +10,7 @@ import boto3
 import pandas
 
 from src.handlers.dashboard.filter_config import get_filter_string
+from src.handlers.shared.decorators import generic_error_handler
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import http_response
 
@@ -89,6 +89,7 @@ def _format_payload(df: pandas.DataFrame, query_params: Dict, filters: List) -> 
     return payload
 
 
+@generic_error_handler(msg="Error retrieving chart data")
 def chart_data_handler(event, context):
     """manages event from dashboard api call and retrieves data"""
     del context
@@ -97,16 +98,11 @@ def chart_data_handler(event, context):
     path_params = event["pathParameters"]
     boto3.setup_default_session(region_name="us-east-1")
     query = _build_query(query_params, filters, path_params)
-    try:
-        df = awswrangler.athena.read_sql_query(
-            query,
-            database="cumulus-aggregator-db",
-            s3_output="s3://cumulus-aggregator-site-counts/awswrangler",
-        )
-        res = _format_payload(df, query_params, filters)
-        res = http_response(200, res)
-        return res
-    except Exception as e:  # pylint: disable=broad-except
-        logging.error("Error retrieving chart data: %s", str(e))
-        res = http_response(500, "Error retrieving chart data")
-        return res
+    df = awswrangler.athena.read_sql_query(
+        query,
+        database="cumulus-aggregator-db",
+        s3_output="s3://cumulus-aggregator-site-counts/awswrangler",
+    )
+    res = _format_payload(df, query_params, filters)
+    res = http_response(200, res)
+    return res
