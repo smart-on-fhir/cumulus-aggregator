@@ -5,6 +5,7 @@ import logging
 import boto3
 import botocore.exceptions
 
+from src.handlers.shared.decorators import generic_error_handler
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import http_response
 
@@ -32,6 +33,7 @@ def create_presigned_post(
         return http_response(400, "Error occured presigning url")
 
 
+@generic_error_handler(msg="Error occured presigning url")
 def upload_url_handler(event, context):
     """Processes event from API Gateway"""
     del context
@@ -39,15 +41,11 @@ def upload_url_handler(event, context):
         "src/handlers/site_upload/site_data/metadata.json", encoding="utf-8"
     ) as metadata:
         metadata_db = json.load(metadata)
-    try:
-        user = event["requestContext"]["authorizer"]["principalId"]
-        body = json.loads(event["body"])
-        res = create_presigned_post(
-            "cumulus-aggregator-site-counts",
-            f"{BucketPath.UPLOAD.value}/{body['study']}/{body['subscription']}/"
-            f"{metadata_db[user]['path']}/{body['filename']}",
-        )
-    except Exception as e:  # pylint: disable=broad-except
-        logging.error(e)
-        res = http_response(500, "Error occured presigning url")
+    user = event["requestContext"]["authorizer"]["principalId"]
+    body = json.loads(event["body"])
+    res = create_presigned_post(
+        "cumulus-aggregator-site-counts",
+        f"{BucketPath.UPLOAD.value}/{body['study']}/{body['subscription']}/"
+        f"{metadata_db[user]['path']}/{body['filename']}",
+    )
     return res

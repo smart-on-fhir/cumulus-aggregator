@@ -11,6 +11,7 @@ import pandas
 
 from numpy import nan
 
+from src.handlers.shared.decorators import generic_error_handler
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import http_response, read_metadata, write_metadata
 
@@ -166,21 +167,18 @@ def merge_powersets(
     awswrangler.s3.to_parquet(df, aggregate_path, index=False)
 
 
+@generic_error_handler(msg="Error processing file")
 def powerset_merge_handler(event, context):
     """manages event from S3, triggers file processing and merge"""
     del context
-    try:
-        s3_bucket = os.environ.get("BUCKET_NAME")
-        s3_client = boto3.client("s3")
-        s3_key = event["Records"][0]["s3"]["object"]["key"]
-        s3_key_array = s3_key.split("/")
+    s3_bucket = os.environ.get("BUCKET_NAME")
+    s3_client = boto3.client("s3")
+    s3_key = event["Records"][0]["s3"]["object"]["key"]
+    s3_key_array = s3_key.split("/")
 
-        study = s3_key_array[1]
-        subscription = s3_key_array[2]
-        process_upload(s3_client, s3_bucket, s3_key)
-        merge_powersets(s3_client, s3_bucket, study, subscription)
-        res = http_response(200, "Merge successful")
-    except Exception as e:  # pylint: disable=broad-except
-        logging.error("Error processing file %s: %s", s3_key, str(e))
-        res = http_response(500, "Error processing file")
+    study = s3_key_array[1]
+    subscription = s3_key_array[2]
+    process_upload(s3_client, s3_bucket, s3_key)
+    merge_powersets(s3_client, s3_bucket, study, subscription)
+    res = http_response(200, "Merge successful")
     return res
