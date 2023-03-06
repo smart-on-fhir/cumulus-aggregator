@@ -16,7 +16,11 @@ def generic_error_handler(msg="Internal server error"):
                 res = func(*args, **kwargs)
             except Exception as e:  # pylint: disable=broad-except
                 logging.error(
-                    f"Error: {msg}, type: {str(e)}, event: {args[0]}, context: {args[1]}"
+                    "Error: %s, type: %s, event: %s, context: %s",
+                    msg,
+                    str(e),
+                    args[0],
+                    args[1],
                 )
                 res = http_response(500, msg)
             return res
