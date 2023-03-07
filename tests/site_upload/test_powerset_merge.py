@@ -81,6 +81,34 @@ class TestPowersetMerge(TestCase):
             else:
                 assert item["Key"].startswith(BucketPath.LAST_VALID.value) == True
 
+    @mock.patch("src.handlers.site_upload.powerset_merge.datetime")
+    def test_dataset_archive(self, mock_dt):
+        mock_dt.now = mock.Mock(return_value=datetime(2020, 1, 1))
+        self.s3_client.upload_file(
+            "./tests/test_data/cube_simple_example.csv",
+            self.bucket_name,
+            f"{BucketPath.LAST_VALID.value}/covid/encounter/general/a_test.csv",
+        )
+        event = {
+            "Records": [
+                {
+                    "s3": {
+                        "object": {
+                            "key": f"{BucketPath.UPLOAD.value}/covid/encounter/general/a_test.csv"
+                        }
+                    }
+                }
+            ]
+        }
+        res = powerset_merge_handler(event, {})
+        assert res["statusCode"] == 200
+        res = self.s3_client.list_objects_v2(Bucket=self.bucket_name)
+        assert len(res["Contents"]) == 6
+        keys = []
+        for resource in res["Contents"]:
+            keys.append(resource["Key"])
+        assert "archive/covid/encounter/general/a_test.2020-01-01T00:00:00.csv" in keys
+
     def test_file_not_found(self):
         event = {
             "Records": [

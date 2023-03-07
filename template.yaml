@@ -218,6 +218,7 @@ Resources:
           - Path: !Ref AggregatorBucket
           - Exclusions: 
             - aggregates/**
+            - archive/**            
             - athena/**
             - csv_aggregates/**
             - error/**

@@ -15,12 +15,26 @@ def generic_error_handler(msg="Internal server error"):
             try:
                 res = func(*args, **kwargs)
             except Exception as e:  # pylint: disable=broad-except
+                trace = []
+                tb = e.__traceback__
+                while tb is not None:
+                    trace.append(
+                        {
+                            "filename": tb.tb_frame.f_code.co_filename,
+                            "name": tb.tb_frame.f_code.co_name,
+                            "lineno": tb.tb_lineno,
+                        }
+                    )
+                    tb = tb.tb_next
                 logging.error(
-                    "Error: %s, type: %s, event: %s, context: %s",
+                    "Error: %s, type: %s, event: %s, "
+                    "context: %s, file: %s, traceback: %s",
                     msg,
                     str(e),
                     args[0],
                     args[1],
+                    __file__,
+                    trace,
                 )
                 res = http_response(500, msg)
             return res

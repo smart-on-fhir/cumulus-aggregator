@@ -84,6 +84,13 @@ def get_site_filename_suffix(s3_path: str):
     return "/".join(s3_path.split("/")[6:])
 
 
+def get_file_list(bucket_root, s3_bucket_name, study, subscription, extension="csv"):
+    return awswrangler.s3.list_objects(  # type: ignore[call-overload]
+        path=f"s3://{s3_bucket_name}/{bucket_root}/{study}/{subscription}",
+        suffix=extension,
+    )
+
+
 def merge_powersets(
     s3_client, s3_bucket_name: str, study: str, subscription: str
 ) -> None:
@@ -92,36 +99,48 @@ def merge_powersets(
     # chunking to lower memory usage during merges.
     metadata = read_metadata(s3_client, s3_bucket_name)
     df = pandas.DataFrame()
-    latest_csv_list = awswrangler.s3.list_objects(  # type: ignore[call-overload]
-        path=f"s3://{s3_bucket_name}/{BucketPath.LATEST.value}/{study}/{subscription}",
-        suffix="csv",
+    latest_csv_list = get_file_list(
+        BucketPath.LATEST.value, s3_bucket_name, study, subscription
     )
-    last_valid_csv_list = awswrangler.s3.list_objects(  # type: ignore[call-overload]
-        path=f"s3://{s3_bucket_name}/{BucketPath.LAST_VALID.value}"
-        f"/{study}/{subscription}",
-        suffix="csv",
+    last_valid_csv_list = get_file_list(
+        BucketPath.LAST_VALID.value, s3_bucket_name, study, subscription
     )
     for s3_path in last_valid_csv_list:
         site_specific_name = get_site_filename_suffix(s3_path)
         site = site_specific_name.split("/", maxsplit=1)[0]
+
         # If the latest uploads don't include this site, we'll use the last-valid
         # one instead
         if not any(x.endswith(site_specific_name) for x in latest_csv_list):
+
             df = concat_sets(df, s3_path)
             metadata[site][study][subscription]["last_aggregation"] = datetime.now(
                 timezone.utc
             ).isoformat()
     for s3_path in latest_csv_list:
         site_specific_name = get_site_filename_suffix(s3_path)
+        subbucket_path = f"{study}/{subscription}/{site_specific_name}"
+        date_str = datetime.now(timezone.utc).isoformat()
+        timestamped_name = f".{date_str}.".join(site_specific_name.split("."))
+        timestamped_path = f"{study}/{subscription}/{timestamped_name}"
         try:
+            # if we're going to replace a file in last_valid, archive the old data
+            if any(x.endswith(site_specific_name) for x in last_valid_csv_list):
+                source = {
+                    "Bucket": s3_bucket_name,
+                    "Key": f"{BucketPath.LAST_VALID.value}/{subbucket_path}",
+                }
+                s3_client.copy_object(
+                    CopySource=source,
+                    Bucket=s3_bucket_name,
+                    Key=f"{BucketPath.ARCHIVE.value}/{timestamped_path}",
+                )
             df = concat_sets(df, s3_path)
             move_s3_file(
                 s3_client,
                 s3_bucket_name,
-                f"{BucketPath.LATEST.value}/{study}/"
-                f"{subscription}/{site_specific_name}",
-                f"{BucketPath.LAST_VALID.value}/{study}/"
-                f"{subscription}/{site_specific_name}",
+                f"{BucketPath.LATEST.value}/{subbucket_path}",
+                f"{BucketPath.LAST_VALID.value}/{subbucket_path}",
             )
             site = site_specific_name.split("/", maxsplit=1)[0]
             date_str = datetime.now(timezone.utc).isoformat()
@@ -129,15 +148,17 @@ def merge_powersets(
             metadata[site][study][subscription]["last_aggregation"] = date_str
         except Exception as e:  # pylint: disable=broad-except
             logging.error("File %s failed to aggregate: %s", s3_path, str(e))
+            # if we created an archive, delete it, since it's not valid
+            s3_client.delete_object(
+                Bucket=s3_bucket_name,
+                Key=f"{BucketPath.ARCHIVE.value}/{timestamped_path}",
+            )
             move_s3_file(
                 s3_client,
                 s3_bucket_name,
-                f"{BucketPath.LATEST.value}/{study}/"
-                f"{subscription}/{site_specific_name}",
-                f"{BucketPath.ERROR.value}/{study}/"
-                f"{subscription}/{site_specific_name}",
+                f"{BucketPath.LATEST.value}/{subbucket_path}",
+                f"{BucketPath.ERROR.value}/{subbucket_path}",
             )
-            date_str = datetime.now(timezone.utc).isoformat()
             metadata[site][study][subscription]["last_error"] = date_str
 
             # if a new file fails, we want to replace it with the last valid
@@ -146,7 +167,7 @@ def merge_powersets(
                 df = concat_sets(
                     df,
                     f"s3://{s3_bucket_name}/{BucketPath.LAST_VALID.value}"
-                    f"/{study}/{subscription}/{site_specific_name}",
+                    f"/{subbucket_path}",
                 )
                 metadata[site][study][subscription]["last_aggregation"] = date_str
     write_metadata(s3_client, s3_bucket_name, metadata)
