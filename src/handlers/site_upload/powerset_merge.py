@@ -85,7 +85,7 @@ def get_site_filename_suffix(s3_path: str):
 
 
 def get_file_list(bucket_root, s3_bucket_name, study, subscription, extension="csv"):
-    return awswrangler.s3.list_objects(  # type: ignore[call-overload]
+    return awswrangler.s3.list_objects(
         path=f"s3://{s3_bucket_name}/{bucket_root}/{study}/{subscription}",
         suffix=extension,
     )
@@ -143,7 +143,6 @@ def merge_powersets(
                 f"{BucketPath.LAST_VALID.value}/{subbucket_path}",
             )
             site = site_specific_name.split("/", maxsplit=1)[0]
-            date_str = datetime.now(timezone.utc).isoformat()
             metadata[site][study][subscription]["last_data_update"] = date_str
             metadata[site][study][subscription]["last_aggregation"] = date_str
         except Exception as e:  # pylint: disable=broad-except
@@ -160,7 +159,6 @@ def merge_powersets(
                 f"{BucketPath.ERROR.value}/{subbucket_path}",
             )
             metadata[site][study][subscription]["last_error"] = date_str
-
             # if a new file fails, we want to replace it with the last valid
             # for purposes of aggregation
             if any(x.endswith(site_specific_name) for x in last_valid_csv_list):
@@ -171,7 +169,6 @@ def merge_powersets(
                 )
                 metadata[site][study][subscription]["last_aggregation"] = date_str
     write_metadata(s3_client, s3_bucket_name, metadata)
-
     csv_aggregate_path = (
         f"s3://{s3_bucket_name}/{BucketPath.CSVAGGREGATE.value}/"
         f"{study}/{study}_{subscription}/{study}_{subscription}_aggregate.csv"
