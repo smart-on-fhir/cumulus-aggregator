@@ -13,18 +13,12 @@ from numpy import nan
 
 from src.handlers.shared.decorators import generic_error_handler
 from src.handlers.shared.enums import BucketPath
-from src.handlers.shared.functions import http_response, read_metadata, write_metadata
-
-METADATA_TEMPLATE = {
-    "version": "1.0",
-    "last_upload": None,
-    "last_data_update": None,
-    "last_aggregation": None,
-    "last_error": None,
-    "earliest_data": None,
-    "latest_data": None,
-    "deleted": None,
-}
+from src.handlers.shared.functions import (
+    http_response,
+    read_metadata,
+    update_metadata,
+    write_metadata,
+)
 
 
 class S3UploadError(Exception):
@@ -59,10 +53,9 @@ def process_upload(s3_client, s3_bucket_name: str, s3_key: str) -> None:
     site = path_params[3]
     new_key = f"{BucketPath.LATEST.value}/{s3_key.split('/', 1)[-1]}"
     move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
-    site_metadata = metadata.setdefault(site, {})
-    study_metadata = site_metadata.setdefault(study, {})
-    subscription_metadata = study_metadata.setdefault(subscription, METADATA_TEMPLATE)
-    subscription_metadata["last_upload"] = last_uploaded_date.isoformat()
+    metadata = update_metadata(
+        metadata, site, study, subscription, "last_uploaded_date"
+    )
     write_metadata(s3_client, s3_bucket_name, metadata)
 
 
@@ -114,9 +107,9 @@ def merge_powersets(
         if not any(x.endswith(site_specific_name) for x in latest_csv_list):
 
             df = concat_sets(df, s3_path)
-            metadata[site][study][subscription]["last_aggregation"] = datetime.now(
-                timezone.utc
-            ).isoformat()
+            metadata = update_metadata(
+                metadata, site, study, subscription, "last_uploaded_date"
+            )
     for s3_path in latest_csv_list:
         site_specific_name = get_site_filename_suffix(s3_path)
         subbucket_path = f"{study}/{subscription}/{site_specific_name}"
@@ -143,22 +136,23 @@ def merge_powersets(
                 f"{BucketPath.LAST_VALID.value}/{subbucket_path}",
             )
             site = site_specific_name.split("/", maxsplit=1)[0]
-            metadata[site][study][subscription]["last_data_update"] = date_str
-            metadata[site][study][subscription]["last_aggregation"] = date_str
+            metadata = update_metadata(
+                metadata, site, study, subscription, "last_data_update"
+            )
+            metadata = update_metadata(
+                metadata, site, study, subscription, "last_aggregation"
+            )
         except Exception as e:  # pylint: disable=broad-except
             logging.error("File %s failed to aggregate: %s", s3_path, str(e))
-            # if we created an archive, delete it, since it's not valid
-            s3_client.delete_object(
-                Bucket=s3_bucket_name,
-                Key=f"{BucketPath.ARCHIVE.value}/{timestamped_path}",
-            )
             move_s3_file(
                 s3_client,
                 s3_bucket_name,
                 f"{BucketPath.LATEST.value}/{subbucket_path}",
                 f"{BucketPath.ERROR.value}/{subbucket_path}",
             )
-            metadata[site][study][subscription]["last_error"] = date_str
+            metadata = update_metadata(
+                metadata, site, study, subscription, "last_error"
+            )
             # if a new file fails, we want to replace it with the last valid
             # for purposes of aggregation
             if any(x.endswith(site_specific_name) for x in last_valid_csv_list):
@@ -167,7 +161,9 @@ def merge_powersets(
                     f"s3://{s3_bucket_name}/{BucketPath.LAST_VALID.value}"
                     f"/{subbucket_path}",
                 )
-                metadata[site][study][subscription]["last_aggregation"] = date_str
+                metadata = update_metadata(
+                    metadata, site, study, subscription, "last_aggregation"
+                )
     write_metadata(s3_client, s3_bucket_name, metadata)
     csv_aggregate_path = (
         f"s3://{s3_bucket_name}/{BucketPath.CSVAGGREGATE.value}/"
@@ -193,7 +189,6 @@ def powerset_merge_handler(event, context):
     s3_client = boto3.client("s3")
     s3_key = event["Records"][0]["s3"]["object"]["key"]
     s3_key_array = s3_key.split("/")
-
     study = s3_key_array[1]
     subscription = s3_key_array[2]
     process_upload(s3_client, s3_bucket, s3_key)

@@ -75,7 +75,7 @@ class TestPowersetMerge(TestCase):
                 metadata = read_metadata(self.s3_client, self.bucket_name)
                 assert "general" in metadata.keys()
                 assert (
-                    metadata["elsewhere"]["covid"]["encounter"]["last_aggregation"]
+                    metadata["general"]["covid"]["encounter"]["last_aggregation"]
                     != None
                 )
             else:
