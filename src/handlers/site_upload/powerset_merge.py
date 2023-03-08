@@ -32,12 +32,12 @@ def move_s3_file(s3_client, s3_bucket_name: str, old_key: str, new_key: str) -> 
     copy_response = s3_client.copy_object(
         CopySource=source, Bucket=s3_bucket_name, Key=new_key
     )
-    delete_response = s3_client.delete_object(Bucket=s3_bucket_name, Key=old_key)
-    if (
-        copy_response["ResponseMetadata"]["HTTPStatusCode"] != 200
-        or delete_response["ResponseMetadata"]["HTTPStatusCode"] != 204
-    ):
+    if copy_response["ResponseMetadata"]["HTTPStatusCode"] != 200:
         logging.error("error copying file %s to %s", old_key, new_key)
+        raise S3UploadError
+    delete_response = s3_client.delete_object(Bucket=s3_bucket_name, Key=old_key)
+    if delete_response["ResponseMetadata"]["HTTPStatusCode"] != 204:
+        logging.error("error deleting file %s", old_key)
         raise S3UploadError
 
 
