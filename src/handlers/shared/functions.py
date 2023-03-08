@@ -51,10 +51,8 @@ def update_metadata(
     site_metadata = metadata.setdefault(site, {})
     study_metadata = site_metadata.setdefault(study, {})
     subscription_metadata = study_metadata.setdefault(subscription, METADATA_TEMPLATE)
-    if not dt:
-        subscription_metadata[target] = datetime.now(timezone.utc).isoformat()
-    else:
-        subscription_metadata[target] = dt.isoformat()
+    dt = dt or datetime.now(timezone.utc)
+    subscription_metadata[target] = dt.isoformat()
     return metadata
 
 
