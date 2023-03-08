@@ -1,7 +1,7 @@
 """ Functions used across different lambdas"""
 import json
 
-from typing import Dict
+from typing import Dict, Optional
 from datetime import datetime, timezone
 
 from src.handlers.shared.enums import BucketPath
@@ -40,13 +40,21 @@ def read_metadata(s3_client, s3_bucket_name: str) -> Dict:
 
 
 def update_metadata(
-    metadata: Dict, site: str, study: str, subscription: str, target: str
+    metadata: Dict,
+    site: str,
+    study: str,
+    subscription: str,
+    target: str,
+    dt: Optional[datetime] = None,
 ):
     """Safely updates items in metadata dictionary"""
     site_metadata = metadata.setdefault(site, {})
     study_metadata = site_metadata.setdefault(study, {})
     subscription_metadata = study_metadata.setdefault(subscription, METADATA_TEMPLATE)
-    subscription_metadata[target] = datetime.now(timezone.utc).isoformat()
+    if not dt:
+        subscription_metadata[target] = datetime.now(timezone.utc).isoformat()
+    else:
+        subscription_metadata[target] = dt.isoformat()
     return metadata
 
 

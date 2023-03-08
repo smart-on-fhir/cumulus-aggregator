@@ -54,7 +54,7 @@ def process_upload(s3_client, s3_bucket_name: str, s3_key: str) -> None:
     new_key = f"{BucketPath.LATEST.value}/{s3_key.split('/', 1)[-1]}"
     move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
     metadata = update_metadata(
-        metadata, site, study, subscription, "last_uploaded_date"
+        metadata, site, study, subscription, "last_uploaded_date", last_uploaded_date
     )
     write_metadata(s3_client, s3_bucket_name, metadata)
 
