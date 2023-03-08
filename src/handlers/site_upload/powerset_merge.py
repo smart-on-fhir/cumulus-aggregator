@@ -13,18 +13,12 @@ from numpy import nan
 
 from src.handlers.shared.decorators import generic_error_handler
 from src.handlers.shared.enums import BucketPath
-from src.handlers.shared.functions import http_response, read_metadata, write_metadata
-
-METADATA_TEMPLATE = {
-    "version": "1.0",
-    "last_upload": None,
-    "last_data_update": None,
-    "last_aggregation": None,
-    "last_error": None,
-    "earliest_data": None,
-    "latest_data": None,
-    "deleted": None,
-}
+from src.handlers.shared.functions import (
+    http_response,
+    read_metadata,
+    update_metadata,
+    write_metadata,
+)
 
 
 class S3UploadError(Exception):
@@ -38,12 +32,12 @@ def move_s3_file(s3_client, s3_bucket_name: str, old_key: str, new_key: str) -> 
     copy_response = s3_client.copy_object(
         CopySource=source, Bucket=s3_bucket_name, Key=new_key
     )
-    delete_response = s3_client.delete_object(Bucket=s3_bucket_name, Key=old_key)
-    if (
-        copy_response["ResponseMetadata"]["HTTPStatusCode"] != 200
-        or delete_response["ResponseMetadata"]["HTTPStatusCode"] != 204
-    ):
+    if copy_response["ResponseMetadata"]["HTTPStatusCode"] != 200:
         logging.error("error copying file %s to %s", old_key, new_key)
+        raise S3UploadError
+    delete_response = s3_client.delete_object(Bucket=s3_bucket_name, Key=old_key)
+    if delete_response["ResponseMetadata"]["HTTPStatusCode"] != 204:
+        logging.error("error deleting file %s", old_key)
         raise S3UploadError
 
 
@@ -59,10 +53,9 @@ def process_upload(s3_client, s3_bucket_name: str, s3_key: str) -> None:
     site = path_params[3]
     new_key = f"{BucketPath.LATEST.value}/{s3_key.split('/', 1)[-1]}"
     move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
-    site_metadata = metadata.setdefault(site, {})
-    study_metadata = site_metadata.setdefault(study, {})
-    subscription_metadata = study_metadata.setdefault(subscription, METADATA_TEMPLATE)
-    subscription_metadata["last_upload"] = last_uploaded_date.isoformat()
+    metadata = update_metadata(
+        metadata, site, study, subscription, "last_uploaded_date", last_uploaded_date
+    )
     write_metadata(s3_client, s3_bucket_name, metadata)
 
 
@@ -84,6 +77,13 @@ def get_site_filename_suffix(s3_path: str):
     return "/".join(s3_path.split("/")[6:])
 
 
+def get_file_list(bucket_root, s3_bucket_name, study, subscription, extension="csv"):
+    return awswrangler.s3.list_objects(
+        path=f"s3://{s3_bucket_name}/{bucket_root}/{study}/{subscription}",
+        suffix=extension,
+    )
+
+
 def merge_powersets(
     s3_client, s3_bucket_name: str, study: str, subscription: str
 ) -> None:
@@ -92,65 +92,79 @@ def merge_powersets(
     # chunking to lower memory usage during merges.
     metadata = read_metadata(s3_client, s3_bucket_name)
     df = pandas.DataFrame()
-    latest_csv_list = awswrangler.s3.list_objects(  # type: ignore[call-overload]
-        path=f"s3://{s3_bucket_name}/{BucketPath.LATEST.value}/{study}/{subscription}",
-        suffix="csv",
+    latest_csv_list = get_file_list(
+        BucketPath.LATEST.value, s3_bucket_name, study, subscription
     )
-    last_valid_csv_list = awswrangler.s3.list_objects(  # type: ignore[call-overload]
-        path=f"s3://{s3_bucket_name}/{BucketPath.LAST_VALID.value}"
-        f"/{study}/{subscription}",
-        suffix="csv",
+    last_valid_csv_list = get_file_list(
+        BucketPath.LAST_VALID.value, s3_bucket_name, study, subscription
     )
     for s3_path in last_valid_csv_list:
         site_specific_name = get_site_filename_suffix(s3_path)
         site = site_specific_name.split("/", maxsplit=1)[0]
+
         # If the latest uploads don't include this site, we'll use the last-valid
         # one instead
         if not any(x.endswith(site_specific_name) for x in latest_csv_list):
+
             df = concat_sets(df, s3_path)
-            metadata[site][study][subscription]["last_aggregation"] = datetime.now(
-                timezone.utc
-            ).isoformat()
+            metadata = update_metadata(
+                metadata, site, study, subscription, "last_uploaded_date"
+            )
     for s3_path in latest_csv_list:
         site_specific_name = get_site_filename_suffix(s3_path)
+        subbucket_path = f"{study}/{subscription}/{site_specific_name}"
+        date_str = datetime.now(timezone.utc).isoformat()
+        timestamped_name = f".{date_str}.".join(site_specific_name.split("."))
+        timestamped_path = f"{study}/{subscription}/{timestamped_name}"
         try:
+            # if we're going to replace a file in last_valid, archive the old data
+            if any(x.endswith(site_specific_name) for x in last_valid_csv_list):
+                source = {
+                    "Bucket": s3_bucket_name,
+                    "Key": f"{BucketPath.LAST_VALID.value}/{subbucket_path}",
+                }
+                s3_client.copy_object(
+                    CopySource=source,
+                    Bucket=s3_bucket_name,
+                    Key=f"{BucketPath.ARCHIVE.value}/{timestamped_path}",
+                )
             df = concat_sets(df, s3_path)
             move_s3_file(
                 s3_client,
                 s3_bucket_name,
-                f"{BucketPath.LATEST.value}/{study}/"
-                f"{subscription}/{site_specific_name}",
-                f"{BucketPath.LAST_VALID.value}/{study}/"
-                f"{subscription}/{site_specific_name}",
+                f"{BucketPath.LATEST.value}/{subbucket_path}",
+                f"{BucketPath.LAST_VALID.value}/{subbucket_path}",
             )
             site = site_specific_name.split("/", maxsplit=1)[0]
-            date_str = datetime.now(timezone.utc).isoformat()
-            metadata[site][study][subscription]["last_data_update"] = date_str
-            metadata[site][study][subscription]["last_aggregation"] = date_str
+            metadata = update_metadata(
+                metadata, site, study, subscription, "last_data_update"
+            )
+            metadata = update_metadata(
+                metadata, site, study, subscription, "last_aggregation"
+            )
         except Exception as e:  # pylint: disable=broad-except
             logging.error("File %s failed to aggregate: %s", s3_path, str(e))
             move_s3_file(
                 s3_client,
                 s3_bucket_name,
-                f"{BucketPath.LATEST.value}/{study}/"
-                f"{subscription}/{site_specific_name}",
-                f"{BucketPath.ERROR.value}/{study}/"
-                f"{subscription}/{site_specific_name}",
+                f"{BucketPath.LATEST.value}/{subbucket_path}",
+                f"{BucketPath.ERROR.value}/{subbucket_path}",
             )
-            date_str = datetime.now(timezone.utc).isoformat()
-            metadata[site][study][subscription]["last_error"] = date_str
-
+            metadata = update_metadata(
+                metadata, site, study, subscription, "last_error"
+            )
             # if a new file fails, we want to replace it with the last valid
             # for purposes of aggregation
             if any(x.endswith(site_specific_name) for x in last_valid_csv_list):
                 df = concat_sets(
                     df,
                     f"s3://{s3_bucket_name}/{BucketPath.LAST_VALID.value}"
-                    f"/{study}/{subscription}/{site_specific_name}",
+                    f"/{subbucket_path}",
                 )
-                metadata[site][study][subscription]["last_aggregation"] = date_str
+                metadata = update_metadata(
+                    metadata, site, study, subscription, "last_aggregation"
+                )
     write_metadata(s3_client, s3_bucket_name, metadata)
-
     csv_aggregate_path = (
         f"s3://{s3_bucket_name}/{BucketPath.CSVAGGREGATE.value}/"
         f"{study}/{study}_{subscription}/{study}_{subscription}_aggregate.csv"
@@ -175,7 +189,6 @@ def powerset_merge_handler(event, context):
     s3_client = boto3.client("s3")
     s3_key = event["Records"][0]["s3"]["object"]["key"]
     s3_key_array = s3_key.split("/")
-
     study = s3_key_array[1]
     subscription = s3_key_array[2]
     process_upload(s3_client, s3_bucket, s3_key)

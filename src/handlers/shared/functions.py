@@ -1,11 +1,22 @@
 """ Functions used across different lambdas"""
 import json
 
-from typing import Dict
+from typing import Dict, Optional
+from datetime import datetime, timezone
 
 from src.handlers.shared.enums import BucketPath
 
 META_PATH = f"{BucketPath.META.value}/transactions.json"
+METADATA_TEMPLATE = {
+    "version": "1.0",
+    "last_upload": None,
+    "last_data_update": None,
+    "last_aggregation": None,
+    "last_error": None,
+    "earliest_data": None,
+    "latest_data": None,
+    "deleted": None,
+}
 
 
 def http_response(status: int, body: str) -> Dict:
@@ -26,6 +37,23 @@ def read_metadata(s3_client, s3_bucket_name: str) -> Dict:
         return json.loads(res["Body"].read())
     else:
         return {}
+
+
+def update_metadata(
+    metadata: Dict,
+    site: str,
+    study: str,
+    subscription: str,
+    target: str,
+    dt: Optional[datetime] = None,
+):
+    """Safely updates items in metadata dictionary"""
+    site_metadata = metadata.setdefault(site, {})
+    study_metadata = site_metadata.setdefault(study, {})
+    subscription_metadata = study_metadata.setdefault(subscription, METADATA_TEMPLATE)
+    dt = dt or datetime.now(timezone.utc)
+    subscription_metadata[target] = dt.isoformat()
+    return metadata
 
 
 def write_metadata(s3_client, s3_bucket_name: str, metadata: Dict) -> None:
