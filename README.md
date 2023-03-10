@@ -21,7 +21,7 @@ The aggregator aims to provide a serverless implementation that accomplish the f
 If you need your instance of the aggregator to be accessible outside your organization, follow these steps prior to trying to deploy the aggregator:
 
 - Register an appropriate domain via AWS Route 53
-- Update the domain in the template.certificate.yaml to match that domain
+- Update the `Domain` parameter in the template.certificate.yaml to match that domain
 - Deploy the certificate & hosted zone with 
 ```bash
 sam deploy --guided --stack-name=cumulus-dns -t template.hostedzone.yaml
