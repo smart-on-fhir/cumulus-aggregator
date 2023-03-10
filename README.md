@@ -37,7 +37,7 @@ Once you've done this, you can do one of two things:
 
 #### Accessing via Amazon account
 
-If your access does not need external access, remove/comment the `Domain` resource under `SiteApiGateway` inside of template.yaml
+If your aggregator does not need public external access, remove/comment the `Domain` resource under `SiteApiGateway` inside of template.yaml
 
 ### Deployment
 
