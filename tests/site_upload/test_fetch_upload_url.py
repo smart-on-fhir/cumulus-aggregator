@@ -1,6 +1,8 @@
 import boto3
 import json
+import os
 import pytest
+
 from moto import mock_s3
 from unittest import TestCase, mock
 
@@ -20,6 +22,7 @@ def mock_json_load(*args):
 
 
 @mock_s3
+@mock.patch.dict(os.environ, {"BUCKET_NAME": "cumulus-aggregator-site-counts"})
 class TestFetchUploadUrl(TestCase):
     def setUp(self):
         self.bucket_name = "cumulus-aggregator-site-counts"
