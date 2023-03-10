@@ -1,6 +1,7 @@
 """ Lambda for generating pre-signed URLs for site upload """
 import json
 import logging
+import os
 
 import boto3
 import botocore.exceptions
@@ -44,7 +45,7 @@ def upload_url_handler(event, context):
     user = event["requestContext"]["authorizer"]["principalId"]
     body = json.loads(event["body"])
     res = create_presigned_post(
-        "cumulus-aggregator-site-counts",
+        os.environ.get("BUCKET_NAME"),
         f"{BucketPath.UPLOAD.value}/{body['study']}/{body['subscription']}/"
         f"{metadata_db[user]['path']}/{body['filename']}",
     )

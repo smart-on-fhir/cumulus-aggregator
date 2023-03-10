@@ -32,7 +32,7 @@ def upload_file(args):
                 )
             )
             api_id = site_api_dict[0]["id"]
-            url = f"https://{api_id}.execute-api.us-east-1.amazonaws.com/Prod/"
+            url = f"https://{api_id}.execute-api.us-east-1.amazonaws.com/dev/"
         except:
             print("No response recieved from AWS API gateway.")
             exit(1)

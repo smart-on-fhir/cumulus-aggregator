@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >-
-  cumulus-aggregator
+  SAM stack for Cumulus aggregator
 Transform:
 - AWS::Serverless-2016-10-31
 
@@ -14,6 +14,18 @@ Parameters:
   AthenaWorkgroupNameParameter:
     Type: String
     Default: primary
+  AggregatorDomainName:
+    Type: String
+    Default: "aggregator.smartcumulus.org"
+  AggregatorCertArn:
+    Type: String
+    Default: ""
+  AggregatorHostedZoneID:
+    Type: String
+    Default: ""
+  DeployStage:
+    Type: String
+    Default: dev
 
 Resources:
 
@@ -42,7 +54,7 @@ Resources:
       Description: Generates a presigned URL for uploading files to S3
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
       Events:
         SiteUploadAPI:
           Type: Api
@@ -52,7 +64,7 @@ Resources:
             Method: POST
       Policies:
         - S3CrudPolicy:
-            BucketName: !Ref BucketNameParameter
+            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
 
   PowersetMergeFunction:
     Type: AWS::Serverless::Function
@@ -66,10 +78,10 @@ Resources:
       Description: Merges and aggregates powerset count data
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
       Policies:
         - S3CrudPolicy:
-            BucketName: !Ref BucketNameParameter
+            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
 
   # Dashboard API
 
@@ -85,7 +97,7 @@ Resources:
       Description: Retrieve data for chart display in Cumulus Dashboard
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
       Events:
         GetChartDataAPI:
           Type: Api
@@ -95,7 +107,7 @@ Resources:
             Method: GET
       Policies:
         - S3CrudPolicy:
-            BucketName: !Ref BucketNameParameter
+            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
         - Statement:
           - Sid: GluePermissionsPolicy
             Effect: Allow
@@ -128,7 +140,7 @@ Resources:
       Description: Retrieve data about site uploads
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
       Events:
         GetMetadataAPI:
           Type: Api
@@ -168,7 +180,7 @@ Resources:
       FunctionName: !Ref PowersetMergeFunction
       Principal: s3.amazonaws.com
       #This can't be a !Ref due to circular refs
-      SourceArn: !Sub 'arn:aws:s3:::${BucketNameParameter}'
+      SourceArn: !Sub 'arn:aws:s3:::${BucketNameParameter}-${DeployStage}'
       SourceAccount: !Ref AWS::AccountId
 
 ### S3 Buckets
@@ -178,7 +190,7 @@ Resources:
     DependsOn:
       - PowersetMergeFunctionPermission
     Properties:
-      BucketName: !Sub '${BucketNameParameter}'
+      BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
       NotificationConfiguration:
         LambdaConfigurations:
           - Event: s3:ObjectCreated:*
@@ -196,13 +208,13 @@ Resources:
     Properties:
       CatalogId: !Ref AWS::AccountId
       DatabaseInput:
-        Name: !Sub '${GlueNameParameter}-db'
+        Name: !Sub '${GlueNameParameter}-db-${DeployStage}'
         Description: Database for serving data to Cumulus Dashboard
 
   GlueCrawler:
     Type: AWS::Glue::Crawler
     Properties:
-      Name: !Sub '${GlueNameParameter}-crawler'
+      Name: !Sub '${GlueNameParameter}-crawler-${DeployStage}'
       DatabaseName: !Ref GlueDB
       Role: !GetAtt CrawlerRole.Arn
       Configuration: "{\"Version\":1.0,\"Grouping\":{\"TableLevelConfiguration\":4}}"
@@ -269,7 +281,7 @@ Resources:
                 Action:
                   - s3:GetObject
                   - s3:PutObject
-                Resource: !Sub "arn:aws:s3:::${BucketNameParameter}/aggregates/*"
+                Resource: !Sub "arn:aws:s3:::${BucketNameParameter}-${DeployStage}/aggregates/*"
 
 ### API Gateways
 
@@ -281,7 +293,7 @@ Resources:
     Type: AWS::Serverless::Api
 #    DependsOn: ApiCWLRoleArn 
     Properties:
-      StageName: Prod
+      StageName: !Ref DeployStage
       Auth:
         Authorizers: 
           FetchAuth: 
@@ -290,6 +302,15 @@ Resources:
             Identity:
               Headers: [Authorization]
         DefaultAuthorizer: FetchAuth
+      # If an external url is not required, delete/comment the Domain node
+      Domain:
+        DomainName: !Ref AggregatorDomainName
+        CertificateArn: !Ref AggregatorCertArn
+        EndpointConfiguration: EDGE
+        Route53:
+          HostedZoneId: !Ref AggregatorHostedZoneID
+        BasePath:
+          - upload
       Name: CumulusAggregatorSiteAPI
 #      MethodSettings:
 #        - LoggingLevel: INFO
@@ -328,14 +349,15 @@ Resources:
   DashboardApiGateway:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: Prod
-      Name: CumulusAggregatorDashboardAPI
+      StageName: !Ref DeployStage
+      Name: CumulusAggregatorDashboardApi
 
 Outputs:
   SiteWebEndpoint:
-    Description: "Site API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${SiteApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+    Description: "Site API Gateway endpoint URL"
+    Value: !Sub "https://${SiteApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${DeployStage}/"
 
   DashboardWebEndpoint:
-    Description: "Dashboard API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${DashboardApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+    Description: "Dashboard API Gateway endpoint URL"
+    Value: !Sub "https://${DashboardApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${DeployStage}/"
+    
