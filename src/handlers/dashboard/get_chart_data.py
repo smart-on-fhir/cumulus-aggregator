@@ -59,9 +59,9 @@ def _build_query(query_params: Dict, filters: List, path_params: Dict) -> str:
         coalesce_str = "WHERE"
     query_str = (
         f"SELECT {select_str} FROM {table} "  # nosec
-        f"{coalesce_str} "  # nosec
-        f"{query_params['column']} != '' {filter_str} "  # nosec
-        f"GROUP BY {group_str}"  # nosec
+        f"{coalesce_str} "
+        f"{query_params['column']} != '' {filter_str} "
+        f"GROUP BY {group_str}"
     )
     return query_str
 
