@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  This provides the hosted zone and SSL certs for external Cumulus URLs.
+Parameters:
+  Domain:
+    Type: String
+    Default: smartcumulus.org
+
+Resources:
+
+  CumulusHostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: !Ref Domain
+
+# See README.md for notes about successfully deploying ACM certs
+  AcmRootCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref Domain
+      DomainValidationOptions:
+        - DomainName: !Ref Domain
+          HostedZoneId: !Ref CumulusHostedZone
+      ValidationMethod: DNS
+
+  AcmAggCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub "aggregator.${Domain}"
+      DomainValidationOptions:
+        - DomainName: !Sub "aggregator.${Domain}"
+          HostedZoneId: !Ref CumulusHostedZone
+      ValidationMethod: DNS
+
+  AcmWwwCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub "www.${Domain}"
+      DomainValidationOptions:
+        - DomainName: !Sub "www.${Domain}"
+          HostedZoneId: !Ref CumulusHostedZone
+      ValidationMethod: DNS
+
+  AcmDashCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub "dashboard.${Domain}"
+      DomainValidationOptions:
+        - DomainName: !Sub "dashboard.${Domain}"
+          HostedZoneId: !Ref CumulusHostedZone
+      ValidationMethod: DNS
+
+Outputs:
+  RootCertificateArn:
+    Description: "ACM Root Certificate ARN"
+    Value: !Ref AcmRootCertificate
+
+  WwwCertificateArn:
+    Description: "ACM Www Certificate ARN"
+    Value: !Ref AcmWwwCertificate
+
+  DashCertificateArn:
+    Description: "ACM Dashboard Certificate ARN"
+    Value: !Ref AcmDashCertificate
+
+  AggCertificateArn:
+    Description: "ACM Aggregator Certificate ARN"
+    Value: !Ref AcmAggCertificate
+
+  CumulusHostedZoneId:
+    Description: "Cumulus Hosted Zone ID"
+    Value: !Ref CumulusHostedZone
