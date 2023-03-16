@@ -120,25 +120,25 @@ def merge_powersets(
     # chunking to lower memory usage during merges.
     metadata = read_metadata(s3_client, s3_bucket_name)
     df = pandas.DataFrame()
-    latest_parquet_list = get_file_list(
+    latest_file_list = get_file_list(
         BucketPath.LATEST.value, s3_bucket_name, study, subscription
     )
-    last_valid_parquet_list = get_file_list(
+    last_valid_file_list = get_file_list(
         BucketPath.LAST_VALID.value, s3_bucket_name, study, subscription
     )
-    for s3_path in last_valid_parquet_list:
+    for s3_path in last_valid_file_list:
         site_specific_name = get_site_filename_suffix(s3_path)
         site = site_specific_name.split("/", maxsplit=1)[0]
 
         # If the latest uploads don't include this site, we'll use the last-valid
         # one instead
-        if not any(x.endswith(site_specific_name) for x in latest_parquet_list):
+        if not any(x.endswith(site_specific_name) for x in latest_file_list):
 
             df = concat_sets(df, s3_path)
             metadata = update_metadata(
                 metadata, site, study, subscription, "last_uploaded_date"
             )
-    for s3_path in latest_parquet_list:
+    for s3_path in latest_file_list:
         site_specific_name = get_site_filename_suffix(s3_path)
         subbucket_path = f"{study}/{subscription}/{site_specific_name}"
         date_str = datetime.now(timezone.utc).isoformat()
@@ -146,7 +146,7 @@ def merge_powersets(
         timestamped_path = f"{study}/{subscription}/{timestamped_name}"
         try:
             # if we're going to replace a file in last_valid, archive the old data
-            if any(x.endswith(site_specific_name) for x in last_valid_parquet_list):
+            if any(x.endswith(site_specific_name) for x in last_valid_file_list):
                 source = {
                     "Bucket": s3_bucket_name,
                     "Key": f"{BucketPath.LAST_VALID.value}/{subbucket_path}",
@@ -183,7 +183,7 @@ def merge_powersets(
             )
             # if a new file fails, we want to replace it with the last valid
             # for purposes of aggregation
-            if any(x.endswith(site_specific_name) for x in last_valid_parquet_list):
+            if any(x.endswith(site_specific_name) for x in last_valid_file_list):
                 df = concat_sets(
                     df,
                     f"s3://{s3_bucket_name}/{BucketPath.LAST_VALID.value}"
