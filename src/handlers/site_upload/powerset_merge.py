@@ -25,6 +25,10 @@ class S3UploadError(Exception):
     pass
 
 
+class UnexpectedFileTypeError(Exception):
+    pass
+
+
 def move_s3_file(s3_client, s3_bucket_name: str, old_key: str, new_key: str) -> None:
     """Move file to different S3 location"""
     # TODO: may need to go into shared_functions at some point.
@@ -51,17 +55,39 @@ def process_upload(s3_client, s3_bucket_name: str, s3_key: str) -> None:
     study = path_params[1]
     subscription = path_params[2]
     site = path_params[3]
-    new_key = f"{BucketPath.LATEST.value}/{s3_key.split('/', 1)[-1]}"
-    move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
-    metadata = update_metadata(
-        metadata, site, study, subscription, "last_uploaded_date", last_uploaded_date
-    )
-    write_metadata(s3_client, s3_bucket_name, metadata)
+    if s3_key.endswith(".parquet"):
+        new_key = f"{BucketPath.LATEST.value}/{s3_key.split('/', 1)[-1]}"
+        move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
+        metadata = update_metadata(
+            metadata,
+            site,
+            study,
+            subscription,
+            "last_uploaded_date",
+            last_uploaded_date,
+        )
+        write_metadata(s3_client, s3_bucket_name, metadata)
+    else:
+        new_key = f"{BucketPath.ERROR.value}/{s3_key.split('/', 1)[-1]}"
+        move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
+        metadata = update_metadata(
+            metadata,
+            site,
+            study,
+            subscription,
+            "last_uploaded_date",
+            last_uploaded_date,
+        )
+        metadata = update_metadata(
+            metadata, site, study, subscription, "last_error", last_uploaded_date
+        )
+        write_metadata(s3_client, s3_bucket_name, metadata)
+        raise UnexpectedFileTypeError
 
 
 def concat_sets(df: pandas.DataFrame, file_path: str) -> pandas.DataFrame:
     """concats a count dataset in a specified S3 location with in memory dataframe"""
-    site_df = awswrangler.s3.read_csv(file_path, na_filter=False)
+    site_df = awswrangler.s3.read_parquet(file_path)
     data_cols = list(site_df.columns)  # type: ignore[union-attr]
     # There is a baked in assumption with the following line related to the powerset
     # structures, which we will need to handle differently in the future:
@@ -77,7 +103,9 @@ def get_site_filename_suffix(s3_path: str):
     return "/".join(s3_path.split("/")[6:])
 
 
-def get_file_list(bucket_root, s3_bucket_name, study, subscription, extension="csv"):
+def get_file_list(
+    bucket_root, s3_bucket_name, study, subscription, extension="parquet"
+):
     return awswrangler.s3.list_objects(
         path=f"s3://{s3_bucket_name}/{bucket_root}/{study}/{subscription}",
         suffix=extension,
@@ -92,25 +120,25 @@ def merge_powersets(
     # chunking to lower memory usage during merges.
     metadata = read_metadata(s3_client, s3_bucket_name)
     df = pandas.DataFrame()
-    latest_csv_list = get_file_list(
+    latest_parquet_list = get_file_list(
         BucketPath.LATEST.value, s3_bucket_name, study, subscription
     )
-    last_valid_csv_list = get_file_list(
+    last_valid_parquet_list = get_file_list(
         BucketPath.LAST_VALID.value, s3_bucket_name, study, subscription
     )
-    for s3_path in last_valid_csv_list:
+    for s3_path in last_valid_parquet_list:
         site_specific_name = get_site_filename_suffix(s3_path)
         site = site_specific_name.split("/", maxsplit=1)[0]
 
         # If the latest uploads don't include this site, we'll use the last-valid
         # one instead
-        if not any(x.endswith(site_specific_name) for x in latest_csv_list):
+        if not any(x.endswith(site_specific_name) for x in latest_parquet_list):
 
             df = concat_sets(df, s3_path)
             metadata = update_metadata(
                 metadata, site, study, subscription, "last_uploaded_date"
             )
-    for s3_path in latest_csv_list:
+    for s3_path in latest_parquet_list:
         site_specific_name = get_site_filename_suffix(s3_path)
         subbucket_path = f"{study}/{subscription}/{site_specific_name}"
         date_str = datetime.now(timezone.utc).isoformat()
@@ -118,7 +146,7 @@ def merge_powersets(
         timestamped_path = f"{study}/{subscription}/{timestamped_name}"
         try:
             # if we're going to replace a file in last_valid, archive the old data
-            if any(x.endswith(site_specific_name) for x in last_valid_csv_list):
+            if any(x.endswith(site_specific_name) for x in last_valid_parquet_list):
                 source = {
                     "Bucket": s3_bucket_name,
                     "Key": f"{BucketPath.LAST_VALID.value}/{subbucket_path}",
@@ -155,7 +183,7 @@ def merge_powersets(
             )
             # if a new file fails, we want to replace it with the last valid
             # for purposes of aggregation
-            if any(x.endswith(site_specific_name) for x in last_valid_csv_list):
+            if any(x.endswith(site_specific_name) for x in last_valid_parquet_list):
                 df = concat_sets(
                     df,
                     f"s3://{s3_bucket_name}/{BucketPath.LAST_VALID.value}"
