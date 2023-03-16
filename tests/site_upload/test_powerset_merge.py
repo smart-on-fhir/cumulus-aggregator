@@ -153,3 +153,26 @@ class TestPowersetMerge(TestCase):
             Bucket=self.bucket_name, Prefix=BucketPath.AGGREGATE.value
         )
         assert len(res["Contents"]) == 1
+
+    def test_invalid_filetype(self):
+        self.s3_client.upload_file(
+            "./tests/test_data/cube_simple_example.csv",
+            self.bucket_name,
+            f"{BucketPath.UPLOAD.value}/covid/encounter/elsewhere/b_test.csv",
+        )
+        event = {
+            "Records": [
+                {
+                    "s3": {
+                        "object": {
+                            "key": f"{BucketPath.UPLOAD.value}/covid/encounter/elsewhere/b_test.csv"
+                        }
+                    }
+                }
+            ]
+        }
+        res = powerset_merge_handler(event, {})
+        assert res["statusCode"] == 500
+        res = self.s3_client.list_objects_v2(
+            Bucket=self.bucket_name, Prefix=BucketPath.ERROR.value
+        )
