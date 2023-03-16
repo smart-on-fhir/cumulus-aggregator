@@ -206,14 +206,16 @@ class AuthPolicy(object):  # pylint: disable=missing-class-docstring
         """Adds an API Gateway method (Http verb + Resource path) to the list of allowed
         methods and includes a condition for the policy statement. More on AWS policy
         conditions here:
-        http://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements.html#Condition"""  # noqa: E501
+        http://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements.html#Condition
+        """  # noqa: E501
         self._addMethod("Allow", verb, resource, conditions)
 
     def denyMethodWithConditions(self, verb, resource, conditions):
         """Adds an API Gateway method (Http verb + Resource path) to the list of denied
         methods and includes a condition for the policy statement. More on AWS policy
         conditions here:
-        http://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements.html#Condition"""  # noqa: E501
+        http://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements.html#Condition
+        """  # noqa: E501
         self._addMethod("Deny", verb, resource, conditions)
 
     def build(self):
