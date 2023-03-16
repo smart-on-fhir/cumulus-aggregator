@@ -133,7 +133,6 @@ def merge_powersets(
         # If the latest uploads don't include this site, we'll use the last-valid
         # one instead
         if not any(x.endswith(site_specific_name) for x in latest_file_list):
-
             df = concat_sets(df, s3_path)
             metadata = update_metadata(
                 metadata, site, study, subscription, "last_uploaded_date"
