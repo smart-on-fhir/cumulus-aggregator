@@ -13,19 +13,20 @@ Parameters:
     Default: cumulus-aggregator
   AthenaWorkgroupNameParameter:
     Type: String
-    Default: primary
-  AggregatorDomainName:
-    Type: String
-    Default: "aggregator.smartcumulus.org"
-  AggregatorCertArn:
-    Type: String
-    Default: ""
-  AggregatorHostedZoneID:
-    Type: String
-    Default: ""
+    Default: cumulus-aggregator
   DeployStage:
     Type: String
-    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+  AggregatorDomainName:
+    Type: String
+  AggregatorCertArn:
+    Type: String
+  AggregatorHostedZoneID:
+    Type: String
+
 
 Resources:
 
@@ -36,7 +37,7 @@ Resources:
   FetchAuthorizerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: CumulusAggFetchAuthorizer
+      FunctionName: !Sub 'CumulusAggFetchAuthorizer-${DeployStage}'
       Handler: src/handlers/site_upload/api_gateway_authorizer.lambda_handler
       Runtime: python3.9
       MemorySize: 128
@@ -46,7 +47,7 @@ Resources:
   FetchUploadUrlFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: CumulusAggFetchUploadUrl
+      FunctionName: !Sub 'CumulusAggFetchUploadUrl-${DeployStage}'
       Handler: src/handlers/site_upload/fetch_upload_url.upload_url_handler
       Runtime: python3.9
       MemorySize: 128
@@ -69,7 +70,7 @@ Resources:
   PowersetMergeFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: CumulusAggPowersetMerge
+      FunctionName: !Sub 'CumulusAggPowersetMerge--${DeployStage}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:1]
       Handler: src/handlers/site_upload/powerset_merge.powerset_merge_handler
       Runtime: python3.9
@@ -88,7 +89,7 @@ Resources:
   DashboardGetChartDataFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: CumulusAggDashboardGetChartData
+      FunctionName: !Sub 'CumulusAggDashboardGetChartData-${DeployStage}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:1]
       Handler: src/handlers/dashboard/get_chart_data.chart_data_handler
       Runtime: python3.9
@@ -116,8 +117,8 @@ Resources:
               - glue:*Partition*
             Resource: 
               - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog'
-              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueNameParameter}-db'
-              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueNameParameter}-db/*'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueNameParameter}-db-${DeployStage}'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueNameParameter}-db-${DeployStage}/*'
         - Statement:
           - Sid: AthenaExecuteQueryPermissionsPolicy
             Effect: Allow
@@ -127,12 +128,12 @@ Resources:
               - athena:GetWorkGroup
               - athena:GetQueryExecution
               - athena:StopQueryExecution
-            Resource: !Sub 'arn:aws:athena:*:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}'
+            Resource: !Sub 'arn:aws:athena:*:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}'
 
   DashboardGetMetadataFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: CumulusAggDashboardGetMetadata
+      FunctionName: !Sub 'CumulusAggDashboardGetMetadata-${DeployStage}'
       Handler: src/handlers/dashboard/get_metadata.metadata_handler
       Runtime: python3.9
       MemorySize: 128

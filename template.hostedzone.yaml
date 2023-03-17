@@ -14,21 +14,13 @@ Resources:
       Name: !Ref Domain
 
 # See README.md for notes about successfully deploying ACM certs
+# Root and www should redirect to the prod dashboard domain
   AcmRootCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
       DomainName: !Ref Domain
       DomainValidationOptions:
         - DomainName: !Ref Domain
-          HostedZoneId: !Ref CumulusHostedZone
-      ValidationMethod: DNS
-
-  AcmAggCertificate:
-    Type: AWS::CertificateManager::Certificate
-    Properties:
-      DomainName: !Sub "aggregator.${Domain}"
-      DomainValidationOptions:
-        - DomainName: !Sub "aggregator.${Domain}"
           HostedZoneId: !Ref CumulusHostedZone
       ValidationMethod: DNS
 
@@ -41,12 +33,59 @@ Resources:
           HostedZoneId: !Ref CumulusHostedZone
       ValidationMethod: DNS
 
+
+# Dashboard
   AcmDashCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
       DomainName: !Sub "dashboard.${Domain}"
       DomainValidationOptions:
         - DomainName: !Sub "dashboard.${Domain}"
+          HostedZoneId: !Ref CumulusHostedZone
+      ValidationMethod: DNS
+
+  AcmStagingDashCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub "staging.dashboard.${Domain}"
+      DomainValidationOptions:
+        - DomainName: !Sub "staging.dashboard.${Domain}"
+          HostedZoneId: !Ref CumulusHostedZone
+      ValidationMethod: DNS
+
+  AcmDevDashCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub "dev.dashboard.${Domain}"
+      DomainValidationOptions:
+        - DomainName: !Sub "dev.dashboard.${Domain}"
+          HostedZoneId: !Ref CumulusHostedZone
+      ValidationMethod: DNS
+
+  AcmAggCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub "aggregator.${Domain}"
+      DomainValidationOptions:
+        - DomainName: !Sub "aggregator.${Domain}"
+          HostedZoneId: !Ref CumulusHostedZone
+      ValidationMethod: DNS
+
+  AcmStagingAggCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub "staging.aggregator.${Domain}"
+      DomainValidationOptions:
+        - DomainName: !Sub "staging.aggregator.${Domain}"
+          HostedZoneId: !Ref CumulusHostedZone
+      ValidationMethod: DNS
+
+  AcmDevAggCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub "dev.aggregator.${Domain}"
+      DomainValidationOptions:
+        - DomainName: !Sub "dev.aggregator.${Domain}"
           HostedZoneId: !Ref CumulusHostedZone
       ValidationMethod: DNS
 
@@ -63,9 +102,25 @@ Outputs:
     Description: "ACM Dashboard Certificate ARN"
     Value: !Ref AcmDashCertificate
 
+  DashStagingCertificateArn:
+    Description: "ACM Staging Dashboard Certificate ARN"
+    Value: !Ref AcmStagingDashCertificate
+
+  DashDevCertificateArn:
+    Description: "ACM Dev Dashboard Certificate ARN"
+    Value: !Ref AcmDevDashCertificate
+
   AggCertificateArn:
     Description: "ACM Aggregator Certificate ARN"
     Value: !Ref AcmAggCertificate
+
+  AggStagingCertificateArn:
+    Description: "ACM Staging Aggregator Certificate ARN"
+    Value: !Ref AcmStagingAggCertificate
+
+  AggDevCertificateArn:
+    Description: "ACM Dev Aggregator Certificate ARN"
+    Value: !Ref AcmDevAggCertificate
 
   CumulusHostedZoneId:
     Description: "Cumulus Hosted Zone ID"
