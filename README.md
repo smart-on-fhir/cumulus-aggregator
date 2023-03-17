@@ -74,9 +74,9 @@ image_repositories = []
 Note that you'll use the same hosted zone for each stage, but a different certificate arn, one per environment. If you skipped external domain setup, just omit those entries
 
 
-Once you've done this, you :could: do one of these things:
+If for some reason you don't want to use the samconfig.toml, you could instead do these things, but it's much more error prone, so please be careful:
 - Add default parameters for `AggregatorCertArn`, `AggregatorHostedZoneID`, `DeployStage`, and `AggregatorHostedDomainName` (if using)
-- Create environment variables and assign values to those parameters. Then, whenever you run `sam`, provide a parameter override, with `--parameter-overrides AggregatorCertArn=$CUMULUS_AGG_CERT_ARN AggregatorHostedZoneID=$CUMULUS_AGG_ZONE_ID`.
+- Create environment variables and assign values to those parameters. Then, whenever you run `sam`, provide a parameter override in place of `--config-env`, with `--parameter-overrides AggregatorCertArn=$CUMULUS_AGG_CERT_ARN AggregatorHostedZoneID=$CUMULUS_AGG_ZONE_ID` (and deploy/domain if using.
 
 
 ### Deployment
@@ -84,7 +84,7 @@ Once you've done this, you :could: do one of these things:
 Assuming you have done the above configuration, you can deploy the aggregator with the following command:
 
 ```bash
-sam deploy --convig-env [stagename]
+sam deploy --config-env [stagename]
 ```
 
 This will show you a list of changes to your environment and ask you to confirm. Responding to the prompt with 'Y' will kick off the deployment.
