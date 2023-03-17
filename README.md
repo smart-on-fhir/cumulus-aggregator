@@ -68,7 +68,7 @@ s3_prefix = "cumulus-aggregator-staging"
 region = "us-east-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
-parameter_overrides = "DeployStage=\"staging\" AggregatorDomainName=\"staging.aggregator.yourdomain.org\" AggregatorHostedZoneID=\"1234567890ABCDEFHIJ\" AggregatorCertArn=\"aarn:aws:acm:us-east-1:1234567890:certificate/12345678-90AB-CDEF-0123-FECDBA0987654"\"
+parameter_overrides = "DeployStage=\"staging\" AggregatorDomainName=\"staging.aggregator.yourdomain.org\" AggregatorHostedZoneID=\"1234567890ABCDEFHIJ\" AggregatorCertArn=\"aarn:aws:acm:us-east-1:1234567890:certificate/12345678-90AB-CDEF-0123-FECDBA0987654\""
 image_repositories = []
 ```
 Note that you'll use the same hosted zone for each stage, but a different certificate arn, one per environment. If you skipped external domain setup, just omit those entries
