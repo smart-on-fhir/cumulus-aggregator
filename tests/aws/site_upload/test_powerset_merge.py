@@ -55,7 +55,7 @@ from tests.utils import TEST_BUCKET, ITEM_COUNT
         ),
         (  # Invalid parquet file
             "general_hospital",
-            "./tests/site_upload/test_powerset_merge.py",
+            "./tests/aws/site_upload/test_powerset_merge.py",
             "/covid/encounter/general_hospital/document.parquet",
             "/covid/encounter/general_hospital/document.parquet",
             False,
