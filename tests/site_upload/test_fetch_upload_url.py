@@ -7,6 +7,7 @@ from moto import mock_s3
 from unittest import TestCase, mock
 
 from src.handlers.site_upload.fetch_upload_url import upload_url_handler
+from tests.utils import TEST_BUCKET, get_mock_metadata
 
 builtin_open = open
 
@@ -18,31 +19,34 @@ def mock_open(*args, **kwargs):
 
 
 def mock_json_load(*args):
-    return {"general": {"path": "s3://bucket/testpath"}}
+    return {"general": {"path": f"s3://{TEST_BUCKET}/testpath"}}
 
 
-@mock_s3
-@mock.patch.dict(os.environ, {"BUCKET_NAME": "cumulus-aggregator-site-counts"})
-class TestFetchUploadUrl(TestCase):
-    def setUp(self):
-        self.bucket_name = "cumulus-aggregator-site-counts"
-        self.s3_client = boto3.client("s3", region_name="us-east-1")
-        self.s3_client.create_bucket(Bucket=self.bucket_name)
-
-    @mock.patch("builtins.open", mock_open)
-    @mock.patch("json.load", mock_json_load)
-    def test_fetch_upload_url(self):
-        body = json.dumps(
-            {"study": "covid", "subscription": "encounter", "filename": "covid.csv"}
-        )
-        context = {
-            "authorizer": {
-                "principalId": "general",
-            }
+@mock.patch.dict(os.environ, {"BUCKET_NAME": TEST_BUCKET})
+@mock.patch("builtins.open", mock_open)
+@mock.patch("json.load", mock_json_load)
+@pytest.mark.parametrize(
+    "body,status",
+    [
+        (
+            {
+                "study": "covid",
+                "subscription": "encounter",
+                "filename": "encounter.parquet",
+            },
+            200,
+        ),
+        ({}, 500),
+    ],
+)
+def test_fetch_upload_url(body, status):
+    context = {
+        "authorizer": {
+            "principalId": "general",
         }
-        response = upload_url_handler({"body": body, "requestContext": context}, None)
-        self.assertEqual(response["statusCode"], 200)
-
-        body = json.dumps({})
-        response = upload_url_handler({"body": body}, None)
-        self.assertEqual(response["statusCode"], 500)
+    }
+    response = upload_url_handler(
+        {"body": json.dumps(body), "requestContext": context}, None
+    )
+    print(response)
+    assert response["statusCode"] == status
