@@ -1,5 +1,5 @@
-"""Storage for state variables/methods shared by test moduless"""
-TEST_BUCKET = "cumulus-aggregator-site-counts-dev"
+"""Storage for state variables/methods shared by test modules"""
+TEST_BUCKET = "cumulus-aggregator-site-counts-test"
 ITEM_COUNT = 7
 
 
