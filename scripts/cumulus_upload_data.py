@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # basic utility for debugging merge behavior
 
 import argparse
@@ -26,13 +27,14 @@ def upload_file(args):
             res = api_client.get_rest_apis()
             site_api_dict = list(
                 filter(
-                    lambda x: x["tags"]["aws:cloudformation:logical-id"]
-                    == "SiteApiGateway",
+                    lambda x: "cumulus-aggregator-dev"
+                    in x["tags"]["aws:cloudformation:stack-name"],
                     res["items"],
                 )
             )
             api_id = site_api_dict[0]["id"]
             url = f"https://{api_id}.execute-api.us-east-1.amazonaws.com/dev/"
+
         except:
             print("No response recieved from AWS API gateway.")
             exit(1)
@@ -83,7 +85,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("-f", "--file", help="The data file to upload")
     parser.add_argument("-u", "--user", help="the name of the site uploading data")
-    parser.add_argument("-p", "--pass", help="the secret assigned to a site")
+    parser.add_argument("-a", "--auth", help="the secret assigned to a site")
     parser.add_argument("-n", "--studyname", help="the name of the data's study")
     parser.add_argument(
         "-s", "--subscription", help="the subscription name within the study"
@@ -104,7 +106,7 @@ if __name__ == "__main__":
         args_dict["user"] = "general"
         args_dict[
             "file"
-        ] = f"{os.path.realpath(os.path.dirname(__file__))}/cube_simple_example.csv"
+        ] = f"{str(Path(__file__).resolve().parents[1])}/tests/test_data/cube_simple_example.parquet"
         args_dict["auth"] = "secretval"
         args_dict["studyname"] = "covid"
         args_dict["subscription"] = "encounter"

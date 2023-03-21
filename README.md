@@ -12,7 +12,7 @@ The aggregator aims to provide a serverless implementation that accomplish the f
 * AWS SAM CLI - [Install the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 * Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community) - for local development
 
-## Working with the SAM CLI
+## Working with SAM CLI
 
 ### Deployment Prequisites
 
@@ -84,7 +84,7 @@ If for some reason you don't want to use the samconfig.toml, you could instead d
 Assuming you have done the above configuration, you can deploy the aggregator with the following command:
 
 ```bash
-sam deploy --config-env [stagename]
+sam build && sam deploy --config-env [stagename]
 ```
 
 This will show you a list of changes to your environment and ask you to confirm. Responding to the prompt with 'Y' will kick off the deployment.
