@@ -55,7 +55,7 @@ from tests.utils import TEST_BUCKET, ITEM_COUNT
         ),
         (  # Invalid parquet file
             "general_hospital",
-            "./tests/aws/site_upload/test_powerset_merge.py",
+            "./tests/site_upload/test_powerset_merge.py",
             "/covid/encounter/general_hospital/document.parquet",
             "/covid/encounter/general_hospital/document.parquet",
             False,
@@ -82,6 +82,7 @@ def test_process_upload(
     archives,
     status,
     expected_contents,
+    mock_bucket,
 ):
     mock_dt.now = mock.Mock(return_value=datetime(2020, 1, 1))
     s3_client = boto3.client("s3", region_name="us-east-1")
@@ -128,29 +129,3 @@ def test_process_upload(
             keys.append(resource["Key"])
         archive_path = ".2020-01-01T00:00:00.".join(upload_path.split("."))
         assert f"{BucketPath.ARCHIVE.value}{archive_path}" in keys
-
-
-"""
-def test_invalid_filetype(self):
-    self.s3_client.upload_file(
-        "./tests/test_data/cube_simple_example.csv",
-        self.bucket_name,
-        f"{BucketPath.UPLOAD.value}/covid/encounter/elsewhere/b_test.csv",
-    )
-    event = {
-        "Records": [
-            {
-                "s3": {
-                    "object": {
-                        "key": f"{BucketPath.UPLOAD.value}/covid/encounter/elsewhere/b_test.csv"
-                    }
-                }
-            }
-        ]
-    }
-    res = powerset_merge_handler(event, {})
-    assert res["statusCode"] == 500
-    res = self.s3_client.list_objects_v2(
-        Bucket=self.bucket_name, Prefix=BucketPath.ERROR.value
-    )
-"""

@@ -21,7 +21,7 @@ def mocker_site_json(mocker):
         (None, pytest.raises(Exception)),
     ],
 )
-def test_validate_pw(auth, expects, mocker_site_json):
+def test_validate_pw(auth, expects, mock_bucket, mocker_site_json):
     mock_headers = {"Authorization": auth}
     event = {
         "headers": mock_headers,

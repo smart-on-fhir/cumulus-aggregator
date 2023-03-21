@@ -26,7 +26,7 @@ def _init_mock_data(s3_client, bucket_name, site, study, subscription):
     )
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def mock_bucket():
     """Mock for testing S3 usage. Should reset before each individual test."""
     s3 = mock_s3()
