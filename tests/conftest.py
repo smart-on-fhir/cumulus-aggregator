@@ -8,7 +8,7 @@ from unittest import mock
 
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import read_metadata, write_metadata
-from tests.utils import get_mock_metadata, get_mock_auth, TEST_BUCKET, ITEM_COUNT
+from tests.utils import get_mock_metadata, ITEM_COUNT, TEST_BUCKET, TEST_GLUE_DB
 
 
 def _init_mock_data(s3_client, bucket_name, site, study, subscription):
@@ -46,7 +46,30 @@ def mock_bucket():
     s3.stop()
 
 
-def test_mock_bucket():
+""" Leaving this unused here for now - there are some low level inconsistencies between moto
+    and AWS wrangler w.r.t. how workgroups are mocked out, but we might be able to
+    use this in the future/mock AWSwranger below the entrypoint if we are concerned.
+
+    https://stackoverflow.com/a/73208335/5318482 discusses this a bit, but doesn't
+    adress mocking out the aws workgroup response (though setting the workgroup
+    to primary helped a bit since it has default permissions).
+"""
+
+
+@pytest.fixture
+def mock_db():
+    athena = mock_athena()
+    athena.start()
+    athena_client = boto3.client("athena", region_name="us-east-1")
+    athena_client.start_query_execution(
+        QueryString=f"create database {TEST_GLUE_DB}",
+        ResultConfiguration={"OutputLocation": f"s3://{TEST_BUCKET}/athena/"},
+    )
+    yield
+    athena.stop()
+
+
+def test_mock_bucket(mock_bucket):
     s3_client = boto3.client("s3", region_name="us-east-1")
     item = s3_client.list_objects_v2(Bucket=TEST_BUCKET)
     assert (len(item["Contents"])) == ITEM_COUNT

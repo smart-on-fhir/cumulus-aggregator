@@ -25,16 +25,19 @@ def upload_file(args):
         try:
             api_client = boto3.client("apigateway")
             res = api_client.get_rest_apis()
-            site_api_dict = list(
+            api_dict = list(
                 filter(
                     lambda x: "cumulus-aggregator-dev"
                     in x["tags"]["aws:cloudformation:stack-name"],
                     res["items"],
                 )
             )
-            api_id = site_api_dict[0]["id"]
-            url = f"https://{api_id}.execute-api.us-east-1.amazonaws.com/dev/"
-
+            for api in api_dict:
+                print(api["name"])
+                if api["name"] == "CumulusAggregatorSiteAPI":
+                    url = (
+                        f"https://{api['id']}.execute-api.us-east-1.amazonaws.com/dev/"
+                    )
         except:
             print("No response recieved from AWS API gateway.")
             exit(1)

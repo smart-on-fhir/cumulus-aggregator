@@ -28,4 +28,4 @@ def test_validate_pw(auth, expects, mock_bucket, mocker_site_json):
         "methodArn": "arn:aws:execute-api:us-east-1:11223:123/Prod/post/lambda",
     }
     with expects:
-        auth = lambda_handler(event, {})
+        res = lambda_handler(event, {})

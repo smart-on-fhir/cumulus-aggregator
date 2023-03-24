@@ -70,7 +70,7 @@ Resources:
   PowersetMergeFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'CumulusAggPowersetMerge--${DeployStage}'
+      FunctionName: !Sub 'CumulusAggPowersetMerge-${DeployStage}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:1]
       Handler: src/handlers/site_upload/powerset_merge.powerset_merge_handler
       Runtime: python3.9
@@ -99,6 +99,8 @@ Resources:
       Environment:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+          GLUE_DB_NAME: !Sub '${GlueNameParameter}-${DeployStage}'
+          WORKGROUP_NAME: !Sub '${AthenaWorkgroupNameParameter}-${DeployStage}'
       Events:
         GetChartDataAPI:
           Type: Api
@@ -108,7 +110,7 @@ Resources:
             Method: GET
       Policies:
         - S3CrudPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+            BucketName: !Ref AggregatorBucket
         - Statement:
           - Sid: GluePermissionsPolicy
             Effect: Allow
@@ -117,18 +119,14 @@ Resources:
               - glue:*Partition*
             Resource: 
               - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog'
-              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueNameParameter}-db-${DeployStage}'
-              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueNameParameter}-db-${DeployStage}/*'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueNameParameter}-${DeployStage}'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueNameParameter}-${DeployStage}/*'
         - Statement:
           - Sid: AthenaExecuteQueryPermissionsPolicy
             Effect: Allow
             Action:
-              - athena:StartQueryExecution
-              - athena:GetQueryResults
-              - athena:GetWorkGroup
-              - athena:GetQueryExecution
-              - athena:StopQueryExecution
-            Resource: !Sub 'arn:aws:athena:*:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}'
+              - athena:*
+            Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}'
 
   DashboardGetMetadataFunction:
     Type: AWS::Serverless::Function
@@ -169,8 +167,54 @@ Resources:
             Method: GET
       Policies:
         - S3ReadPolicy:
-            BucketName: !Ref BucketNameParameter
+            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
 
+  DashboardGetSubscriptionsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggDashboardGetSubscriptions-${DeployStage}'
+      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:1]
+      Handler: src/handlers/dashboard/get_subscriptions.subscriptions_handler
+      Runtime: python3.9
+      MemorySize: 512
+      Timeout: 100
+      Description: Retrieve data for chart display in Cumulus Dashboard
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+          GLUE_DB_NAME: !Sub '${GlueNameParameter}-${DeployStage}'
+          WORKGROUP_NAME: !Sub '${AthenaWorkgroupNameParameter}-${DeployStage}'
+      Events:
+        GetSubscriptionsAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /subscriptions
+            Method: GET
+      # TODO: it :should: be possible to move these policies to a central role/policy
+      # set that can be referenced in multiple places; see
+      # https://stackoverflow.com/questions/64523817/aws-sam-multiple-functions-with-same-inline-policy
+      # However - this causes a lot of nested policy conflicts that might require a
+      # more comprehensive policy/role overhaul.
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref AggregatorBucket
+        - Statement:
+          - Sid: GlueSubscriptionsPolicy
+            Effect: Allow
+            Action:
+              - glue:*Table*
+              - glue:*Partition*
+            Resource: 
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueNameParameter}-${DeployStage}'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueNameParameter}-${DeployStage}/*'
+        - Statement:
+          - Sid: AthenaSubscriptionsPolicy
+            Effect: Allow
+            Action:
+              - athena:*
+            Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}'
 
 ### Lambda permissions
 
@@ -209,7 +253,7 @@ Resources:
     Properties:
       CatalogId: !Ref AWS::AccountId
       DatabaseInput:
-        Name: !Sub '${GlueNameParameter}-db-${DeployStage}'
+        Name: !Sub '${GlueNameParameter}-${DeployStage}'
         Description: Database for serving data to Cumulus Dashboard
 
   GlueCrawler:
@@ -240,7 +284,18 @@ Resources:
             - site_metadata/**
             - site_upload/**
 
-
+  AthenaWorkGroup:
+    Type: AWS::Athena::WorkGroup
+    Properties:
+      Name: !Sub '${AthenaWorkgroupNameParameter}-${DeployStage}'
+      State: ENABLED
+      WorkGroupConfiguration:
+        EnforceWorkGroupConfiguration: True
+        PublishCloudWatchMetricsEnabled: True
+        EngineVersion:
+          SelectedEngineVersion: "Athena engine version 3"
+        ResultConfiguration:
+          OutputLocation: !Sub "s3://${BucketNameParameter}-${DeployStage}/athena/"
 
 ### IAM Roles 
 
@@ -283,6 +338,7 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                 Resource: !Sub "arn:aws:s3:::${BucketNameParameter}-${DeployStage}/aggregates/*"
+
 
 ### API Gateways
 
