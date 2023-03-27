@@ -1,27 +1,24 @@
 #!/usr/bin/env python3
-# basic utility for debugging merge behavior
+""" basic utility for debugging merge behavior"""
 
 import argparse
-import json
-import requests
 import os
 import sys
 
+from pathlib import Path
+
 import boto3
+import requests
 
 # workaround - the lambda environment resolves dependencies primarily based
 # on absolute path, and rather than modify the lambda code to support this test
 # script, we'll tack on the project root to the path for just this case.
-
-from pathlib import Path
-
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from src.handlers.site_upload import fetch_upload_url
 
 
-def upload_file(args):
+def upload_file(cli_args):
     """Handles S3 uploads via a pre-signed post"""
-    if args["url"] == None:
+    if cli_args["url"] is None:
         try:
             api_client = boto3.client("apigateway")
             res = api_client.get_rest_apis()
@@ -37,41 +34,45 @@ def upload_file(args):
                     url = (
                         f"https://{api['id']}.execute-api.us-east-1.amazonaws.com/dev/"
                     )
-        except:
+        except Exception:  # pylint: disable=broad-except
             print("No response recieved from AWS API gateway.")
-            exit(1)
+            sys.exit(1)
     else:
-        url = args["url"]
+        url = cli_args["url"]
     try:
-        object_name = args["file"].split("/")[-1]
-    except:
+        object_name = cli_args["file"].split("/")[-1]
+    except Exception:  # pylint: disable=broad-except
         print("No filename provided for upload.")
-        exit(1)
+        sys.exit(1)
     response = requests.post(
         url,
         json={
-            "study": args["studyname"],
-            "subscription": args["subscription"],
-            "filename": f"{args['user']}_{object_name}",
+            "study": cli_args["studyname"],
+            "subscription": cli_args["subscription"],
+            "filename": f"{cli_args['user']}_{object_name}",
         },
-        auth=(args["user"], args["auth"]),
+        auth=(cli_args["user"], cli_args["auth"]),
+        timeout=60,
     )
     if response is None:
         print(f"API at {url} not found")
-        exit(1)
+        sys.exit(1)
     if response.status_code != 200:
         print(response.request.headers)
         print(response.text)
         print("Provided site/auth credentials are invalid.")
-        exit(1)
+        sys.exit(1)
     body = response.json()
-    with open(args["file"], "rb") as f:
+    with open(cli_args["file"], "rb") as f:
         files = {"file": (object_name, f)}
-        http_response = requests.post(body["url"], data=body["fields"], files=files)
+        http_response = requests.post(
+            body["url"], data=body["fields"], files=files, timeout=60
+        )
 
     # If successful, returns HTTP status code 204
     print(
-        f"{args['user']}_{object_name} upload HTTP status code: {http_response.status_code}"
+        f"{cli_args['user']}_{object_name} upload HTTP status code: "
+        f"{http_response.status_code}"
     )
 
 
@@ -81,7 +82,7 @@ if __name__ == "__main__":
 
         Each non-test argument can optionally be defined as an enviroment variable.
         They should be of the form CUMULUS_UPLOAD_[param name, capitalized]. Values
-        passed via flags will always replace these values. All non-test values are 
+        passed via flags will always replace these values. All non-test values are
         required, except for url; if url is not provided, your AWS profile will be
         used to try to connect to your AWS instance"""
     )
@@ -106,9 +107,10 @@ if __name__ == "__main__":
         args_dict[key] = os.getenv(f"CUMULUS_UPLOAD_{key.upper()}")
     if args["test"]:
         args_dict["user"] = "general"
-        args_dict[
-            "file"
-        ] = f"{str(Path(__file__).resolve().parents[1])}/tests/test_data/cube_simple_example.parquet"
+        args_dict["file"] = (
+            f"{str(Path(__file__).resolve().parents[1])}"
+            f"/tests/test_data/cube_simple_example.parquet"
+        )
         args_dict["auth"] = "secretval"
         args_dict["studyname"] = "covid"
         args_dict["subscription"] = "encounter"

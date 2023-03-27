@@ -1,13 +1,12 @@
+"""Fixture generation for support of unit testing standardization
+"""
 import boto3
-import json
-import os
 
 import pytest
 from moto import mock_s3, mock_athena
-from unittest import mock
 
 from src.handlers.shared.enums import BucketPath
-from src.handlers.shared.functions import read_metadata, write_metadata
+from src.handlers.shared.functions import write_metadata
 from tests.utils import get_mock_metadata, ITEM_COUNT, TEST_BUCKET, TEST_GLUE_DB
 
 
@@ -46,18 +45,17 @@ def mock_bucket():
     s3.stop()
 
 
-""" Leaving this unused here for now - there are some low level inconsistencies between moto
-    and AWS wrangler w.r.t. how workgroups are mocked out, but we might be able to
-    use this in the future/mock AWSwranger below the entrypoint if we are concerned.
+@pytest.fixture
+def mock_db():
+    """Leaving this unused here for now - there are some low level inconsistencies
+    between moto and AWS wrangler w.r.t. how workgroups are mocked out, but we might
+    be able to use this in the future/mock AWSwranger below the entrypoint if we are
+    concerned.
 
     https://stackoverflow.com/a/73208335/5318482 discusses this a bit, but doesn't
     adress mocking out the aws workgroup response (though setting the workgroup
     to primary helped a bit since it has default permissions).
-"""
-
-
-@pytest.fixture
-def mock_db():
+    """
     athena = mock_athena()
     athena.start()
     athena_client = boto3.client("athena", region_name="us-east-1")
@@ -69,7 +67,7 @@ def mock_db():
     athena.stop()
 
 
-def test_mock_bucket(mock_bucket):
+def test_mock_bucket():
     s3_client = boto3.client("s3", region_name="us-east-1")
     item = s3_client.list_objects_v2(Bucket=TEST_BUCKET)
     assert (len(item["Contents"])) == ITEM_COUNT
