@@ -1,3 +1,6 @@
+""" Lambda for retrieving list of available subscriptions
+"""
+
 import os
 
 import awswrangler
@@ -10,6 +13,7 @@ from src.handlers.shared.functions import http_response
 @generic_error_handler(msg="Error retrieving subscriptions")
 def subscriptions_handler(event, context):
     """Retrieves list of subscriptions in Athena DB."""
+    del event
     del context
     boto3.setup_default_session(region_name="us-east-1")
     db = os.environ.get("GLUE_DB_NAME")

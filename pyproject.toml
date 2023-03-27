@@ -41,6 +41,10 @@ test = [
     "pytest-mock"
 ]
 dev = [
+    "bandit",
+    "black",
     "pre-commit",
-    "black"
+    "pylint",
+    "pycodestyle"
+
 ]

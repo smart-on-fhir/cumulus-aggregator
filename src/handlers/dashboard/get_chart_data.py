@@ -58,7 +58,8 @@ def _build_query(query_params: Dict, filters: List, path_params: Dict) -> str:
     else:
         coalesce_str = "WHERE"
     query_str = (
-        f"SELECT {select_str} FROM \"{os.environ.get('GLUE_DB_NAME')}\".\"{table}\" "  # nosec
+        f"SELECT {select_str} "  # nosec
+        f"FROM \"{os.environ.get('GLUE_DB_NAME')}\".\"{table}\" "
         f"{coalesce_str} "
         f"{query_params['column']} IS NOT Null {filter_str} "
         f"GROUP BY {group_str}"
