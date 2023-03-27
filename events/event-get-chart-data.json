@@ -1,0 +1,125 @@
+{
+    "resource": "/chart_data/{subscription_name}",
+    "path": "/chart_data/covid__encounter",
+    "httpMethod": "GET",
+    "headers": {
+        "Accept": "*/*",
+        "Accept-Encoding": "gzip, deflate, br",
+        "CloudFront-Forwarded-Proto": "https",
+        "CloudFront-Is-Desktop-Viewer": "true",
+        "CloudFront-Is-Mobile-Viewer": "false",
+        "CloudFront-Is-SmartTV-Viewer": "false",
+        "CloudFront-Is-Tablet-Viewer": "false",
+        "CloudFront-Viewer-ASN": "40127",
+        "CloudFront-Viewer-Country": "US",
+        "Host": "effmuaxft2.execute-api.us-east-1.amazonaws.com",
+        "Postman-Token": "10f731c3-bb8d-4720-971c-7fd5e7cf0065",
+        "User-Agent": "PostmanRuntime/7.31.3",
+        "Via": "1.1 3ae9464b3a12f9a00e97e3c81ee98466.cloudfront.net (CloudFront)",
+        "X-Amz-Cf-Id": "JWyqc8QN24nqpUdGuej_gc35vpExxV017XJD8EXxM8x1OupUzCGYbg==",
+        "X-Amzn-Trace-Id": "Root=1-641c7f2c-5c612f3e389094297688efa0",
+        "X-Forwarded-For": "134.174.21.156, 70.132.21.75",
+        "X-Forwarded-Port": "443",
+        "X-Forwarded-Proto": "https"
+    },
+    "multiValueHeaders": {
+        "Accept": [
+            "*/*"
+        ],
+        "Accept-Encoding": [
+            "gzip, deflate, br"
+        ],
+        "CloudFront-Forwarded-Proto": [
+            "https"
+        ],
+        "CloudFront-Is-Desktop-Viewer": [
+            "true"
+        ],
+        "CloudFront-Is-Mobile-Viewer": [
+            "false"
+        ],
+        "CloudFront-Is-SmartTV-Viewer": [
+            "false"
+        ],
+        "CloudFront-Is-Tablet-Viewer": [
+            "false"
+        ],
+        "CloudFront-Viewer-ASN": [
+            "40127"
+        ],
+        "CloudFront-Viewer-Country": [
+            "US"
+        ],
+        "Host": [
+            "effmuaxft2.execute-api.us-east-1.amazonaws.com"
+        ],
+        "Postman-Token": [
+            "10f731c3-bb8d-4720-971c-7fd5e7cf0065"
+        ],
+        "User-Agent": [
+            "PostmanRuntime/7.31.3"
+        ],
+        "Via": [
+            "1.1 3ae9464b3a12f9a00e97e3c81ee98466.cloudfront.net (CloudFront)"
+        ],
+        "X-Amz-Cf-Id": [
+            "JWyqc8QN24nqpUdGuej_gc35vpExxV017XJD8EXxM8x1OupUzCGYbg=="
+        ],
+        "X-Amzn-Trace-Id": [
+            "Root=1-641c7f2c-5c612f3e389094297688efa0"
+        ],
+        "X-Forwarded-For": [
+            "134.174.21.156, 70.132.21.75"
+        ],
+        "X-Forwarded-Port": [
+            "443"
+        ],
+        "X-Forwarded-Proto": [
+            "https"
+        ]
+    },
+    "queryStringParameters": {
+        "column": "gender"
+    },
+    "multiValueQueryStringParameters": {
+        "column": [
+            "gender"
+        ]
+    },
+    "pathParameters": {
+        "subscription_name": "covid__encounter"
+    },
+    "stageVariables": "None",
+    "requestContext": {
+        "resourceId": "ta1ris",
+        "resourcePath": "/chart_data/{subscription_name}",
+        "httpMethod": "GET",
+        "extendedRequestId": "CPjPEHgQoAMFZ8A=",
+        "requestTime": "23/Mar/2023:16:32:44 +0000",
+        "path": "/dev/chart_data/covid__encounter",
+        "accountId": "316333106222",
+        "protocol": "HTTP/1.1",
+        "stage": "dev",
+        "domainPrefix": "effmuaxft2",
+        "requestTimeEpoch": 1679589164970,
+        "requestId": "ec3e7961-c978-45b5-af6b-46b70bcd9d7c",
+        "identity": {
+            "cognitoIdentityPoolId": "None",
+            "accountId": "None",
+            "cognitoIdentityId": "None",
+            "caller": "None",
+            "sourceIp": "134.174.21.156",
+            "principalOrgId": "None",
+            "accessKey": "None",
+            "cognitoAuthenticationType": "None",
+            "cognitoAuthenticationProvider": "None",
+            "userArn": "None",
+            "userAgent": "PostmanRuntime/7.31.3",
+            "user": "None"
+        },
+        "domainName": "effmuaxft2.execute-api.us-east-1.amazonaws.com",
+        "apiId": "effmuaxft2"
+    },
+    "body": "None",
+    "isBase64Encoded": false
+}

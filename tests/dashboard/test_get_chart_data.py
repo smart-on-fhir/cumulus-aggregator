@@ -1,4 +1,5 @@
 import json
+import os
 
 import pandas
 import pytest
@@ -6,6 +7,7 @@ import pytest
 from unittest import mock
 
 from src.handlers.dashboard import get_chart_data
+from tests.utils import MOCK_ENV, TEST_BUCKET, TEST_GLUE_DB, TEST_WORKGROUP
 
 
 def mock_get_table_cols(name):
@@ -22,6 +24,7 @@ def mock_data_frame(filter):
 @mock.patch(
     "src.handlers.dashboard.get_chart_data._get_table_cols", mock_get_table_cols
 )
+@mock.patch.dict(os.environ, MOCK_ENV)
 @pytest.mark.parametrize(
     "query_params,filters,path_params,query_str",
     [
@@ -29,24 +32,24 @@ def mock_data_frame(filter):
             {"column": "gender"},
             [],
             {"subscription_name": "test_study"},
-            "SELECT gender, sum(cnt) as cnt FROM test_study "
-            "WHERE COALESCE (race) = '' AND gender != ''  "
+            f'SELECT gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
+            "WHERE COALESCE (race) IS NOT Null AND gender IS NOT Null  "
             "GROUP BY gender",
         ),
         (
             {"column": "gender", "stratifier": "race"},
             [],
             {"subscription_name": "test_study"},
-            "SELECT race, gender, sum(cnt) as cnt FROM test_study "
-            "WHERE gender != ''  "
+            f'SELECT race, gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
+            "WHERE gender IS NOT Null  "
             "GROUP BY race, gender",
         ),
         (
             {"column": "gender"},
             ["gender:strEq:female"],
             {"subscription_name": "test_study"},
-            "SELECT gender, sum(cnt) as cnt FROM test_study "
-            "WHERE COALESCE (race) = '' AND gender != '' "
+            f'SELECT gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
+            "WHERE COALESCE (race) IS NOT Null AND gender IS NOT Null "
             "AND gender LIKE 'female' "
             "GROUP BY gender",
         ),
@@ -54,8 +57,8 @@ def mock_data_frame(filter):
             {"column": "gender", "stratifier": "race"},
             ["gender:strEq:female"],
             {"subscription_name": "test_study"},
-            "SELECT race, gender, sum(cnt) as cnt FROM test_study "
-            "WHERE gender != '' "
+            f'SELECT race, gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
+            "WHERE gender IS NOT Null "
             "AND gender LIKE 'female' "
             "GROUP BY race, gender",
         ),

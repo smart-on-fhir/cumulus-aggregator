@@ -95,7 +95,12 @@ def concat_sets(df: pandas.DataFrame, file_path: str) -> pandas.DataFrame:
     # but at some point, we may have different kinds of counts, like "cnt_encounter".
     # We'll need to modify this once we know a bit more about the final design.
     data_cols.remove("cnt")
-    return pandas.concat([df, site_df]).groupby(data_cols).sum().reset_index()
+    return (
+        pandas.concat([df, site_df])
+        .groupby(data_cols, dropna=False)
+        .sum()
+        .reset_index()
+    )
 
 
 def get_site_filename_suffix(s3_path: str):

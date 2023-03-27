@@ -24,8 +24,8 @@ def _get_table_cols(table_name: str) -> List:
     """
     s3_bucket_name = os.environ.get("BUCKET_NAME")
     s3_key = (
-        f"{BucketPath.CSVAGGREGATE.value}/{table_name.split('_')[0]}"
-        f"/{table_name}/{table_name}_aggregate.csv"
+        f"{BucketPath.CSVAGGREGATE.value}/{table_name.split('__')[0]}"
+        f"/{table_name}/{table_name}__aggregate.csv"
     )
     s3_client = boto3.client("s3")
     s3_iter = s3_client.get_object(
@@ -54,13 +54,14 @@ def _build_query(query_params: Dict, filters: List, path_params: Dict) -> str:
         group_str = f"{query_params['stratifier']}, {group_str}"
         columns.remove(query_params["stratifier"])
     if len(columns) > 0:
-        coalesce_str = f"WHERE COALESCE ({','.join(columns)}) = '' AND"
+        coalesce_str = f"WHERE COALESCE ({','.join(columns)}) IS NOT Null AND"
     else:
         coalesce_str = "WHERE"
     query_str = (
-        f"SELECT {select_str} FROM {table} "  # nosec
+        f"SELECT {select_str} "  # nosec
+        f"FROM \"{os.environ.get('GLUE_DB_NAME')}\".\"{table}\" "
         f"{coalesce_str} "
-        f"{query_params['column']} != '' {filter_str} "
+        f"{query_params['column']} IS NOT Null {filter_str} "
         f"GROUP BY {group_str}"
     )
     return query_str
@@ -100,8 +101,9 @@ def chart_data_handler(event, context):
     query = _build_query(query_params, filters, path_params)
     df = awswrangler.athena.read_sql_query(
         query,
-        database="cumulus-aggregator-db",
-        s3_output="s3://cumulus-aggregator-site-counts/awswrangler",
+        database=os.environ.get("GLUE_DB_NAME"),
+        s3_output=f"s3://{os.environ.get('BUCKET_NAME')}/awswrangler",
+        workgroup=os.environ.get("WORKGROUP_NAME"),
     )
     res = _format_payload(df, query_params, filters)
     res = http_response(200, res)

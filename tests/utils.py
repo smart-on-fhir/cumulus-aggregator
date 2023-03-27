@@ -1,6 +1,18 @@
 """Storage for state variables/methods shared by test modules"""
+
 TEST_BUCKET = "cumulus-aggregator-site-counts-test"
+TEST_WORKGROUP = "cumulus-aggregator-test-wg"
+TEST_GLUE_DB = "cumulus-aggregator-test-db"
 ITEM_COUNT = 7
+SUBSCRIPTION_COUNT = 2
+
+# This is a convenience for loading into os.environ with mock.patch.dict.
+# Other cases should probably use the getter version below.
+MOCK_ENV = {
+    "BUCKET_NAME": TEST_BUCKET,
+    "GLUE_DB_NAME": TEST_GLUE_DB,
+    "WORKGROUP_NAME": TEST_WORKGROUP,
+}
 
 
 def get_mock_metadata():
@@ -57,3 +69,7 @@ def get_mock_auth():
         # u/a: hope test3
         "aG9wZTp0ZXN0Mw==": {"site": "chicago_hope"},
     }
+
+
+def get_mock_env():
+    return MOCK_ENV
