@@ -88,7 +88,6 @@ def process_upload(s3_client, s3_bucket_name: str, s3_key: str) -> None:
 def concat_sets(df: pandas.DataFrame, file_path: str) -> pandas.DataFrame:
     """concats a count dataset in a specified S3 location with in memory dataframe"""
     site_df = awswrangler.s3.read_parquet(file_path)
-    # print(site_df)
     data_cols = list(site_df.columns)  # type: ignore[union-attr]
     # There is a baked in assumption with the following line related to the powerset
     # structures, which we will need to handle differently in the future:
