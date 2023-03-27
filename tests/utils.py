@@ -6,6 +6,14 @@ TEST_GLUE_DB = "cumulus-aggregator-test-db"
 ITEM_COUNT = 7
 SUBSCRIPTION_COUNT = 2
 
+# This is a convenience for loading into os.environ with mock.patch.dict.
+# Other cases should probably use the getter version below.
+MOCK_ENV = {
+    "BUCKET_NAME": TEST_BUCKET,
+    "GLUE_DB_NAME": TEST_GLUE_DB,
+    "WORKGROUP_NAME": TEST_WORKGROUP,
+}
+
 
 def get_mock_metadata():
     return {
@@ -64,8 +72,4 @@ def get_mock_auth():
 
 
 def get_mock_env():
-    return {
-        "BUCKET_NAME": TEST_BUCKET,
-        "GLUE_DB_NAME": TEST_GLUE_DB,
-        "WORKGROUP_NAME": TEST_WORKGROUP,
-    }
+    return MOCK_ENV

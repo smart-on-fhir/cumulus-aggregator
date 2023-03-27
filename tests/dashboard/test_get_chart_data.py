@@ -7,7 +7,7 @@ import pytest
 from unittest import mock
 
 from src.handlers.dashboard import get_chart_data
-from tests.utils import TEST_BUCKET, TEST_GLUE_DB, TEST_WORKGROUP
+from tests.utils import MOCK_ENV, TEST_BUCKET, TEST_GLUE_DB, TEST_WORKGROUP
 
 
 def mock_get_table_cols(name):
@@ -24,14 +24,7 @@ def mock_data_frame(filter):
 @mock.patch(
     "src.handlers.dashboard.get_chart_data._get_table_cols", mock_get_table_cols
 )
-@mock.patch.dict(
-    os.environ,
-    {
-        "BUCKET_NAME": TEST_BUCKET,
-        "GLUE_DB_NAME": TEST_GLUE_DB,
-        "WORKGROUP_NAME": TEST_WORKGROUP,
-    },
-)
+@mock.patch.dict(os.environ, MOCK_ENV)
 @pytest.mark.parametrize(
     "query_params,filters,path_params,query_str",
     [

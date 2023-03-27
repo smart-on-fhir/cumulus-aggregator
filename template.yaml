@@ -213,7 +213,11 @@ Resources:
           - Sid: AthenaSubscriptionsPolicy
             Effect: Allow
             Action:
-              - athena:*
+              - athena:StartQueryExecution
+              - athena:GetQueryResults
+              - athena:GetWorkGroup
+              - athena:GetQueryExecution
+              - athena:StopQueryExecution
             Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}'
 
 ### Lambda permissions

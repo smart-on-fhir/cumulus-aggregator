@@ -1,8 +1,10 @@
 .aws-sam
+.python-version
 samconfig.toml
 data/
 auth.json
 metadata.json
+*.png
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
