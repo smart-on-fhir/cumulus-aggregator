@@ -110,18 +110,18 @@ def test_process_upload(
     assert len(res["Contents"]) == expected_contents
     for item in res["Contents"]:
         if item["Key"].endswith("aggregate.parquet"):
-            assert item["Key"].startswith(BucketPath.AGGREGATE.value) == True
+            assert item["Key"].startswith(BucketPath.AGGREGATE.value) is True
         elif item["Key"].endswith("aggregate.csv"):
-            assert item["Key"].startswith(BucketPath.CSVAGGREGATE.value) == True
+            assert item["Key"].startswith(BucketPath.CSVAGGREGATE.value) is True
         elif item["Key"].endswith("transactions.json"):
-            assert item["Key"].startswith(BucketPath.META.value) == True
+            assert item["Key"].startswith(BucketPath.META.value) is True
             metadata = read_metadata(s3_client, TEST_BUCKET)
-            assert metadata[site]["covid"]["encounter"]["last_aggregation"] != None
+            assert metadata[site]["covid"]["encounter"]["last_aggregation"] is not None
         else:
             assert (
-                item["Key"].startswith(BucketPath.LAST_VALID.value) == True
-                or item["Key"].startswith(BucketPath.ARCHIVE.value) == True
-                or item["Key"].startswith(BucketPath.ERROR.value) == True
+                item["Key"].startswith(BucketPath.LAST_VALID.value) is True
+                or item["Key"].startswith(BucketPath.ARCHIVE.value) is True
+                or item["Key"].startswith(BucketPath.ERROR.value) is True
             )
     if archives:
         keys = []

@@ -66,7 +66,10 @@ from src.handlers.dashboard.filter_config import get_filter_string
         ),
         (
             ["column:sameMonthOrBefore:1900-01-01"],
-            "date_trunc('month',DATE(column)) <= date_trunc('month',DATE('1900-01-01'))",
+            (
+                "date_trunc('month',DATE(column)) <= "
+                "date_trunc('month',DATE('1900-01-01'))"
+            ),
         ),
         (
             ["column:sameYearOrBefore:1900-01-01"],
@@ -82,7 +85,10 @@ from src.handlers.dashboard.filter_config import get_filter_string
         ),
         (
             ["column:sameMonthOrAfter:1900-01-01"],
-            "date_trunc('month',DATE(column)) >= date_trunc('month',DATE('1900-01-01'))",
+            (
+                "date_trunc('month',DATE(column)) >= "
+                "date_trunc('month',DATE('1900-01-01'))"
+            ),
         ),
         (
             ["column:sameYearOrAfter:1900-01-01"],
