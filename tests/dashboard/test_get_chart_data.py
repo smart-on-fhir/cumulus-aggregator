@@ -73,8 +73,6 @@ def mock_data_frame(filter):
 )
 def test_build_query(query_params, filters, path_params, query_str):
     query = get_chart_data._build_query(query_params, filters, path_params)
-    print(query)
-    print(query_str)
     assert query == query_str
 
 

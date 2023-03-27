@@ -21,9 +21,6 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
-[package]
-include = ["src/*.py"]
-
 [project.urls]
 "Homepage" = "https://github.com/smart-on-fhir/cumulus-aggregator"
 

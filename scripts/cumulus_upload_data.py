@@ -33,7 +33,6 @@ def upload_file(args):
                 )
             )
             for api in api_dict:
-                print(api["name"])
                 if api["name"] == "CumulusAggregatorSiteAPI":
                     url = (
                         f"https://{api['id']}.execute-api.us-east-1.amazonaws.com/dev/"
