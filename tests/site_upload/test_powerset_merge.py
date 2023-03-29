@@ -17,7 +17,7 @@ from tests.utils import TEST_BUCKET, ITEM_COUNT
 @pytest.mark.parametrize(
     "site,upload_file,upload_path,event_key,archives,status,expected_contents",
     [
-        (  # Adding a new subscription to a site with uploads
+        (  # Adding a new data package to a site with uploads
             "general_hospital",
             "./tests/test_data/cube_simple_example.parquet",
             "/covid/encounter/general_hospital/document.parquet",
@@ -26,7 +26,7 @@ from tests.utils import TEST_BUCKET, ITEM_COUNT
             200,
             ITEM_COUNT + 3,
         ),
-        (  # Adding a new subscription to a site without uploads
+        (  # Adding a new data package to a site without uploads
             "chicago_hope",
             "./tests/test_data/cube_simple_example.parquet",
             "/covid/encounter/chicago_hope/document.parquet",
@@ -35,7 +35,7 @@ from tests.utils import TEST_BUCKET, ITEM_COUNT
             200,
             ITEM_COUNT + 3,
         ),
-        (  # Updating an existing subscription
+        (  # Updating an existing data package
             "general_hospital",
             "./tests/test_data/cube_simple_example.parquet",
             "/covid/encounter/general_hospital/encounter.parquet",

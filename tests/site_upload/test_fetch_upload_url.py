@@ -31,7 +31,7 @@ def mock_json_load(*args):
         (
             {
                 "study": "covid",
-                "subscription": "encounter",
+                "data_package": "encounter",
                 "filename": "encounter.parquet",
             },
             200,

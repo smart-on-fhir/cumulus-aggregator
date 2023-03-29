@@ -1,10 +1,12 @@
-# Dashboard API definition spec
+# Dashboard chart API definition spec
+
+This document describes the customer implementation of the Cumulus dashboard's API for recieving chart data for display in the chart builder, which the aggregator re-implements as a lambda building Athena queries.
 
 ### endpoint
-`/:id/api`
+`/chart_data/{subscription_name}`
 
 ### URL segments
-- `:id` - The ID of the data subscription we are querying
+- `subscription_name` - The name of the data subscription we are querying
 
 ### Query parameters
 - `column` - `string`, `required`; The name of the column we are requesting from the data table.
