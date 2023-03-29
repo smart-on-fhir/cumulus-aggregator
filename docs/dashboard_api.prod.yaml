@@ -1,0 +1,62 @@
+openapi: "3.0.1"
+info:
+  title: "CumulusAggregatorDashboardApi"
+  version: "1.0"
+servers:
+- url: "https://aggregator.smartcumulus.org/{basePath}"
+  variables:
+    basePath:
+      default: "/"
+paths:
+  /metadata/{site}/{study}/{subscription}:
+    get:
+      parameters:
+      - name: "study"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "subscription"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+  /metadata:
+    get: {}
+  /chart_data/{subscription_name}:
+    get:
+      parameters:
+      - name: "subscription_name"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+  /subscriptions:
+    get: {}
+  /metadata/{site}:
+    get:
+      parameters:
+      - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+  /metadata/{site}/{study}:
+    get:
+      parameters:
+      - name: "study"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+components: {}

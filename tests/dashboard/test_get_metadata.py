@@ -24,7 +24,7 @@ from tests.utils import get_mock_metadata, TEST_BUCKET
             get_mock_metadata()["general_hospital"]["covid"],
         ),
         (
-            {"site": "general_hospital", "study": "covid", "subscription": "encounter"},
+            {"site": "general_hospital", "study": "covid", "data_package": "encounter"},
             200,
             get_mock_metadata()["general_hospital"]["covid"]["encounter"],
         ),

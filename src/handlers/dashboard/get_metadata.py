@@ -20,7 +20,7 @@ def metadata_handler(event, context):
             metadata = metadata[params["site"]]
         if "study" in params:
             metadata = metadata[params["study"]]
-        if "subscription" in params:
-            metadata = metadata[params["subscription"]]
+        if "data_package" in params:
+            metadata = metadata[params["data_package"]]
     res = http_response(200, metadata)
     return res

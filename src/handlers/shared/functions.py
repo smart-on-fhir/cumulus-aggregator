@@ -43,16 +43,16 @@ def update_metadata(
     metadata: Dict,
     site: str,
     study: str,
-    subscription: str,
+    data_package: str,
     target: str,
     dt: Optional[datetime] = None,
 ):
     """Safely updates items in metadata dictionary"""
     site_metadata = metadata.setdefault(site, {})
     study_metadata = site_metadata.setdefault(study, {})
-    subscription_metadata = study_metadata.setdefault(subscription, METADATA_TEMPLATE)
+    data_package_metadata = study_metadata.setdefault(data_package, METADATA_TEMPLATE)
     dt = dt or datetime.now(timezone.utc)
-    subscription_metadata[target] = dt.isoformat()
+    data_package_metadata[target] = dt.isoformat()
     return metadata
 
 
