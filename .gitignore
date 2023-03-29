@@ -4,7 +4,6 @@ samconfig.toml
 data/
 auth.json
 metadata.json
-*.png
 dashboard_api.yaml
 .DS_Store
 
