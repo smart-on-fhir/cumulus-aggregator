@@ -2,7 +2,9 @@
 
 ## Python versioning gotchas
 
-It's strongly recommended you use a venv for this project, rather than the global python, especially if you're using a package manager like brew - As of this writing, the SAM CLI is occasionally just force upgrading dependencies to install python 3.11, while moto is pinned to no newer than 3.10, and lambda execution is still on 3.9. You should use the python version that corresponds to however you decide to configure your lambda execution.
+It's :strongly: recommended you use a venv based on python 3.9 for this project, and the SAM tooling, as opposed to relying on system python, due to the various risky interactions between the different tools the aggregator uses.
+
+Mac brew specific: If for some reason you don't want to use a venv, note that updates for the SAM CLI have been observed in at least one case to install new python versions without confirmation - so please tread lightly on recommended upgrades.
 
 ## Testing
 
