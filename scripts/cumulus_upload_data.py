@@ -30,7 +30,7 @@ def upload_file(cli_args):
                 )
             )
             for api in api_dict:
-                if api["name"] == "CumulusAggregatorSiteAPI":
+                if api["name"] == "CumulusAggregatorSiteAPI-dev":
                     url = (
                         f"https://{api['id']}.execute-api.us-east-1.amazonaws.com/dev/"
                     )
@@ -47,8 +47,8 @@ def upload_file(cli_args):
     response = requests.post(
         url,
         json={
-            "study": cli_args["studyname"],
-            "subscription": cli_args["subscription"],
+            "study": cli_args["study"],
+            "data_package": cli_args["data_package"],
             "filename": f"{cli_args['user']}_{object_name}",
         },
         auth=(cli_args["user"], cli_args["auth"]),
@@ -89,9 +89,9 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--file", help="The data file to upload")
     parser.add_argument("-u", "--user", help="the name of the site uploading data")
     parser.add_argument("-a", "--auth", help="the secret assigned to a site")
-    parser.add_argument("-n", "--studyname", help="the name of the data's study")
+    parser.add_argument("-s", "--study", help="the name of the data's study")
     parser.add_argument(
-        "-s", "--subscription", help="the subscription name within the study"
+        "-d", "--data_package", help="the data_package name within the study"
     )
     parser.add_argument("-r", "--url", help="the public URL of the aggregator")
     parser.add_argument(
@@ -112,8 +112,8 @@ if __name__ == "__main__":
             f"/tests/test_data/cube_simple_example.parquet"
         )
         args_dict["auth"] = "secretval"
-        args_dict["studyname"] = "covid"
-        args_dict["subscription"] = "encounter"
+        args_dict["study"] = "covid"
+        args_dict["data_package"] = "encounter"
 
     for key in args.keys():
         if args[key] is not None:

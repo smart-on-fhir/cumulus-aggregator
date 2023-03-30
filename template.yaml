@@ -372,7 +372,7 @@ Resources:
           HostedZoneId: !Ref AggregatorHostedZoneID
         BasePath:
           - upload
-      Name: CumulusAggregatorSiteAPI
+      Name: !Sub "CumulusAggregatorSiteAPI-${DeployStage}"
 #      MethodSettings:
 #        - LoggingLevel: INFO
 #          MetricsEnabled: True
@@ -411,7 +411,7 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref DeployStage
-      Name: CumulusAggregatorDashboardApi
+      Name: !Sub "CumulusAggregatorDashboardApi-${DeployStage}"
 
 Outputs:
   SiteWebEndpoint:
