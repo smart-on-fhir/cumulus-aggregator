@@ -5,24 +5,31 @@ import boto3
 import pytest
 from moto import mock_s3, mock_athena
 
+from scripts.credential_management import create_auth, create_meta
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import write_metadata
 from tests.utils import get_mock_metadata, ITEM_COUNT, TEST_BUCKET, TEST_GLUE_DB
 
 
-def _init_mock_data(s3_client, bucket_name, site, study, subscription):
+def _init_mock_data(s3_client, bucket_name, site, study, data_package):
     s3_client.upload_file(
         "./tests/test_data/cube_simple_example.parquet",
         bucket_name,
         f"{BucketPath.AGGREGATE.value}/{site}/{study}/"
-        f"{site}__{subscription}/{site}__{subscription}__aggregate.parquet",
+        f"{site}__{data_package}/{site}__{data_package}__aggregate.parquet",
     )
     s3_client.upload_file(
         "./tests/test_data/cube_simple_example.csv",
         bucket_name,
         f"{BucketPath.CSVAGGREGATE.value}/{site}/{study}/"
-        f"{site}__{subscription}/{site}__{subscription}__aggregate.csv",
+        f"{site}__{data_package}/{site}__{data_package}__aggregate.csv",
     )
+    create_auth(s3_client, bucket_name, "general_1", "test_1", "general")
+    create_meta(s3_client, bucket_name, "general", "general_hospital")
+    create_auth(s3_client, bucket_name, "elsewhere_2", "test_2", "elsewhere")
+    create_meta(s3_client, bucket_name, "elsewhere", "st_elsewhere")
+    create_auth(s3_client, bucket_name, "hope_3", "test_3", "hope")
+    create_meta(s3_client, bucket_name, "hope", "chicago_hope")
 
 
 @pytest.fixture

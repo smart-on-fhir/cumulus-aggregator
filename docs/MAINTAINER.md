@@ -12,6 +12,19 @@ Testing relies heavily on `pytest`. It's assumed that you're going to be running
 
 If you're writing unit tests - note that moto support for Athena mocking is currently still somewhat limited, so you may have to more aggressively mock AWS wrangler calls.
 
+## Managing upload credentials
+
+In order to enable site uploads, we provide a [utility](../scripts/credential_management.py) to simplify managing S3-based dictionaries for authorizing pre-signed URLs. No credentials are created by default. These artifacts should persist between cloudformation deployments, but if for some reason you need to delete the contents of the bucket and recreate, you can back up credentials by copying the contents of the admin/ virtual directory to another location.
+
+To create a new user, you would need to run the following two commands:
+
+Creating a user:
+`./scripts/cumulus_upload_data.py --ca user_name auth_secret site_short_name`
+Associating a site with an s3 directory:
+`./scripts/cumulus_upload_data.py --cm site_short_name s3_folder_name`
+
+These commands allow you to create a many to one relation of users to a given site, and a many to one relation of site to s3_upload_location, if so desired.
+
 ## Cloudwatch logging
 
 Configuring API gateways to log to Cloudwatch requires creating a role based on the Amazon 

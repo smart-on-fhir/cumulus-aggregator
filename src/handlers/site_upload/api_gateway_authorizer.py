@@ -6,7 +6,13 @@ https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/d49e
 from __future__ import print_function
 
 import json
+import io
+import os
 import re
+
+import boto3
+
+from src.handlers.shared.enums import BucketPath
 
 
 class AuthError(Exception):
@@ -16,8 +22,14 @@ class AuthError(Exception):
 def lambda_handler(event, context):
     del context
     # ---- aggregator specific logic
-    with open("src/handlers/site_upload/site_data/auth.json", encoding="utf-8") as auth:
-        user_db = json.load(auth)
+    s3_client = boto3.client("s3", region_name=os.environ.get("REGION"))
+    bytes_buffer = io.BytesIO()
+    s3_client.download_fileobj(
+        Bucket=os.environ.get("BUCKET_NAME"),
+        Key=f"{BucketPath.ADMIN.value}/auth.json",
+        Fileobj=bytes_buffer,
+    )
+    user_db = json.loads(bytes_buffer.getvalue().decode())
     try:
         auth_header = event["headers"]["Authorization"].split(" ")
         auth_token = auth_header[1]

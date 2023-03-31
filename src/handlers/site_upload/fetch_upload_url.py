@@ -1,4 +1,5 @@
 """ Lambda for generating pre-signed URLs for site upload """
+import io
 import json
 import logging
 import os
@@ -38,10 +39,14 @@ def create_presigned_post(
 def upload_url_handler(event, context):
     """Processes event from API Gateway"""
     del context
-    with open(
-        "src/handlers/site_upload/site_data/metadata.json", encoding="utf-8"
-    ) as metadata:
-        metadata_db = json.load(metadata)
+    s3_client = boto3.client("s3", region_name=os.environ.get("REGION"))
+    bytes_buffer = io.BytesIO()
+    s3_client.download_fileobj(
+        Bucket=os.environ.get("BUCKET_NAME"),
+        Key=f"{BucketPath.ADMIN.value}/metadata.json",
+        Fileobj=bytes_buffer,
+    )
+    metadata_db = json.loads(bytes_buffer.getvalue().decode())
     user = event["requestContext"]["authorizer"]["principalId"]
     body = json.loads(event["body"])
     res = create_presigned_post(
