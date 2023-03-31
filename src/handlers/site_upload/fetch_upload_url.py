@@ -8,7 +8,7 @@ import botocore.exceptions
 
 from src.handlers.shared.decorators import generic_error_handler
 from src.handlers.shared.enums import BucketPath
-from src.handlers.shared.functions import http_response
+from src.handlers.shared.functions import get_s3_json_as_dict, http_response
 
 
 def create_presigned_post(
@@ -38,10 +38,9 @@ def create_presigned_post(
 def upload_url_handler(event, context):
     """Processes event from API Gateway"""
     del context
-    with open(
-        "src/handlers/site_upload/site_data/metadata.json", encoding="utf-8"
-    ) as metadata:
-        metadata_db = json.load(metadata)
+    metadata_db = get_s3_json_as_dict(
+        os.environ.get("BUCKET_NAME"), f"{BucketPath.ADMIN.value}/metadata.json"
+    )
     user = event["requestContext"]["authorizer"]["principalId"]
     body = json.loads(event["body"])
     res = create_presigned_post(

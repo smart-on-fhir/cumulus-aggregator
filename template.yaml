@@ -43,6 +43,13 @@ Resources:
       MemorySize: 128
       Timeout: 100
       Description: Validates credentials before providing signed urls
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+          REGION: !Ref "AWS::Region"
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
 
   FetchUploadUrlFunction:
     Type: AWS::Serverless::Function
@@ -56,6 +63,7 @@ Resources:
       Environment:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+          REGION: !Ref "AWS::Region"
       Events:
         SiteUploadAPI:
           Type: Api
@@ -276,17 +284,7 @@ Resources:
         ScheduleExpression: "cron(0 22 ? * SUN *)"
       Targets:
         S3Targets:
-          - Path: !Ref AggregatorBucket
-          - Exclusions: 
-            - aggregates/**
-            - archive/**            
-            - athena/**
-            - csv_aggregates/**
-            - error/**
-            - last_valid/**
-            - latest/**
-            - site_metadata/**
-            - site_upload/**
+          - Path: !Sub '${AggregatorBucket}/site_upload'
 
   AthenaWorkGroup:
     Type: AWS::Athena::WorkGroup

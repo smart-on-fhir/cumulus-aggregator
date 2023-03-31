@@ -1,18 +1,14 @@
 import json
+import os
 import pytest
 
 from contextlib import nullcontext as does_not_raise
+from unittest import mock
 
 from pytest_mock import MockerFixture
 
 from src.handlers.site_upload.api_gateway_authorizer import lambda_handler
-from tests.utils import get_mock_auth
-
-
-@pytest.fixture
-def mocker_site_json(mocker: MockerFixture):
-    mocked_site_json = mocker.mock_open(read_data=json.dumps(get_mock_auth()))
-    mocker.patch("builtins.open", mocked_site_json)
+from tests.utils import get_mock_auth, TEST_BUCKET
 
 
 @pytest.mark.parametrize(
@@ -23,7 +19,7 @@ def mocker_site_json(mocker: MockerFixture):
         (None, pytest.raises(Exception)),
     ],
 )
-def test_validate_pw(auth, expects, mock_bucket, mocker_site_json):
+def test_validate_pw(auth, expects, mock_bucket):
     mock_headers = {"Authorization": auth}
     event = {
         "headers": mock_headers,

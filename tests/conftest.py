@@ -1,28 +1,45 @@
 """Fixture generation for support of unit testing standardization
 """
-import boto3
+import os
 
+from unittest import mock
+
+import boto3
 import pytest
+
 from moto import mock_s3, mock_athena
 
+from scripts.credential_management import create_auth, create_meta
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import write_metadata
-from tests.utils import get_mock_metadata, ITEM_COUNT, TEST_BUCKET, TEST_GLUE_DB
+from tests.utils import get_mock_metadata, ITEM_COUNT, MOCK_ENV
 
 
-def _init_mock_data(s3_client, bucket_name, site, study, subscription):
+def _init_mock_data(s3_client, bucket_name, site, study, data_package):
     s3_client.upload_file(
         "./tests/test_data/cube_simple_example.parquet",
         bucket_name,
         f"{BucketPath.AGGREGATE.value}/{site}/{study}/"
-        f"{site}__{subscription}/{site}__{subscription}__aggregate.parquet",
+        f"{site}__{data_package}/{site}__{data_package}__aggregate.parquet",
     )
     s3_client.upload_file(
         "./tests/test_data/cube_simple_example.csv",
         bucket_name,
         f"{BucketPath.CSVAGGREGATE.value}/{site}/{study}/"
-        f"{site}__{subscription}/{site}__{subscription}__aggregate.csv",
+        f"{site}__{data_package}/{site}__{data_package}__aggregate.csv",
     )
+    create_auth(s3_client, bucket_name, "general_1", "test_1", "general")
+    create_meta(s3_client, bucket_name, "general", "general_hospital")
+    create_auth(s3_client, bucket_name, "elsewhere_2", "test_2", "elsewhere")
+    create_meta(s3_client, bucket_name, "elsewhere", "st_elsewhere")
+    create_auth(s3_client, bucket_name, "hope_3", "test_3", "hope")
+    create_meta(s3_client, bucket_name, "hope", "chicago_hope")
+
+
+@pytest.fixture(autouse=True)
+def mock_env():
+    with mock.patch.dict(os.environ, MOCK_ENV):
+        yield
 
 
 @pytest.fixture
@@ -31,16 +48,18 @@ def mock_bucket():
     s3 = mock_s3()
     s3.start()
     s3_client = boto3.client("s3", region_name="us-east-1")
-    s3_client.create_bucket(Bucket=TEST_BUCKET)
+
+    bucket = os.environ["BUCKET_NAME"]
+    s3_client.create_bucket(Bucket=bucket)
     aggregate_params = [
         ["general_hospital", "covid", "encounter"],
         ["general_hospital", "lyme", "encounter"],
         ["st_elsewhere", "covid", "encounter"],
     ]
     for param_list in aggregate_params:
-        _init_mock_data(s3_client, TEST_BUCKET, *param_list)
+        _init_mock_data(s3_client, bucket, *param_list)
     metadata = get_mock_metadata()
-    write_metadata(s3_client, TEST_BUCKET, metadata)
+    write_metadata(s3_client, bucket, metadata)
     yield
     s3.stop()
 
@@ -60,8 +79,10 @@ def mock_db():
     athena.start()
     athena_client = boto3.client("athena", region_name="us-east-1")
     athena_client.start_query_execution(
-        QueryString=f"create database {TEST_GLUE_DB}",
-        ResultConfiguration={"OutputLocation": f"s3://{TEST_BUCKET}/athena/"},
+        QueryString=f"create database {os.environ['TEST_GLUE_DB']}",
+        ResultConfiguration={
+            "OutputLocation": f"s3://{os.environ['TEST_BUCKET']}/athena/"
+        },
     )
     yield
     athena.stop()
@@ -69,5 +90,5 @@ def mock_db():
 
 def test_mock_bucket():
     s3_client = boto3.client("s3", region_name="us-east-1")
-    item = s3_client.list_objects_v2(Bucket=TEST_BUCKET)
+    item = s3_client.list_objects_v2(Bucket=os.environ["TEST_BUCKET"])
     assert (len(item["Contents"])) == ITEM_COUNT

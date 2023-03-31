@@ -3,7 +3,7 @@
 TEST_BUCKET = "cumulus-aggregator-site-counts-test"
 TEST_WORKGROUP = "cumulus-aggregator-test-wg"
 TEST_GLUE_DB = "cumulus-aggregator-test-db"
-ITEM_COUNT = 7
+ITEM_COUNT = 9
 SUBSCRIPTION_COUNT = 2
 
 # This is a convenience for loading into os.environ with mock.patch.dict.
@@ -62,12 +62,12 @@ def get_mock_metadata():
 
 def get_mock_auth():
     return {
-        # u/a: general test1
-        "Z2VuZXJhbDp0ZXN0MQ==": {"site": "general_hospital"},
-        # u/a: elsewhere test2
-        "ZWxzZXdoZXJlOnRlc3Qy": {"site": "st_elsewhere"},
-        # u/a: hope test3
-        "aG9wZTp0ZXN0Mw==": {"site": "chicago_hope"},
+        # u/a: general_1 test_1
+        "Z2VuZXJhbF8xOnRlc3RfMQ==": {"site": "general"},
+        # u/a: elsewhere_2 test_2
+        "ZWxzZXdoZXJlXzI6dGVzdF8y": {"site": "elsewhere"},
+        # u/a: hope_3 test_3
+        "aG9wZV8zOnRlc3RfMw==": {"site": "hope"},
     }
 
 

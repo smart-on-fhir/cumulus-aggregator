@@ -5,8 +5,11 @@ https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/d49e
 # pylint: disable=invalid-name,pointless-string-statement
 from __future__ import print_function
 
-import json
+import os
 import re
+
+from src.handlers.shared.enums import BucketPath
+from src.handlers.shared.functions import get_s3_json_as_dict
 
 
 class AuthError(Exception):
@@ -16,8 +19,9 @@ class AuthError(Exception):
 def lambda_handler(event, context):
     del context
     # ---- aggregator specific logic
-    with open("src/handlers/site_upload/site_data/auth.json", encoding="utf-8") as auth:
-        user_db = json.load(auth)
+    user_db = get_s3_json_as_dict(
+        os.environ.get("BUCKET_NAME"), f"{BucketPath.ADMIN.value}/auth.json"
+    )
     try:
         auth_header = event["headers"]["Authorization"].split(" ")
         auth_token = auth_header[1]

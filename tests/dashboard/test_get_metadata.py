@@ -12,7 +12,6 @@ from src.handlers.dashboard.get_metadata import metadata_handler
 from tests.utils import get_mock_metadata, TEST_BUCKET
 
 
-@mock.patch.dict(os.environ, {"BUCKET_NAME": TEST_BUCKET})
 @pytest.mark.parametrize(
     "params,status,expected",
     [

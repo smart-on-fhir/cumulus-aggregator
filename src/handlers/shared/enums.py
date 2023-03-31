@@ -3,6 +3,7 @@ from enum import Enum
 
 
 class BucketPath(Enum):
+    ADMIN = "admin"
     AGGREGATE = "aggregates"
     ARCHIVE = "archive"
     CSVAGGREGATE = "csv_aggregates"
