@@ -12,7 +12,7 @@ from moto import mock_s3, mock_athena
 from scripts.credential_management import create_auth, create_meta
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import write_metadata
-from tests.utils import get_mock_metadata, MOCK_ENV
+from tests.utils import get_mock_metadata, ITEM_COUNT, MOCK_ENV
 
 
 def _init_mock_data(s3_client, bucket_name, site, study, data_package):
@@ -36,14 +36,14 @@ def _init_mock_data(s3_client, bucket_name, site, study, data_package):
     create_meta(s3_client, bucket_name, "hope", "chicago_hope")
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_env():
     with mock.patch.dict(os.environ, MOCK_ENV):
         yield
 
 
 @pytest.fixture
-def mock_bucket(mock_env):
+def mock_bucket():
     """Mock for testing S3 usage. Should reset before each individual test."""
     s3 = mock_s3()
     s3.start()
@@ -65,7 +65,7 @@ def mock_bucket(mock_env):
 
 
 @pytest.fixture
-def mock_db(mock_env):
+def mock_db():
     """Leaving this unused here for now - there are some low level inconsistencies
     between moto and AWS wrangler w.r.t. how workgroups are mocked out, but we might
     be able to use this in the future/mock AWSwranger below the entrypoint if we are

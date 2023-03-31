@@ -5,12 +5,8 @@ https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/d49e
 # pylint: disable=invalid-name,pointless-string-statement
 from __future__ import print_function
 
-import json
-import io
 import os
 import re
-
-import boto3
 
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import get_s3_json_as_dict

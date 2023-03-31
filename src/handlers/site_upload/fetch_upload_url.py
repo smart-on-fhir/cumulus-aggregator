@@ -1,5 +1,4 @@
 """ Lambda for generating pre-signed URLs for site upload """
-import io
 import json
 import logging
 import os
