@@ -1,8 +1,11 @@
 """ Functions used across different lambdas"""
+import io
 import json
 
 from typing import Dict, Optional
 from datetime import datetime, timezone
+
+import boto3
 
 from src.handlers.shared.enums import BucketPath
 
@@ -61,3 +64,14 @@ def write_metadata(s3_client, s3_bucket_name: str, metadata: Dict) -> None:
     s3_client.put_object(
         Bucket=s3_bucket_name, Key=META_PATH, Body=json.dumps(metadata)
     )
+
+
+def get_s3_json_as_dict(bucket, key):
+    s3_client = boto3.client("s3")
+    bytes_buffer = io.BytesIO()
+    s3_client.download_fileobj(
+        Bucket=bucket,
+        Key=key,
+        Fileobj=bytes_buffer,
+    )
+    return json.loads(bytes_buffer.getvalue().decode())

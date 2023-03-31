@@ -13,6 +13,7 @@ import re
 import boto3
 
 from src.handlers.shared.enums import BucketPath
+from src.handlers.shared.functions import get_s3_json_as_dict
 
 
 class AuthError(Exception):
@@ -22,14 +23,9 @@ class AuthError(Exception):
 def lambda_handler(event, context):
     del context
     # ---- aggregator specific logic
-    s3_client = boto3.client("s3", region_name=os.environ.get("REGION"))
-    bytes_buffer = io.BytesIO()
-    s3_client.download_fileobj(
-        Bucket=os.environ.get("BUCKET_NAME"),
-        Key=f"{BucketPath.ADMIN.value}/auth.json",
-        Fileobj=bytes_buffer,
+    user_db = get_s3_json_as_dict(
+        os.environ.get("BUCKET_NAME"), f"{BucketPath.ADMIN.value}/auth.json"
     )
-    user_db = json.loads(bytes_buffer.getvalue().decode())
     try:
         auth_header = event["headers"]["Authorization"].split(" ")
         auth_token = auth_header[1]

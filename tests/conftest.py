@@ -45,13 +45,11 @@ def mock_env():
 @pytest.fixture
 def mock_bucket(mock_env):
     """Mock for testing S3 usage. Should reset before each individual test."""
-    print(os.environ)
     s3 = mock_s3()
     s3.start()
     s3_client = boto3.client("s3", region_name="us-east-1")
 
     bucket = os.environ["BUCKET_NAME"]
-    print(bucket)
     s3_client.create_bucket(Bucket=bucket)
     aggregate_params = [
         ["general_hospital", "covid", "encounter"],
