@@ -11,7 +11,6 @@ from src.handlers.site_upload.api_gateway_authorizer import lambda_handler
 from tests.utils import get_mock_auth, TEST_BUCKET
 
 
-@mock.patch.dict(os.environ, {"BUCKET_NAME": TEST_BUCKET})
 @pytest.mark.parametrize(
     "auth,expects",
     [

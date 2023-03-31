@@ -1,14 +1,18 @@
 """Fixture generation for support of unit testing standardization
 """
-import boto3
+import os
 
+from unittest import mock
+
+import boto3
 import pytest
+
 from moto import mock_s3, mock_athena
 
 from scripts.credential_management import create_auth, create_meta
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import write_metadata
-from tests.utils import get_mock_metadata, ITEM_COUNT, TEST_BUCKET, TEST_GLUE_DB
+from tests.utils import get_mock_metadata, MOCK_ENV
 
 
 def _init_mock_data(s3_client, bucket_name, site, study, data_package):
@@ -33,27 +37,37 @@ def _init_mock_data(s3_client, bucket_name, site, study, data_package):
 
 
 @pytest.fixture
-def mock_bucket():
+def mock_env():
+    with mock.patch.dict(os.environ, MOCK_ENV):
+        yield
+
+
+@pytest.fixture
+def mock_bucket(mock_env):
     """Mock for testing S3 usage. Should reset before each individual test."""
+    print(os.environ)
     s3 = mock_s3()
     s3.start()
     s3_client = boto3.client("s3", region_name="us-east-1")
-    s3_client.create_bucket(Bucket=TEST_BUCKET)
+
+    bucket = os.environ["BUCKET_NAME"]
+    print(bucket)
+    s3_client.create_bucket(Bucket=bucket)
     aggregate_params = [
         ["general_hospital", "covid", "encounter"],
         ["general_hospital", "lyme", "encounter"],
         ["st_elsewhere", "covid", "encounter"],
     ]
     for param_list in aggregate_params:
-        _init_mock_data(s3_client, TEST_BUCKET, *param_list)
+        _init_mock_data(s3_client, bucket, *param_list)
     metadata = get_mock_metadata()
-    write_metadata(s3_client, TEST_BUCKET, metadata)
+    write_metadata(s3_client, bucket, metadata)
     yield
     s3.stop()
 
 
 @pytest.fixture
-def mock_db():
+def mock_db(mock_env):
     """Leaving this unused here for now - there are some low level inconsistencies
     between moto and AWS wrangler w.r.t. how workgroups are mocked out, but we might
     be able to use this in the future/mock AWSwranger below the entrypoint if we are
@@ -67,8 +81,10 @@ def mock_db():
     athena.start()
     athena_client = boto3.client("athena", region_name="us-east-1")
     athena_client.start_query_execution(
-        QueryString=f"create database {TEST_GLUE_DB}",
-        ResultConfiguration={"OutputLocation": f"s3://{TEST_BUCKET}/athena/"},
+        QueryString=f"create database {os.environ['TEST_GLUE_DB']}",
+        ResultConfiguration={
+            "OutputLocation": f"s3://{os.environ['TEST_BUCKET']}/athena/"
+        },
     )
     yield
     athena.stop()
@@ -76,5 +92,5 @@ def mock_db():
 
 def test_mock_bucket():
     s3_client = boto3.client("s3", region_name="us-east-1")
-    item = s3_client.list_objects_v2(Bucket=TEST_BUCKET)
+    item = s3_client.list_objects_v2(Bucket=os.environ["TEST_BUCKET"])
     assert (len(item["Contents"])) == ITEM_COUNT

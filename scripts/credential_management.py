@@ -83,25 +83,29 @@ if __name__ == "__main__":
         "-b", "--bucket", default="cumulus-aggregator-site-counts", help="bucket name"
     )
     parser.add_argument("-e", "--env", default="dev", help="Name of deploy environment")
-    parser.add_argument(
-        "--ca", action="extend", nargs="+", help="Create auth. Expects: User Auth Site"
+    s3_modification = parser.add_mutually_exclusive_group(required=True)
+    s3_modification.add_argument(
+        "--create_auth",
+        action="extend",
+        nargs="+",
+        help="Create auth. Expects: User Auth Site",
     )
-    parser.add_argument("--da", help="Delete auth. Expects: SiteId")
-    parser.add_argument(
-        "--cm", action="extend", nargs="+", help="Create metadata. Expects: Site Folder"
+    s3_modification.add_argument("--delete_auth", help="Delete auth. Expects: SiteId")
+    s3_modification.add_argument(
+        "--create_meta",
+        action="extend",
+        nargs="+",
+        help="Create metadata. Expects: Site Folder",
     )
-    parser.add_argument("--dm", help="Delete metadata. Expects: Site")
+    s3_modification.add_argument("--delete_meta", help="Delete metadata. Expects: Site")
     args = parser.parse_args()
 
     action_list = [args.ca, args.da, args.cm, args.dm]
-    if len(action_list) - action_list.count(None) != 1:
-        print("Exactly one modification action must be specified")
-        sys.exit()
     if args.env == "prod":
         response = input("🚨🚨 Modifying production, are you sure? (y/N) 🚨🚨\n")
         if response.lower() != "y":
             sys.exit()
-    s3_client = boto3.client("s3", region_name="us-east-1")
+    s3_client = boto3.client("s3")
     bucket = f"{args.bucket}-{args.env}"
     if args.ca:
         id_str = create_auth(s3_client, bucket, args.ca[0], args.ca[1], args.ca[2])

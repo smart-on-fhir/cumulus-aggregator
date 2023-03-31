@@ -9,7 +9,6 @@ from src.handlers.site_upload.fetch_upload_url import upload_url_handler
 from tests.utils import TEST_BUCKET, get_mock_metadata
 
 
-@mock.patch.dict(os.environ, {"BUCKET_NAME": TEST_BUCKET})
 @pytest.mark.parametrize(
     "body,status",
     [

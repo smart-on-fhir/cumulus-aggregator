@@ -286,9 +286,9 @@ Resources:
         S3Targets:
           - Path: !Ref AggregatorBucket
           - Exclusions:
-            - admin/**           
+            - admin/**
             - aggregates/**
-            - archive/**            
+            - archive/**
             - athena/**
             - csv_aggregates/**
             - error/**

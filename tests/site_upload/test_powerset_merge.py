@@ -12,7 +12,6 @@ from src.handlers.site_upload.powerset_merge import powerset_merge_handler
 from tests.utils import TEST_BUCKET, ITEM_COUNT
 
 
-@mock.patch.dict(os.environ, {"BUCKET_NAME": TEST_BUCKET})
 @mock.patch("src.handlers.site_upload.powerset_merge.datetime")
 @pytest.mark.parametrize(
     "site,upload_file,upload_path,event_key,archives,status,expected_contents",
