@@ -5,9 +5,9 @@ version = "0.1.0"
 # The project dependencies are handled via AWS layers. These are only required for
 # local development.
 dependencies= [
-    "awswrangler",
+    "awswrangler >=2.19.0, <3",
     "boto3",
-    "pandas"
+    "pandas >=1.5.0, <2"
 ]
 authors = [
   { name="Matt Garber", email="matthew.garber@childrens.harvard.edu" },
