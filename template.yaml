@@ -284,7 +284,7 @@ Resources:
         ScheduleExpression: "cron(0 22 ? * SUN *)"
       Targets:
         S3Targets:
-          - Path: !Sub '${AggregatorBucket}/site_upload'
+          - Path: !Sub '${AggregatorBucket}/aggregates'
 
   AthenaWorkGroup:
     Type: AWS::Athena::WorkGroup

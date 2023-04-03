@@ -42,7 +42,7 @@ test = [
 ]
 dev = [
     "bandit",
-    "black",
+    "black==22.12.0",
     "pre-commit",
     "pylint",
     "pycodestyle"

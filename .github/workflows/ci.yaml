@@ -15,8 +15,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest
-          pip install -r tests/requirements.txt
+          pip install ".[test]"
       - name: Test with pytest
         run: |
           python -m pytest
@@ -24,13 +23,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-
       - name: Install linters
-        # black is synced with the .pre-commit-hooks version
         run: |
           python -m pip install --upgrade pip
-          pip install bandit[toml] pycodestyle pylint black==22.12.0
-          pip install ".[dev,test]"
+          pip install ".[dev]"
       - name: Run pycodestyle
         run: |
           pycodestyle scripts src tests --max-line-length=88
