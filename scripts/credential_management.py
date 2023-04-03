@@ -105,20 +105,26 @@ if __name__ == "__main__":
             sys.exit()
     s3_client = boto3.client("s3")
     bucket = f"{args.bucket}-{args.env}"
-    if args.ca:
-        id_str = create_auth(s3_client, bucket, args.ca[0], args.ca[1], args.ca[2])
+    if args.create_auth:
+        id_str = create_auth(
+            s3_client,
+            bucket,
+            args.create_auth[0],
+            args.create_auth[1],
+            args.create_auth[2],
+        )
         print(f"{id_str} created")
-    elif args.da:
-        succeeded = delete_auth(s3_client, bucket, args.da)
+    elif args.delete_auth:
+        succeeded = delete_auth(s3_client, bucket, args.delete_auth)
         if succeeded:
-            print(f"Removed {args.da}")
+            print(f"Removed {args.delete_auth}")
         else:
             print(f"{args.da} not found")
-    elif args.cm:
-        create_meta(s3_client, bucket, args.cm[0], args.cm[1])
-        print(f"{args.cm[0]} mapped to S3 folder {args.cm[1]}")
-    elif args.dm:
-        succeeded = delete_meta(s3_client, bucket, args.dm)
+    elif args.create_meta:
+        create_meta(s3_client, bucket, args.create_meta[0], args.create_meta[1])
+        print(f"{args.create_meta[0]} mapped to S3 folder {args.create_meta[1]}")
+    elif args.delete_meta:
+        succeeded = delete_meta(s3_client, bucket, args.delete_meta)
         if succeeded:
             print(f"Unmapped {args.dm}")
         else:
