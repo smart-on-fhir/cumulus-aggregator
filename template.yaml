@@ -88,7 +88,6 @@ Resources:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
           TOPIC_PROCESS_UPLOAD_ARN: !Ref SNSTopicProcessUpload
-          REGION: !Ref "AWS::Region"
       Policies:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${DeployStage}'

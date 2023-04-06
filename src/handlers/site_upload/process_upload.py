@@ -68,10 +68,9 @@ def process_upload_handler(event, context):
     """manages event from S3, triggers file processing and merge"""
     del context
     s3_bucket = os.environ.get("BUCKET_NAME")
-    region = os.environ.get("REGION")
     topic_sns_arn = os.environ.get("TOPIC_PROCESS_UPLOAD_ARN")
-    s3_client = boto3.client("s3", region_name=region)
-    sns_client = boto3.client("sns", region_name=region)
+    s3_client = boto3.client("s3")
+    sns_client = boto3.client("sns")
     s3_key = event["Records"][0]["s3"]["object"]["key"]
     process_upload(s3_client, sns_client, s3_bucket, s3_key, topic_sns_arn)
     res = http_response(200, "Upload processing successful")
