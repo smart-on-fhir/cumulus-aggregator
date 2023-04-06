@@ -93,11 +93,15 @@ def move_s3_file(s3_client, s3_bucket_name: str, old_key: str, new_key: str) -> 
 
 
 def get_s3_site_filename_suffix(s3_path: str):
-    # Extracts site/filename data from s3 path
+    """Extracts site/filename data from s3 path"""
+    # The expected s3 path for site data packages looks like:
+    #   s3://bucket_name/enum_value/site/study/subscription/file
+    # so this is returning subscription/file
     return "/".join(s3_path.split("/")[6:])
 
 
 def get_s3_json_as_dict(bucket, key: str):
+    """reads a json object as dict (typically metadata in this case)"""
     s3_client = boto3.client("s3")
     bytes_buffer = io.BytesIO()
     s3_client.download_fileobj(

@@ -1,8 +1,10 @@
 import boto3
 import os
 
-from datetime import datetime, timezone
 import pytest
+
+from datetime import datetime
+from freezegun import freeze_time
 from unittest import mock
 
 from src.handlers.shared.enums import BucketPath
@@ -12,6 +14,7 @@ from src.handlers.site_upload.process_upload import process_upload_handler
 from tests.utils import TEST_BUCKET, ITEM_COUNT
 
 
+@freeze_time("2020-01-01")
 @mock.patch("src.handlers.site_upload.powerset_merge.datetime")
 @pytest.mark.parametrize(
     "site,upload_file,upload_path,event_key,status,expected_contents",
@@ -85,9 +88,9 @@ def test_process_upload(
 
     res = process_upload_handler(event, {})
     assert res["statusCode"] == status
-    res = s3_client.list_objects_v2(Bucket=TEST_BUCKET)
-    assert len(res["Contents"]) == expected_contents
-    for item in res["Contents"]:
+    s3_res = s3_client.list_objects_v2(Bucket=TEST_BUCKET)
+    assert len(s3_res["Contents"]) == expected_contents
+    for item in s3_res["Contents"]:
         if item["Key"].endswith("aggregate.parquet"):
             assert item["Key"].startswith(BucketPath.AGGREGATE.value) is True
         elif item["Key"].endswith("aggregate.csv"):
@@ -98,7 +101,7 @@ def test_process_upload(
             if upload_file is not None:
                 assert (
                     metadata[site]["covid"]["encounter"]["last_uploaded_date"]
-                    is not None
+                    == "2020-01-01T00:00:00+00:00"
                 )
         else:
             assert (

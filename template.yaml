@@ -268,10 +268,10 @@ Resources:
   SNSTopicProcessUpload:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub 'ProcessUpload-${DeployStage}'
+      TopicName: !Sub 'CumulusProcessUpload-${DeployStage}'
       Tags:
         - Key: Name
-          Value: !Sub 'ProcessUpload-${DeployStage}'
+          Value: !Sub 'CumulusProcessUpload-${DeployStage}'
 
 ### S3 Buckets
 

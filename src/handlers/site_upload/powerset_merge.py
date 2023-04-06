@@ -155,7 +155,7 @@ def merge_powersets(
 
 @generic_error_handler(msg="Error merging powersets")
 def powerset_merge_handler(event, context):
-    """manages event from S3, triggers file processing and merge"""
+    """manages event from SNS, triggers file processing and merge"""
     del context
     s3_bucket = os.environ.get("BUCKET_NAME")
     s3_client = boto3.client("s3")
