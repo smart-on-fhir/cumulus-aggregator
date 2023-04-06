@@ -7,7 +7,7 @@ from unittest import mock
 import boto3
 import pytest
 
-from moto import mock_s3, mock_athena
+from moto import mock_s3, mock_athena, mock_sns
 
 from scripts.credential_management import create_auth, create_meta
 from src.handlers.shared.enums import BucketPath
@@ -62,6 +62,16 @@ def mock_bucket():
     write_metadata(s3_client, bucket, metadata)
     yield
     s3.stop()
+
+
+@pytest.fixture
+def mock_notification():
+    sns = mock_sns()
+    sns.start()
+    sns_client = boto3.client("sns", region_name="us-east-1")
+    sns_client.create_topic(Name="test-upload")
+    yield
+    sns.stop()
 
 
 @pytest.fixture

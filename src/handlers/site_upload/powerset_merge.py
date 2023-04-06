@@ -14,75 +14,29 @@ from numpy import nan
 from src.handlers.shared.decorators import generic_error_handler
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import (
+    get_s3_site_filename_suffix,
     http_response,
+    move_s3_file,
     read_metadata,
     update_metadata,
     write_metadata,
 )
 
 
-class S3UploadError(Exception):
-    pass
-
-
-class UnexpectedFileTypeError(Exception):
-    pass
-
-
-def move_s3_file(s3_client, s3_bucket_name: str, old_key: str, new_key: str) -> None:
-    """Move file to different S3 location"""
-    # TODO: may need to go into shared_functions at some point.
-    source = {"Bucket": s3_bucket_name, "Key": old_key}
-    copy_response = s3_client.copy_object(
-        CopySource=source, Bucket=s3_bucket_name, Key=new_key
+def get_s3_data_package_list(
+    bucket_root: str,
+    s3_bucket_name: str,
+    study: str,
+    data_package: str,
+    extension: str = "parquet",
+):
+    """Retrieves a list of all data packages for a given S3 path"""
+    # TODO: this may need to be moved to a shared location at some point - it would
+    # need to be a new one for just AWSWrangler-enabled lambdas.
+    return awswrangler.s3.list_objects(
+        path=f"s3://{s3_bucket_name}/{bucket_root}/{study}/{data_package}",
+        suffix=extension,
     )
-    if copy_response["ResponseMetadata"]["HTTPStatusCode"] != 200:
-        logging.error("error copying file %s to %s", old_key, new_key)
-        raise S3UploadError
-    delete_response = s3_client.delete_object(Bucket=s3_bucket_name, Key=old_key)
-    if delete_response["ResponseMetadata"]["HTTPStatusCode"] != 204:
-        logging.error("error deleting file %s", old_key)
-        raise S3UploadError
-
-
-def process_upload(s3_client, s3_bucket_name: str, s3_key: str) -> None:
-    """Moves file from upload path to powerset generation path"""
-    last_uploaded_date = s3_client.head_object(Bucket=s3_bucket_name, Key=s3_key)[
-        "LastModified"
-    ]
-    metadata = read_metadata(s3_client, s3_bucket_name)
-    path_params = s3_key.split("/")
-    study = path_params[1]
-    data_package = path_params[2]
-    site = path_params[3]
-    if s3_key.endswith(".parquet"):
-        new_key = f"{BucketPath.LATEST.value}/{s3_key.split('/', 1)[-1]}"
-        move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
-        metadata = update_metadata(
-            metadata,
-            site,
-            study,
-            data_package,
-            "last_uploaded_date",
-            last_uploaded_date,
-        )
-        write_metadata(s3_client, s3_bucket_name, metadata)
-    else:
-        new_key = f"{BucketPath.ERROR.value}/{s3_key.split('/', 1)[-1]}"
-        move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
-        metadata = update_metadata(
-            metadata,
-            site,
-            study,
-            data_package,
-            "last_uploaded_date",
-            last_uploaded_date,
-        )
-        metadata = update_metadata(
-            metadata, site, study, data_package, "last_error", last_uploaded_date
-        )
-        write_metadata(s3_client, s3_bucket_name, metadata)
-        raise UnexpectedFileTypeError
 
 
 def concat_sets(df: pandas.DataFrame, file_path: str) -> pandas.DataFrame:
@@ -103,36 +57,22 @@ def concat_sets(df: pandas.DataFrame, file_path: str) -> pandas.DataFrame:
     )
 
 
-def get_site_filename_suffix(s3_path: str):
-    # Extracts site/filename data from s3 path
-    return "/".join(s3_path.split("/")[6:])
-
-
-def get_file_list(
-    bucket_root, s3_bucket_name, study, data_package, extension="parquet"
-):
-    return awswrangler.s3.list_objects(
-        path=f"s3://{s3_bucket_name}/{bucket_root}/{study}/{data_package}",
-        suffix=extension,
-    )
-
-
 def merge_powersets(
-    s3_client, s3_bucket_name: str, study: str, data_package: str
+    s3_client, s3_bucket_name: str, site: str, study: str, data_package: str
 ) -> None:
     """Creates an aggregate powerset from all files with a given s3 prefix"""
     # TODO: this should be memory profiled for large datasets. We can use
     # chunking to lower memory usage during merges.
     metadata = read_metadata(s3_client, s3_bucket_name)
     df = pandas.DataFrame()
-    latest_file_list = get_file_list(
+    latest_file_list = get_s3_data_package_list(
         BucketPath.LATEST.value, s3_bucket_name, study, data_package
     )
-    last_valid_file_list = get_file_list(
+    last_valid_file_list = get_s3_data_package_list(
         BucketPath.LAST_VALID.value, s3_bucket_name, study, data_package
     )
     for s3_path in last_valid_file_list:
-        site_specific_name = get_site_filename_suffix(s3_path)
+        site_specific_name = get_s3_site_filename_suffix(s3_path)
         site = site_specific_name.split("/", maxsplit=1)[0]
 
         # If the latest uploads don't include this site, we'll use the last-valid
@@ -143,7 +83,7 @@ def merge_powersets(
                 metadata, site, study, data_package, "last_uploaded_date"
             )
     for s3_path in latest_file_list:
-        site_specific_name = get_site_filename_suffix(s3_path)
+        site_specific_name = get_s3_site_filename_suffix(s3_path)
         subbucket_path = f"{study}/{data_package}/{site_specific_name}"
         date_str = datetime.now(timezone.utc).isoformat()
         timestamped_name = f".{date_str}.".join(site_specific_name.split("."))
@@ -213,17 +153,17 @@ def merge_powersets(
     awswrangler.s3.to_parquet(df, aggregate_path, index=False)
 
 
-@generic_error_handler(msg="Error processing file")
+@generic_error_handler(msg="Error merging powersets")
 def powerset_merge_handler(event, context):
     """manages event from S3, triggers file processing and merge"""
     del context
     s3_bucket = os.environ.get("BUCKET_NAME")
     s3_client = boto3.client("s3")
-    s3_key = event["Records"][0]["s3"]["object"]["key"]
+    s3_key = event["Records"][0]["Sns"]["Message"]
     s3_key_array = s3_key.split("/")
+    site = s3_key_array[0]
     study = s3_key_array[1]
     data_package = s3_key_array[2]
-    process_upload(s3_client, s3_bucket, s3_key)
-    merge_powersets(s3_client, s3_bucket, study, data_package)
+    merge_powersets(s3_client, s3_bucket, site, study, data_package)
     res = http_response(200, "Merge successful")
     return res
