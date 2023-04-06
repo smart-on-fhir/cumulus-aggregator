@@ -70,7 +70,7 @@ def process_upload_handler(event, context):
     s3_bucket = os.environ.get("BUCKET_NAME")
     topic_sns_arn = os.environ.get("TOPIC_PROCESS_UPLOAD_ARN")
     s3_client = boto3.client("s3")
-    sns_client = boto3.client("sns")
+    sns_client = boto3.client("sns", region_name=os.environ.get("REGION"))
     s3_key = event["Records"][0]["s3"]["object"]["key"]
     process_upload(s3_client, sns_client, s3_bucket, s3_key, topic_sns_arn)
     res = http_response(200, "Upload processing successful")
