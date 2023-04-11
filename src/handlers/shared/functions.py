@@ -1,5 +1,6 @@
 """ Functions used across different lambdas"""
 import io
+import logging
 import json
 
 from typing import Dict, Optional
@@ -30,6 +31,9 @@ def http_response(status: int, body: str) -> Dict:
         "body": json.dumps(body),
         "headers": {"Content-Type": "application/json"},
     }
+
+
+# metadata processing
 
 
 def read_metadata(s3_client, s3_bucket_name: str) -> Dict:
@@ -66,7 +70,38 @@ def write_metadata(s3_client, s3_bucket_name: str, metadata: Dict) -> None:
     )
 
 
-def get_s3_json_as_dict(bucket, key):
+# S3 data management
+
+
+class S3UploadError(Exception):
+    pass
+
+
+def move_s3_file(s3_client, s3_bucket_name: str, old_key: str, new_key: str) -> None:
+    """Move file to different S3 location"""
+    source = {"Bucket": s3_bucket_name, "Key": old_key}
+    copy_response = s3_client.copy_object(
+        CopySource=source, Bucket=s3_bucket_name, Key=new_key
+    )
+    if copy_response["ResponseMetadata"]["HTTPStatusCode"] != 200:
+        logging.error("error copying file %s to %s", old_key, new_key)
+        raise S3UploadError
+    delete_response = s3_client.delete_object(Bucket=s3_bucket_name, Key=old_key)
+    if delete_response["ResponseMetadata"]["HTTPStatusCode"] != 204:
+        logging.error("error deleting file %s", old_key)
+        raise S3UploadError
+
+
+def get_s3_site_filename_suffix(s3_path: str):
+    """Extracts site/filename data from s3 path"""
+    # The expected s3 path for site data packages looks like:
+    #   s3://bucket_name/enum_value/site/study/subscription/file
+    # so this is returning subscription/file
+    return "/".join(s3_path.split("/")[6:])
+
+
+def get_s3_json_as_dict(bucket, key: str):
+    """reads a json object as dict (typically metadata in this case)"""
     s3_client = boto3.client("s3")
     bytes_buffer = io.BytesIO()
     s3_client.download_fileobj(

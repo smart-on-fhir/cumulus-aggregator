@@ -18,7 +18,7 @@ jobs:
           pip install ".[test]"
       - name: Test with pytest
         run: |
-          python -m pytest
+          export AWS_DEFAULT_REGION=us-east-1; python -m pytest
   lint:
     runs-on: ubuntu-22.04
     steps:

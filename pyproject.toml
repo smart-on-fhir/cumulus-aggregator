@@ -36,7 +36,8 @@ test = [
     # TODO: We are investigating some new features around athena mocks, 
     # which currently only exist in 4.1.5 and are broken in 4.1.6dev. Swing back
     # around on this as the functionality matures.
-    "moto[s3,athena] == 4.1.5",
+    "freezegun",
+    "moto[s3,athena,sns] == 4.1.5",
     "pytest",
     "pytest-mock"
 ]

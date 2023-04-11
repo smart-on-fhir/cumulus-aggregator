@@ -3,6 +3,7 @@
 TEST_BUCKET = "cumulus-aggregator-site-counts-test"
 TEST_WORKGROUP = "cumulus-aggregator-test-wg"
 TEST_GLUE_DB = "cumulus-aggregator-test-db"
+TEST_PROCESS_UPLOAD_ARN = "arn:aws:sns:us-east-1:123456789012:test-upload"
 ITEM_COUNT = 9
 SUBSCRIPTION_COUNT = 2
 
@@ -12,6 +13,7 @@ MOCK_ENV = {
     "BUCKET_NAME": TEST_BUCKET,
     "GLUE_DB_NAME": TEST_GLUE_DB,
     "WORKGROUP_NAME": TEST_WORKGROUP,
+    "TOPIC_PROCESS_UPLOAD_ARN": TEST_PROCESS_UPLOAD_ARN,
 }
 
 

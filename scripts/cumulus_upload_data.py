@@ -106,12 +106,12 @@ if __name__ == "__main__":
     for key in args.keys():
         args_dict[key] = os.getenv(f"CUMULUS_UPLOAD_{key.upper()}")
     if args["test"]:
-        args_dict["user"] = "general"
+        args_dict["user"] = os.environ.get("CUMULUS_TEST_UPLOAD_USER", "general")
         args_dict["file"] = (
             f"{str(Path(__file__).resolve().parents[1])}"
             f"/tests/test_data/cube_simple_example.parquet"
         )
-        args_dict["auth"] = "secretval"
+        args_dict["auth"] = os.environ.get("CUMULUS_TEST_UPLOAD_AUTH", "secretval")
         args_dict["study"] = "covid"
         args_dict["data_package"] = "encounter"
 

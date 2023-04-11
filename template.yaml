@@ -75,6 +75,25 @@ Resources:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
 
+  ProcessUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggProcessUpload-${DeployStage}'
+      Handler: src/handlers/site_upload/process_upload.process_upload_handler
+      Runtime: python3.9
+      MemorySize: 128
+      Timeout: 800
+      Description: Merges and aggregates powerset count data
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+          TOPIC_PROCESS_UPLOAD_ARN: !Ref SNSTopicProcessUpload
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt SNSTopicProcessUpload.TopicName
+
   PowersetMergeFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -88,6 +107,11 @@ Resources:
       Environment:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+      Events:
+        ProcessUploadSNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref SNSTopicProcessUpload
       Policies:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
@@ -230,28 +254,37 @@ Resources:
 
 ### Lambda permissions
 
-  PowersetMergeFunctionPermission:
+  ProcessUploadFunctionPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: 'lambda:InvokeFunction'
-      FunctionName: !Ref PowersetMergeFunction
+      FunctionName: !Ref ProcessUploadFunction
       Principal: s3.amazonaws.com
       #This can't be a !Ref due to circular refs
       SourceArn: !Sub 'arn:aws:s3:::${BucketNameParameter}-${DeployStage}'
       SourceAccount: !Ref AWS::AccountId
+
+### SNS topics
+  SNSTopicProcessUpload:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'CumulusProcessUpload-${DeployStage}'
+      Tags:
+        - Key: Name
+          Value: !Sub 'CumulusProcessUpload-${DeployStage}'
 
 ### S3 Buckets
 
   AggregatorBucket:
     Type: AWS::S3::Bucket
     DependsOn:
-      - PowersetMergeFunctionPermission
+      - ProcessUploadFunctionPermission
     Properties:
       BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
       NotificationConfiguration:
         LambdaConfigurations:
           - Event: s3:ObjectCreated:*
-            Function: !GetAtt PowersetMergeFunction.Arn
+            Function: !GetAtt ProcessUploadFunction.Arn
             Filter:
               S3Key:
                 Rules:
