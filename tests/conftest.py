@@ -12,7 +12,7 @@ from moto import mock_s3, mock_athena, mock_sns
 from scripts.credential_management import create_auth, create_meta
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import write_metadata
-from tests.utils import get_mock_metadata, ITEM_COUNT, MOCK_ENV
+from tests.utils import get_mock_metadata, get_mock_study_metadata, ITEM_COUNT, MOCK_ENV
 
 
 def _init_mock_data(s3_client, bucket_name, site, study, data_package):
@@ -60,6 +60,8 @@ def mock_bucket():
         _init_mock_data(s3_client, bucket, *param_list)
     metadata = get_mock_metadata()
     write_metadata(s3_client, bucket, metadata)
+    study_metadata = get_mock_study_metadata()
+    write_metadata(s3_client, bucket, study_metadata, meta_type="study_periods")
     yield
     s3.stop()
 
@@ -69,7 +71,8 @@ def mock_notification():
     sns = mock_sns()
     sns.start()
     sns_client = boto3.client("sns", region_name="us-east-1")
-    sns_client.create_topic(Name="test-upload")
+    sns_client.create_topic(Name="test-counts")
+    sns_client.create_topic(Name="test-meta")
     yield
     sns.stop()
 

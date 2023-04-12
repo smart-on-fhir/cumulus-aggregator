@@ -59,6 +59,14 @@ from tests.utils import TEST_BUCKET, ITEM_COUNT
             500,
             ITEM_COUNT,
         ),
+        (  # Adding study metadata data package
+            "general_hospital",
+            "./tests/test_data/cube_simple_example.parquet",
+            "/covid/encounter/general_hospital/document_meta_date.parquet",
+            "/covid/encounter/general_hospital/document_meta_date.parquet",
+            200,
+            ITEM_COUNT + 1,
+        ),
     ],
 )
 def test_process_upload(
@@ -100,13 +108,16 @@ def test_process_upload(
             metadata = read_metadata(s3_client, TEST_BUCKET)
             if upload_file is not None:
                 assert (
-                    metadata[site]["covid"]["encounter"]["last_uploaded_date"]
+                    metadata[site]["covid"]["encounter"]["last_upload"]
                     == "2020-01-01T00:00:00+00:00"
                 )
+        elif item["Key"].startswith(BucketPath.STUDY_META.value):
+            assert "_meta_" in item["Key"]
         else:
             assert (
                 item["Key"].startswith(BucketPath.LATEST.value) is True
                 or item["Key"].startswith(BucketPath.LAST_VALID.value) is True
                 or item["Key"].startswith(BucketPath.ERROR.value) is True
                 or item["Key"].startswith(BucketPath.ADMIN.value) is True
+                or item["Key"].endswith("study_periods.json") is True
             )

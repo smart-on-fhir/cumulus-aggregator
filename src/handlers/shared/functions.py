@@ -10,16 +10,19 @@ import boto3
 
 from src.handlers.shared.enums import BucketPath
 
-META_PATH = f"{BucketPath.META.value}/transactions.json"
-METADATA_TEMPLATE = {
+TRANSACTION_METADATA_TEMPLATE = {
     "version": "1.0",
     "last_upload": None,
     "last_data_update": None,
     "last_aggregation": None,
     "last_error": None,
-    "earliest_data": None,
-    "latest_data": None,
     "deleted": None,
+}
+STUDY_PERIOD_METADATA_TEMPLATE = {
+    "version": "1.0",
+    "earliest_date": None,
+    "latest_date": None,
+    "last_data_update": None,
 }
 
 
@@ -36,12 +39,24 @@ def http_response(status: int, body: str) -> Dict:
 # metadata processing
 
 
-def read_metadata(s3_client, s3_bucket_name: str) -> Dict:
+def check_meta_type(meta_type: str) -> None:
+    """helper for ensuring specified metadata types"""
+    types = ["transactions", "study_periods"]
+    if meta_type not in types:
+        raise ValueError("invalid metadata type specified")
+
+
+def read_metadata(
+    s3_client, s3_bucket_name: str, meta_type: str = "transactions"
+) -> Dict:
     """Reads transaction information from an s3 bucket as a dictionary"""
-    res = s3_client.list_objects_v2(Bucket=s3_bucket_name, Prefix=META_PATH)
+    check_meta_type(meta_type)
+    prefix = f"{BucketPath.META.value}/{meta_type}.json"
+    res = s3_client.list_objects_v2(Bucket=s3_bucket_name, Prefix=prefix)
     if "Contents" in res:
-        res = s3_client.get_object(Bucket=s3_bucket_name, Key=META_PATH)
-        return json.loads(res["Body"].read())
+        res = s3_client.get_object(Bucket=s3_bucket_name, Key=prefix)
+        doc = res["Body"].read()
+        return json.loads(doc)
     else:
         return {}
 
@@ -53,20 +68,37 @@ def update_metadata(
     data_package: str,
     target: str,
     dt: Optional[datetime] = None,
+    meta_type: str = "transactions",
 ):
     """Safely updates items in metadata dictionary"""
-    site_metadata = metadata.setdefault(site, {})
-    study_metadata = site_metadata.setdefault(study, {})
-    data_package_metadata = study_metadata.setdefault(data_package, METADATA_TEMPLATE)
-    dt = dt or datetime.now(timezone.utc)
-    data_package_metadata[target] = dt.isoformat()
+    check_meta_type(meta_type)
+    if meta_type == "transactions":
+        site_metadata = metadata.setdefault(site, {})
+        study_metadata = site_metadata.setdefault(study, {})
+        data_package_metadata = study_metadata.setdefault(
+            data_package, TRANSACTION_METADATA_TEMPLATE
+        )
+        dt = dt or datetime.now(timezone.utc)
+        data_package_metadata[target] = dt.isoformat()
+    elif meta_type == "study_periods":
+        site_metadata = site_metadata.setdefault(site, {})
+        study_period_metadata = site_metadata.setdefault(
+            study, STUDY_PERIOD_METADATA_TEMPLATE
+        )
+        dt = dt or datetime.now(timezone.utc)
+        study_period_metadata[target] = dt.isoformat()
     return metadata
 
 
-def write_metadata(s3_client, s3_bucket_name: str, metadata: Dict) -> None:
+def write_metadata(
+    s3_client, s3_bucket_name: str, metadata: Dict, meta_type: str = "transactions"
+) -> None:
     """Writes transaction info from ∏a dictionary to an s3 bucket metadata location"""
+    check_meta_type(meta_type)
     s3_client.put_object(
-        Bucket=s3_bucket_name, Key=META_PATH, Body=json.dumps(metadata)
+        Bucket=s3_bucket_name,
+        Key=f"{BucketPath.META.value}/{meta_type}.json",
+        Body=json.dumps(metadata),
     )
 
 

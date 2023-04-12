@@ -113,6 +113,7 @@ def test_process_upload(
                 or item["Key"].startswith(BucketPath.ARCHIVE.value) is True
                 or item["Key"].startswith(BucketPath.ERROR.value) is True
                 or item["Key"].startswith(BucketPath.ADMIN.value) is True
+                or item["Key"].endswith("study_periods.json") is True
             )
     if archives:
         keys = []

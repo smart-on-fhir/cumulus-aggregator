@@ -13,6 +13,7 @@ from numpy import nan
 
 from src.handlers.shared.decorators import generic_error_handler
 from src.handlers.shared.enums import BucketPath
+from src.handlers.shared.awswrangler_functions import get_s3_data_package_list
 from src.handlers.shared.functions import (
     get_s3_site_filename_suffix,
     http_response,
@@ -21,22 +22,6 @@ from src.handlers.shared.functions import (
     update_metadata,
     write_metadata,
 )
-
-
-def get_s3_data_package_list(
-    bucket_root: str,
-    s3_bucket_name: str,
-    study: str,
-    data_package: str,
-    extension: str = "parquet",
-):
-    """Retrieves a list of all data packages for a given S3 path"""
-    # TODO: this may need to be moved to a shared location at some point - it would
-    # need to be a new one for just AWSWrangler-enabled lambdas.
-    return awswrangler.s3.list_objects(
-        path=f"s3://{s3_bucket_name}/{bucket_root}/{study}/{data_package}",
-        suffix=extension,
-    )
 
 
 def concat_sets(df: pandas.DataFrame, file_path: str) -> pandas.DataFrame:
