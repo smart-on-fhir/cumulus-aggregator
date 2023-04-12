@@ -81,7 +81,7 @@ def update_metadata(
         dt = dt or datetime.now(timezone.utc)
         data_package_metadata[target] = dt.isoformat()
     elif meta_type == "study_periods":
-        site_metadata = site_metadata.setdefault(site, {})
+        site_metadata = metadata.setdefault(site, {})
         study_period_metadata = site_metadata.setdefault(
             study, STUDY_PERIOD_METADATA_TEMPLATE
         )
