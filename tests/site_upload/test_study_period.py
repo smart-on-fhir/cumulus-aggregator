@@ -1,4 +1,5 @@
 import boto3
+import csv
 import os
 
 import pytest
@@ -78,3 +79,10 @@ def test_process_upload(
             metadata[site][study_key]["last_data_update"]
             == datetime.now(timezone.utc).isoformat()
         )
+        with open("./tests/test_data/meta_date.csv", "r") as file:
+            reader = csv.reader(file)
+            # discarding CSV header row
+            next(reader)
+            row = next(reader)
+            assert metadata[site][study_key]["earliest_date"] == f"{row[0]}T00:00:00"
+            assert metadata[site][study_key]["latest_date"] == f"{row[1]}T00:00:00"
