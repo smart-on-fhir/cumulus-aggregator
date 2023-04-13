@@ -8,7 +8,7 @@ from unittest import mock
 
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import read_metadata, write_metadata
-from src.handlers.dashboard.get_metadata import metadata_handler
+from src.handlers.dashboard.get_study_periods import study_periods_handler
 from tests.utils import get_mock_study_metadata, TEST_BUCKET
 
 
@@ -33,7 +33,8 @@ from tests.utils import get_mock_study_metadata, TEST_BUCKET
 def test_get_metadata(mock_bucket, params, status, expected):
     event = {"pathParameters": params}
 
-    res = metadata_handler(event, {})
+    res = study_periods_handler(event, {})
+    print(res["body"])
     assert res["statusCode"] == status
     if status == 200:
         assert json.loads(res["body"]) == expected
