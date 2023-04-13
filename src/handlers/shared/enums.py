@@ -15,3 +15,10 @@ class BucketPath(Enum):
     META = "metadata"
     STUDY_META = "study_metadata"
     UPLOAD = "site_upload"
+
+
+class JsonDict(Enum):
+    """stores names of expected kinds of S3 json dictionaries"""
+
+    TRANSACTIONS = "transactions"
+    STUDY_PERIODS = "study_periods"

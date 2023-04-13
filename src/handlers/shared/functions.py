@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 import boto3
 
-from src.handlers.shared.enums import BucketPath
+from src.handlers.shared.enums import BucketPath, JsonDict
 
 TRANSACTION_METADATA_TEMPLATE = {
     "version": "1.0",
@@ -36,18 +36,18 @@ def http_response(status: int, body: str) -> Dict:
     }
 
 
-# metadata processing
+# S3 json processing
 
 
 def check_meta_type(meta_type: str) -> None:
     """helper for ensuring specified metadata types"""
-    types = ["transactions", "study_periods"]
+    types = [item.value for item in JsonDict]
     if meta_type not in types:
         raise ValueError("invalid metadata type specified")
 
 
 def read_metadata(
-    s3_client, s3_bucket_name: str, meta_type: str = "transactions"
+    s3_client, s3_bucket_name: str, meta_type: str = JsonDict.TRANSACTIONS.value
 ) -> Dict:
     """Reads transaction information from an s3 bucket as a dictionary"""
     check_meta_type(meta_type)
@@ -68,11 +68,11 @@ def update_metadata(
     data_package: str,
     target: str,
     dt: Optional[datetime] = None,
-    meta_type: str = "transactions",
+    meta_type: str = JsonDict.TRANSACTIONS.value,
 ):
     """Safely updates items in metadata dictionary"""
     check_meta_type(meta_type)
-    if meta_type == "transactions":
+    if meta_type == JsonDict.TRANSACTIONS.value:
         site_metadata = metadata.setdefault(site, {})
         study_metadata = site_metadata.setdefault(study, {})
         data_package_metadata = study_metadata.setdefault(
@@ -80,7 +80,7 @@ def update_metadata(
         )
         dt = dt or datetime.now(timezone.utc)
         data_package_metadata[target] = dt.isoformat()
-    elif meta_type == "study_periods":
+    elif meta_type == JsonDict.STUDY_PERIODS.value:
         site_metadata = metadata.setdefault(site, {})
         study_period_metadata = site_metadata.setdefault(
             study, STUDY_PERIOD_METADATA_TEMPLATE
@@ -91,7 +91,10 @@ def update_metadata(
 
 
 def write_metadata(
-    s3_client, s3_bucket_name: str, metadata: Dict, meta_type: str = "transactions"
+    s3_client,
+    s3_bucket_name: str,
+    metadata: Dict,
+    meta_type: str = JsonDict.TRANSACTIONS.value,
 ) -> None:
     """Writes transaction info from ∏a dictionary to an s3 bucket metadata location"""
     check_meta_type(meta_type)

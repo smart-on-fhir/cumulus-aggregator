@@ -8,7 +8,7 @@ import awswrangler
 import boto3
 
 from src.handlers.shared.decorators import generic_error_handler
-from src.handlers.shared.enums import BucketPath
+from src.handlers.shared.enums import BucketPath, JsonDict
 from src.handlers.shared.awswrangler_functions import get_s3_study_meta_list
 from src.handlers.shared.functions import (
     http_response,
@@ -26,7 +26,9 @@ def update_study_period(s3_client, s3_bucket, site, study, data_package):
     if len(path) != 1:
         raise KeyError("Unique date path not found")
     df = awswrangler.s3.read_parquet(path[0])
-    study_meta = read_metadata(s3_client, s3_bucket, meta_type="study_periods")
+    study_meta = read_metadata(
+        s3_client, s3_bucket, meta_type=JsonDict.STUDY_PERIODS.value
+    )
     study_meta = update_metadata(
         study_meta,
         site,
@@ -34,7 +36,7 @@ def update_study_period(s3_client, s3_bucket, site, study, data_package):
         data_package,
         "earliest_date",
         df["min_date"][0],
-        meta_type="study_periods",
+        meta_type=JsonDict.STUDY_PERIODS.value,
     )
     study_meta = update_metadata(
         study_meta,
@@ -43,7 +45,7 @@ def update_study_period(s3_client, s3_bucket, site, study, data_package):
         data_package,
         "latest_date",
         df["max_date"][0],
-        meta_type="study_periods",
+        meta_type=JsonDict.STUDY_PERIODS.value,
     )
     study_meta = update_metadata(
         study_meta,
@@ -52,9 +54,11 @@ def update_study_period(s3_client, s3_bucket, site, study, data_package):
         data_package,
         "last_data_update",
         datetime.now(timezone.utc),
-        meta_type="study_periods",
+        meta_type=JsonDict.STUDY_PERIODS.value,
     )
-    write_metadata(s3_client, s3_bucket, study_meta, meta_type="study_periods")
+    write_metadata(
+        s3_client, s3_bucket, study_meta, meta_type=JsonDict.STUDY_PERIODS.value
+    )
 
 
 @generic_error_handler(msg="Error updating study period")
