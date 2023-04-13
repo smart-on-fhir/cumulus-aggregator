@@ -83,16 +83,19 @@ Resources:
       Runtime: python3.9
       MemorySize: 128
       Timeout: 800
-      Description: Merges and aggregates powerset count data
+      Description: Handles initial relocation of upload data
       Environment:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
-          TOPIC_PROCESS_UPLOAD_ARN: !Ref SNSTopicProcessUpload
+          TOPIC_PROCESS_COUNTS_ARN: !Ref SNSTopicProcessCounts
+          TOPIC_PROCESS_STUDY_META_ARN: !Ref SNSTopicProcessStudyMeta
       Policies:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
         - SNSPublishMessagePolicy:
-            TopicName: !GetAtt SNSTopicProcessUpload.TopicName
+            TopicName: !GetAtt SNSTopicProcessCounts.TopicName
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt SNSTopicProcessStudyMeta.TopicName
 
   PowersetMergeFunction:
     Type: AWS::Serverless::Function
@@ -111,7 +114,29 @@ Resources:
         ProcessUploadSNSEvent:
           Type: SNS
           Properties:
-            Topic: !Ref SNSTopicProcessUpload
+            Topic: !Ref SNSTopicProcessCounts
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+
+  StudyPeriodFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggStudyPeriod-${DeployStage}'
+      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:1]
+      Handler: src/handlers/site_upload/study_period.study_period_handler
+      Runtime: python3.9
+      MemorySize: 512
+      Timeout: 800
+      Description: Handles metadata outside of upload/processing for studies
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+      Events:
+        ProcessUploadSNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref SNSTopicProcessStudyMeta
       Policies:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
@@ -265,13 +290,21 @@ Resources:
       SourceAccount: !Ref AWS::AccountId
 
 ### SNS topics
-  SNSTopicProcessUpload:
+  SNSTopicProcessCounts:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub 'CumulusProcessUpload-${DeployStage}'
+      TopicName: !Sub 'CumulusProcessCounts-${DeployStage}'
       Tags:
         - Key: Name
-          Value: !Sub 'CumulusProcessUpload-${DeployStage}'
+          Value: !Sub 'CumulusProcessCounts-${DeployStage}'
+
+  SNSTopicProcessStudyMeta:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'CumulusProcessStudyMeta-${DeployStage}'
+      Tags:
+        - Key: Name
+          Value: !Sub 'CumulusProcessStudyMeta-${DeployStage}'
 
 ### S3 Buckets
 

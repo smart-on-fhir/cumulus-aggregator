@@ -2,9 +2,8 @@ import boto3
 import os
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from freezegun import freeze_time
-from unittest import mock
 
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import read_metadata, write_metadata
@@ -14,7 +13,6 @@ from tests.utils import get_mock_metadata, TEST_BUCKET, ITEM_COUNT
 
 
 @freeze_time("2020-01-01")
-@mock.patch("src.handlers.site_upload.powerset_merge.datetime")
 @pytest.mark.parametrize(
     "site,upload_file,upload_path,event_key,archives,status,expected_contents",
     [
@@ -56,8 +54,7 @@ from tests.utils import get_mock_metadata, TEST_BUCKET, ITEM_COUNT
         ),
     ],
 )
-def test_process_upload(
-    mock_dt,
+def test_powerset_merge(
     site,
     upload_file,
     upload_path,
@@ -67,7 +64,6 @@ def test_process_upload(
     expected_contents,
     mock_bucket,
 ):
-    mock_dt.now = mock.Mock(return_value=datetime(2020, 1, 1))
     s3_client = boto3.client("s3", region_name="us-east-1")
     if upload_file is not None:
         s3_client.upload_file(
@@ -89,16 +85,16 @@ def test_process_upload(
     assert len(s3_res["Contents"]) == expected_contents
     for item in s3_res["Contents"]:
         if item["Key"].endswith("aggregate.parquet"):
-            assert item["Key"].startswith(BucketPath.AGGREGATE.value) is True
+            assert item["Key"].startswith(BucketPath.AGGREGATE.value)
         elif item["Key"].endswith("aggregate.csv"):
-            assert item["Key"].startswith(BucketPath.CSVAGGREGATE.value) is True
+            assert item["Key"].startswith(BucketPath.CSVAGGREGATE.value)
         elif item["Key"].endswith("transactions.json"):
-            assert item["Key"].startswith(BucketPath.META.value) is True
+            assert item["Key"].startswith(BucketPath.META.value)
             metadata = read_metadata(s3_client, TEST_BUCKET)
             if res["statusCode"] == 200:
                 assert (
                     metadata[site]["covid"]["encounter"]["last_aggregation"]
-                    == "2020-01-01T00:00:00+00:00"
+                    == datetime.now(timezone.utc).isoformat()
                 )
             else:
                 assert (
@@ -109,14 +105,16 @@ def test_process_upload(
                 )
         else:
             assert (
-                item["Key"].startswith(BucketPath.LAST_VALID.value) is True
-                or item["Key"].startswith(BucketPath.ARCHIVE.value) is True
-                or item["Key"].startswith(BucketPath.ERROR.value) is True
-                or item["Key"].startswith(BucketPath.ADMIN.value) is True
+                item["Key"].startswith(BucketPath.LAST_VALID.value)
+                or item["Key"].startswith(BucketPath.ARCHIVE.value)
+                or item["Key"].startswith(BucketPath.ERROR.value)
+                or item["Key"].startswith(BucketPath.ADMIN.value)
+                or item["Key"].endswith("study_periods.json")
             )
     if archives:
         keys = []
         for resource in s3_res["Contents"]:
             keys.append(resource["Key"])
-        archive_path = ".2020-01-01T00:00:00.".join(upload_path.split("."))
+        date_str = datetime.now(timezone.utc).isoformat()
+        archive_path = f".{date_str}.".join(upload_path.split("."))
         assert f"{BucketPath.ARCHIVE.value}{archive_path}" in keys
