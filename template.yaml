@@ -277,6 +277,41 @@ Resources:
               - athena:StopQueryExecution
             Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}'
 
+  DashboardGetStudyPeriodsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggDashboardStudyPeriods-${DeployStage}'
+      Handler: src/handlers/dashboard/get_study_periods.study_periods_handler
+      Runtime: python3.9
+      MemorySize: 128
+      Timeout: 100
+      Description: Retrieve data about the study period
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+      Events:
+        GetStudyPeriodAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /study_periods/
+            Method: GET
+        GetStudyPeriodSiteAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /study_periods/{site}/
+            Method: GET
+        GetStudyPeriodSiteStudyAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /study_periods/{site}/{study}
+            Method: GET 
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+
 ### Lambda permissions
 
   ProcessUploadFunctionPermission:
