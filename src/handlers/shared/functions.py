@@ -51,10 +51,10 @@ def read_metadata(
 ) -> Dict:
     """Reads transaction information from an s3 bucket as a dictionary"""
     check_meta_type(meta_type)
-    prefix = f"{BucketPath.META.value}/{meta_type}.json"
-    res = s3_client.list_objects_v2(Bucket=s3_bucket_name, Prefix=prefix)
+    s3_path = f"{BucketPath.META.value}/{meta_type}.json"
+    res = s3_client.list_objects_v2(Bucket=s3_bucket_name, Prefix=s3_path)
     if "Contents" in res:
-        res = s3_client.get_object(Bucket=s3_bucket_name, Key=prefix)
+        res = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_path)
         doc = res["Body"].read()
         return json.loads(doc)
     else:

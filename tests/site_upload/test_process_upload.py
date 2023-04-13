@@ -3,9 +3,8 @@ import os
 
 import pytest
 
-from datetime import datetime
+from datetime import datetime, timezone
 from freezegun import freeze_time
-from unittest import mock
 
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import read_metadata, write_metadata
@@ -15,7 +14,6 @@ from tests.utils import TEST_BUCKET, ITEM_COUNT
 
 
 @freeze_time("2020-01-01")
-@mock.patch("src.handlers.site_upload.powerset_merge.datetime")
 @pytest.mark.parametrize(
     "site,upload_file,upload_path,event_key,status,expected_contents",
     [
@@ -70,7 +68,6 @@ from tests.utils import TEST_BUCKET, ITEM_COUNT
     ],
 )
 def test_process_upload(
-    mock_dt,
     site,
     upload_file,
     upload_path,
@@ -80,7 +77,6 @@ def test_process_upload(
     mock_bucket,
     mock_notification,
 ):
-    mock_dt.now = mock.Mock(return_value=datetime(2020, 1, 1))
     s3_client = boto3.client("s3", region_name="us-east-1")
     if upload_file is not None:
         s3_client.upload_file(
@@ -100,24 +96,24 @@ def test_process_upload(
     assert len(s3_res["Contents"]) == expected_contents
     for item in s3_res["Contents"]:
         if item["Key"].endswith("aggregate.parquet"):
-            assert item["Key"].startswith(BucketPath.AGGREGATE.value) is True
+            assert item["Key"].startswith(BucketPath.AGGREGATE.value)
         elif item["Key"].endswith("aggregate.csv"):
-            assert item["Key"].startswith(BucketPath.CSVAGGREGATE.value) is True
+            assert item["Key"].startswith(BucketPath.CSVAGGREGATE.value)
         elif item["Key"].endswith("transactions.json"):
-            assert item["Key"].startswith(BucketPath.META.value) is True
+            assert item["Key"].startswith(BucketPath.META.value)
             metadata = read_metadata(s3_client, TEST_BUCKET)
             if upload_file is not None:
                 assert (
                     metadata[site]["covid"]["encounter"]["last_upload"]
-                    == "2020-01-01T00:00:00+00:00"
+                    == datetime.now(timezone.utc).isoformat()
                 )
         elif item["Key"].startswith(BucketPath.STUDY_META.value):
             assert "_meta_" in item["Key"]
         else:
             assert (
-                item["Key"].startswith(BucketPath.LATEST.value) is True
-                or item["Key"].startswith(BucketPath.LAST_VALID.value) is True
-                or item["Key"].startswith(BucketPath.ERROR.value) is True
-                or item["Key"].startswith(BucketPath.ADMIN.value) is True
-                or item["Key"].endswith("study_periods.json") is True
+                item["Key"].startswith(BucketPath.LATEST.value)
+                or item["Key"].startswith(BucketPath.LAST_VALID.value)
+                or item["Key"].startswith(BucketPath.ERROR.value)
+                or item["Key"].startswith(BucketPath.ADMIN.value)
+                or item["Key"].endswith("study_periods.json")
             )

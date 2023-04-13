@@ -1,4 +1,4 @@
-""" Lambda for performing joins of site count data """
+""" Lambda for updating date ranges associated with studies """
 
 import os
 

@@ -29,7 +29,6 @@ def process_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> N
     data_package = path_params[2]
     site = path_params[3]
     if s3_key.endswith(".parquet"):
-        print(s3_key)
         if "_meta_" in s3_key:
             new_key = f"{BucketPath.STUDY_META.value}/{s3_key.split('/', 1)[-1]}"
             topic_sns_arn = os.environ.get("TOPIC_PROCESS_STUDY_META_ARN")
