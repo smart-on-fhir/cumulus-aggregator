@@ -2,9 +2,8 @@ import boto3
 import os
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from freezegun import freeze_time
-from unittest import mock
 
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import read_metadata, write_metadata
@@ -14,7 +13,6 @@ from tests.utils import get_mock_study_metadata, TEST_BUCKET
 
 
 @freeze_time("2020-01-01")
-@mock.patch("src.handlers.site_upload.study_period.datetime")
 @pytest.mark.parametrize(
     "site,upload_file,upload_path,event_key,status,study_key",
     [
@@ -53,7 +51,6 @@ from tests.utils import get_mock_study_metadata, TEST_BUCKET
     ],
 )
 def test_process_upload(
-    mock_dt,
     site,
     upload_file,
     upload_path,
@@ -62,7 +59,6 @@ def test_process_upload(
     study_key,
     mock_bucket,
 ):
-    mock_dt.now = mock.Mock(return_value=datetime(2020, 1, 1))
     s3_client = boto3.client("s3", region_name="us-east-1")
     if upload_file is not None:
         s3_client.upload_file(
@@ -78,4 +74,7 @@ def test_process_upload(
     metadata = read_metadata(s3_client, TEST_BUCKET, meta_type="study_periods")
     if study_key is not None:
         assert study_key in metadata[site]
-        assert metadata[site][study_key]["last_data_update"] == "2020-01-01T00:00:00"
+        assert (
+            metadata[site][study_key]["last_data_update"]
+            == datetime.now(timezone.utc).isoformat()
+        )
