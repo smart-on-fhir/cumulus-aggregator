@@ -28,7 +28,7 @@ paths:
           type: "string"
   /metadata:
     get: {}
-  /chart_data/{subscription_name}:
+  /chart-data/{subscription_name}:
     get:
       parameters:
       - name: "subscription_name"
@@ -36,9 +36,7 @@ paths:
         required: true
         schema:
           type: "string"
-  /subscriptions:
-    get: {}
-  /metadata/{site}:
+  /study-periods/{site}:
     get:
       parameters:
       - name: "site"
@@ -46,6 +44,8 @@ paths:
         required: true
         schema:
           type: "string"
+  /subscriptions:
+    get: {}
   /metadata/{site}/{study}:
     get:
       parameters:
@@ -59,4 +59,27 @@ paths:
         required: true
         schema:
           type: "string"
+  /metadata/{site}:
+    get:
+      parameters:
+      - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+  /study-periods/{site}/{study}:
+    get:
+      parameters:
+      - name: "study"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+  /study-periods:
+    get: {}
 components: {}
