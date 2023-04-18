@@ -9,7 +9,7 @@ from unittest import mock
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import read_metadata, write_metadata
 from src.handlers.dashboard.get_study_periods import study_periods_handler
-from tests.utils import get_mock_study_metadata, TEST_BUCKET
+from tests.utils import get_mock_study_metadata
 
 
 @pytest.mark.parametrize(
@@ -30,11 +30,10 @@ from tests.utils import get_mock_study_metadata, TEST_BUCKET
         ({"site": "general_hospital", "study": "flu"}, 500, None),
     ],
 )
-def test_get_metadata(mock_bucket, params, status, expected):
+def test_get_study_periods(mock_bucket, params, status, expected):
     event = {"pathParameters": params}
 
     res = study_periods_handler(event, {})
-    print(res["body"])
     assert res["statusCode"] == status
     if status == 200:
         assert json.loads(res["body"]) == expected

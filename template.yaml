@@ -163,7 +163,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /chart_data/{subscription_name}
+            Path: /chart-data/{subscription_name}
             Method: GET
       Policies:
         - S3CrudPolicy:
@@ -294,19 +294,19 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /study_periods/
+            Path: /study-periods/
             Method: GET
         GetStudyPeriodSiteAPI:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /study_periods/{site}/
+            Path: /study-periods/{site}/
             Method: GET
         GetStudyPeriodSiteStudyAPI:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /study_periods/{site}/{study}
+            Path: /study-periods/{site}/{study}
             Method: GET 
       Policies:
         - S3ReadPolicy:
