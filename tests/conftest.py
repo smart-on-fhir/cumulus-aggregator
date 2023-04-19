@@ -17,13 +17,13 @@ from tests.utils import get_mock_metadata, get_mock_study_metadata, ITEM_COUNT, 
 
 def _init_mock_data(s3_client, bucket_name, site, study, data_package):
     s3_client.upload_file(
-        "./tests/test_data/cube_simple_example.parquet",
+        "./tests/test_data/count_synthea_patient.parquet",
         bucket_name,
         f"{BucketPath.AGGREGATE.value}/{site}/{study}/"
         f"{site}__{data_package}/{site}__{data_package}__aggregate.parquet",
     )
     s3_client.upload_file(
-        "./tests/test_data/cube_simple_example.csv",
+        "./tests/test_data/count_synthea_patient.csv",
         bucket_name,
         f"{BucketPath.CSVAGGREGATE.value}/{site}/{study}/"
         f"{site}__{data_package}/{site}__{data_package}__aggregate.csv",
