@@ -10,6 +10,7 @@ import boto3
 import pandas
 
 from numpy import nan
+from pandas.core.indexes.range import RangeIndex
 
 from src.handlers.shared.decorators import generic_error_handler
 from src.handlers.shared.enums import BucketPath
@@ -24,9 +25,9 @@ from src.handlers.shared.functions import (
 )
 
 
-def get_static_string_series(static_str, size):
+def get_static_string_series(static_str: str, size: RangeIndex):
     """Helper for the verbose way of defining a pandas string series"""
-    return pandas.Series([static_str for item in range(0, len(size))]).astype("string")
+    return pandas.Series([static_str] * len(size)).astype("string")
 
 
 def expand_and_concat_sets(
