@@ -25,9 +25,9 @@ from src.handlers.shared.functions import (
 )
 
 
-def get_static_string_series(static_str: str, size: RangeIndex):
+def get_static_string_series(static_str: str, index: RangeIndex):
     """Helper for the verbose way of defining a pandas string series"""
-    return pandas.Series([static_str] * len(size)).astype("string")
+    return pandas.Series([static_str] * len(index)).astype("string")
 
 
 def expand_and_concat_sets(
