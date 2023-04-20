@@ -5,7 +5,7 @@ TEST_WORKGROUP = "cumulus-aggregator-test-wg"
 TEST_GLUE_DB = "cumulus-aggregator-test-db"
 TEST_PROCESS_COUNTS_ARN = "arn:aws:sns:us-east-1:123456789012:test-counts"
 TEST_PROCESS_STUDY_META_ARN = "arn:aws:sns:us-east-1:123456789012:test-meta"
-ITEM_COUNT = 10
+ITEM_COUNT = 8
 SUBSCRIPTION_COUNT = 2
 
 # This is a convenience for loading into os.environ with mock.patch.dict.

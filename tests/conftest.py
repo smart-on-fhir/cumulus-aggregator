@@ -15,18 +15,18 @@ from src.handlers.shared.functions import write_metadata
 from tests.utils import get_mock_metadata, get_mock_study_metadata, ITEM_COUNT, MOCK_ENV
 
 
-def _init_mock_data(s3_client, bucket_name, site, study, data_package):
+def _init_mock_data(s3_client, bucket_name, study, data_package):
     s3_client.upload_file(
-        "./tests/test_data/cube_simple_example.parquet",
+        "./tests/test_data/count_synthea_patient.parquet",
         bucket_name,
-        f"{BucketPath.AGGREGATE.value}/{site}/{study}/"
-        f"{site}__{data_package}/{site}__{data_package}__aggregate.parquet",
+        f"{BucketPath.AGGREGATE.value}/{study}/"
+        f"{study}__{data_package}/{study}__{data_package}__aggregate.parquet",
     )
     s3_client.upload_file(
-        "./tests/test_data/cube_simple_example.csv",
+        "./tests/test_data/count_synthea_patient.csv",
         bucket_name,
-        f"{BucketPath.CSVAGGREGATE.value}/{site}/{study}/"
-        f"{site}__{data_package}/{site}__{data_package}__aggregate.csv",
+        f"{BucketPath.CSVAGGREGATE.value}/{study}/"
+        f"{study}__{data_package}/{study}__{data_package}__aggregate.csv",
     )
     create_auth(s3_client, bucket_name, "general_1", "test_1", "general")
     create_meta(s3_client, bucket_name, "general", "general_hospital")
@@ -52,9 +52,8 @@ def mock_bucket():
     bucket = os.environ["BUCKET_NAME"]
     s3_client.create_bucket(Bucket=bucket)
     aggregate_params = [
-        ["general_hospital", "covid", "encounter"],
-        ["general_hospital", "lyme", "encounter"],
-        ["st_elsewhere", "covid", "encounter"],
+        ["covid", "encounter"],
+        ["lyme", "encounter"],
     ]
     for param_list in aggregate_params:
         _init_mock_data(s3_client, bucket, *param_list)

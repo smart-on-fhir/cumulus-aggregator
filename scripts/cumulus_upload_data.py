@@ -109,11 +109,11 @@ if __name__ == "__main__":
         args_dict["user"] = os.environ.get("CUMULUS_TEST_UPLOAD_USER", "general")
         args_dict["file"] = (
             f"{str(Path(__file__).resolve().parents[1])}"
-            f"/tests/test_data/cube_simple_example.parquet"
+            f"/tests/test_data/count_synthea_patient.parquet"
         )
         args_dict["auth"] = os.environ.get("CUMULUS_TEST_UPLOAD_AUTH", "secretval")
-        args_dict["study"] = "covid"
-        args_dict["data_package"] = "encounter"
+        args_dict["study"] = "core"
+        args_dict["data_package"] = "patient"
 
     for key in args.keys():
         if args[key] is not None:
