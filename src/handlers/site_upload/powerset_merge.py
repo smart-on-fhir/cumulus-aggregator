@@ -92,14 +92,14 @@ def merge_powersets(
     )
     for s3_path in last_valid_file_list:
         site_specific_name = get_s3_site_filename_suffix(s3_path)
-        site = site_specific_name.split("/", maxsplit=1)[0]
+        last_valid_site = site_specific_name.split("/", maxsplit=1)[0]
 
         # If the latest uploads don't include this site, we'll use the last-valid
         # one instead
         if not any(x.endswith(site_specific_name) for x in latest_file_list):
-            df = expand_and_concat_sets(df, s3_path, site)
+            df = expand_and_concat_sets(df, s3_path, last_valid_site)
             metadata = update_metadata(
-                metadata, site, study, data_package, "last_uploaded_date"
+                metadata, last_valid_site, study, data_package, "last_uploaded_date"
             )
     for s3_path in latest_file_list:
         site_specific_name = get_s3_site_filename_suffix(s3_path)
@@ -126,12 +126,12 @@ def merge_powersets(
                 f"{BucketPath.LATEST.value}/{subbucket_path}",
                 f"{BucketPath.LAST_VALID.value}/{subbucket_path}",
             )
-            site = site_specific_name.split("/", maxsplit=1)[0]
+            latest_site = site_specific_name.split("/", maxsplit=1)[0]
             metadata = update_metadata(
-                metadata, site, study, data_package, "last_data_update"
+                metadata, latest_site, study, data_package, "last_data_update"
             )
             metadata = update_metadata(
-                metadata, site, study, data_package, "last_aggregation"
+                metadata, latest_site, study, data_package, "last_aggregation"
             )
         except Exception as e:  # pylint: disable=broad-except
             logging.error("File %s failed to aggregate: %s", s3_path, str(e))

@@ -19,14 +19,14 @@ def _init_mock_data(s3_client, bucket_name, site, study, data_package):
     s3_client.upload_file(
         "./tests/test_data/count_synthea_patient.parquet",
         bucket_name,
-        f"{BucketPath.AGGREGATE.value}/{site}/{study}/"
-        f"{site}__{data_package}/{site}__{data_package}__aggregate.parquet",
+        f"{BucketPath.AGGREGATE.value}/{study}/"
+        f"{study}__{data_package}/{study}__{data_package}__aggregate.parquet",
     )
     s3_client.upload_file(
         "./tests/test_data/count_synthea_patient.csv",
         bucket_name,
-        f"{BucketPath.CSVAGGREGATE.value}/{site}/{study}/"
-        f"{site}__{data_package}/{site}__{data_package}__aggregate.csv",
+        f"{BucketPath.CSVAGGREGATE.value}/{study}/"
+        f"{study}__{data_package}/{study}__{data_package}__aggregate.csv",
     )
     create_auth(s3_client, bucket_name, "general_1", "test_1", "general")
     create_meta(s3_client, bucket_name, "general", "general_hospital")
