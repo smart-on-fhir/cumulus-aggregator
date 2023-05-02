@@ -31,27 +31,10 @@ With these environment variables set, the bulk uploader is all set to load data.
 
 ## Integration test: Processing synthetic data through ETL
 
-If the quick test was successful, you can test your processing pipeline entirely with synthetic data by running through the following steps:
+If the quick test was successful, you can test your processing pipeline entirely with synthetic data. by running through the following steps:
 
-- In the synthetic data repository's readme, there are links to synthetic data sets. Download one (tiny or small is recommended), and unzip it into a directory of your choice
-- Create an environment variable, `CUMULUS_SYNTHETIC_DATA`, which points to the synthetic dataset directory
-- If you haven't already, set up the ETL, following the [ETL first time setup guide](https://github.com/smart-on-fhir/cumulus-etl/blob/main/docs/howtos/first-time-setup.md), substituting synthetic data for test data to make sure the ETL is working correctly.
-  - If you are currently using your ETL cloudformation for real data, it is recommended to create a second ETL cloudformation deployment for synthetic testing, with a different bucket/athena name, so you don't upload real data before you're ready to.
-- Run the ETL with a command like the following:
-```
-docker compose -f $CUMULUS_REPO_PATH/compose.yaml \
- run --volume $CUMULUS_SYNTHETIC_DATA:/cumulus-etl/data --rm \
- cumulus-etl \
-  --input-format=ndjson \
-  --output-format=deltalake \
-  --batch-size=100000 \
-  --s3-region=us-east-1 \
-  --task-filter=cpu \
-  /cumulus-etl/data  \
-  s3://your-etl-output-bucket/output/  \
-  s3://your-etl-phi-output-bucket/output
-```
-- When it's complete, run the crawler you created in the AWS setup guide to make sure the appropriate athena tables are generated correctly.
+- If you haven't already, you'll want to set up the ETL with synthetic data. The [first time setup guide](https://github.com/smart-on-fhir/cumulus-etl/blob/main/docs/howtos/first-time-setup.md) and the documents it links to will help you get the pipeline configured - make sure to note the instructions in the latter for deploying with synthetic datasets.
+- When it's complete, you should be able to view data in athena to verify.
 - In the cumulus library repo, build the athena tables and export results, with `./library/make.py --build --export` (make sure you set the cumulus library [setup instructions](https://github.com/smart-on-fhir/library#setup) and set the appropriate environment variables/aws credentials)
 - When the export completes, you should have folders in `./library/data_export` corresponding to the currently configured exportable studies (at the time of this writing, core and covid). 
 - Run the bulk uploader with `./data_export/bulk_upload.py`
