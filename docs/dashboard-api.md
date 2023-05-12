@@ -1,6 +1,20 @@
-# Dashboard chart API definition spec
+---
+title: Dashboard API
+parent: Aggregator
+nav_order: 10
+# audience: programmers; highly technical
+# type: reference
+---
 
-This document describes the customer implementation of the Cumulus dashboard's API for recieving chart data for display in the chart builder, which the aggregator re-implements as a lambda building Athena queries.
+# Dashboard API
+
+You can download the full [Aggregator's OpenAPI spec](dashboard_api.prod.yaml),
+but some APIs will also be discussed in more detail below.
+
+## Chart Data
+
+This is the customer implementation of the Dashboard's API for receiving chart data,
+which the Aggregator re-implements as a lambda building Athena queries.
 
 ### endpoint
 `/chart_data/{subscription_name}`
@@ -151,7 +165,7 @@ As a post-processing step, after the results are fetched from DB, if a stratifie
 }
 ```
 
-The same response without a stratifier would kook like:
+The same response without a stratifier would look like:
 ```js
 { 
     column: "enct_month",

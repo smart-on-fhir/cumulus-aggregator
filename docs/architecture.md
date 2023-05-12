@@ -1,14 +1,23 @@
+---
+title: Architecture
+parent: Aggregator
+nav_order: 1
+# audience: engineer familiar with the project
+# type: explanation
+---
+
 # Aggregator architecture
 
 ## Terminology
 
-The aggregator uses the following terms as context signifiers:
+The Aggregator uses the following terms as context signifiers:
 
-- **ETL** in this context refers to the [Cumulus ETL](https://github.com/smart-on-fhir/cumulus-etl), which extracts data from an EHR system
-- **Library** in this context refers to the [Cumulus Library](https://github.com/smart-on-fhir/library), which allows an SME to design queries against the outputs of the ETL to generate datasets
-- **Site** is shorthand for any Cumulus participant that is uploading data to the aggregator. They will be running queries from the library against their own EHR system
+- **ETL** in this context refers to the [Cumulus ETL](https://docs.smarthealthit.org/cumulus/etl/), which extracts data from an EHR system
+- **Library** in this context refers to the [Cumulus Library](https://docs.smarthealthit.org/cumulus/library/), which allows an SME to design queries against the outputs of the ETL to generate datasets
+- **Site** is shorthand for any Cumulus participant that is uploading data to the aggregator.
+  They will be running queries from the Library against their own EHR system.
 - **Study** is the name for any research grant topic being addressed in Cumulus, such as Covid or Lyme
-- **Data package** is the name for a file created by Library query as part of a study that is uploaded to the aggregator, and is focused on a single topic within that study. A study may have many data packages. They are expected to be in paquet format.
+- **Data package** is the name for a file created by Library query as part of a study that is uploaded to the aggregator, and is focused on a single topic within that study. A study may have many data packages. They are expected to be in parquet format.
 - **Aggregates** are combinations of similar data packages, from the same study, from as many sites as have uploaded that type of data package. 
 - **Subscriptions** are aggregates that have been processed by AWS Glue and are available as Athena tables, and thus are available to be used by the dashboard for generating charts
 
@@ -38,7 +47,7 @@ All data files are logically grouped by site, study, and data package. Data move
 - `site_upload` contains files in the state they were provided from the providing site.
 - If a file in `site_upload` is a valid file, it is moved to `latest` for joining as part of an aggregate. Otherwise, it is moved to `error`.
 - A file in `latest` will be joined with other previously aggregated files, contained in `last_valid`. If it successful, it replaces a matching file for the site/study/data package in `last_valid`. If not, it is moved to `error`.
-- A file in `last_valid` will be used for aggregation within a site/study/data package for uploads from other locations, up until it is replaced by a more recent, successfully aggregated file for that site/study/data package, at which point it will be moved to `archive` with a timestamp of when the move occured.
+- A file in `last_valid` will be used for aggregation within a site/study/data package for uploads from other locations, up until it is replaced by a more recent, successfully aggregated file for that site/study/data package, at which point it will be moved to `archive` with a timestamp of when the move occurred.
 - Files in `aggregates` and `csv_aggregates` are created after aggregation is completed. The former (in parquet) is used as the data Athena queries, while the latter is mostly used in case a user wants a human-readable version of the same data.
 - Files in `error` are timestamped with the time they were moved into the error state. Corresponding logs for the error can be found in CloudWatch
 
@@ -52,4 +61,4 @@ The dashboard API gateway provides a set of endpoints aimed at servicing the Cum
 
 - Metadata, exposing which sites have uploaded what study's data packages, and when the last time was it traversed through a relevant state in the data processing pipeline
 - Subscriptions, exposing which aggregates have been crawled by glue and are ready to be queried
-- Chart data, which allows for passing psuedo query parameters to extract subsets of an aggregate associated with a subscription for graphing in Cumulus.
+- Chart data, which allows for passing pseudo query parameters to extract subsets of an aggregate associated with a subscription for graphing in Cumulus.
