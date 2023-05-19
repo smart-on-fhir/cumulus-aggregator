@@ -28,3 +28,4 @@ def test_get_subscriptions(mocker: MockerFixture):
     res = subscriptions_handler({}, {})
     assert res["statusCode"] == 200
     assert SUBSCRIPTION_COUNT == 2
+    assert "Access-Control-Allow-Origin" in res["headers"]

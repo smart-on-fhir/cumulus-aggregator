@@ -4,6 +4,15 @@ Description: >-
 Transform:
 - AWS::Serverless-2016-10-31
 
+#TODO: This is only meant for the dashboard API, that should be split into
+# a child template
+Globals:
+  Api:
+    Cors:
+      AllowMethods: "'GET'"
+      AllowHeaders: "'*'"
+      AllowOrigin: "'*'"
+
 Parameters:
   BucketNameParameter:
     Type: String

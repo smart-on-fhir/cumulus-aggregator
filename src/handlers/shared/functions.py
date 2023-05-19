@@ -26,13 +26,22 @@ STUDY_PERIOD_METADATA_TEMPLATE = {
 }
 
 
-def http_response(status: int, body: str) -> Dict:
+def http_response(status: int, body: str, allow_cors: bool = False) -> Dict:
     """Generates the payload AWS lambda expects as a return value"""
+    headers = {"Content-Type": "application/json"}
+    if allow_cors:
+        headers.update(
+            {
+                "Access-Control-Allow-Headers": "Content-Type",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET",
+            }
+        )
     return {
         "isBase64Encoded": False,
         "statusCode": status,
         "body": json.dumps(body),
-        "headers": {"Content-Type": "application/json"},
+        "headers": headers,
     }
 
 
