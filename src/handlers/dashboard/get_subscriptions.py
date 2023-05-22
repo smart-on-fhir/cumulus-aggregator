@@ -30,5 +30,5 @@ def subscriptions_handler(event, context):
     )
     # df.iloc[:, 0] is getting the first pandas Series from the awswrangler datafame.
     # Should be insulated from the change mentioned above
-    res = http_response(200, df.iloc[:, 0].to_json(orient="values"))
+    res = http_response(200, df.iloc[:, 0].to_json(orient="values"), allow_cors=True)
     return res

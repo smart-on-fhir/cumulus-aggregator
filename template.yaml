@@ -4,6 +4,23 @@ Description: >-
 Transform:
 - AWS::Serverless-2016-10-31
 
+# TODO: The global section is only meant for the dashboard API. We should split
+# out the dashboard API into its own cloudformation template to limit this scope.
+
+# Generally we are being lax w.r.t. CORS at the moment with the
+# following items in mind:
+# - The dashboard API is not wired up to a public URL
+# - you can only access the private URL while on the BCH VPN
+# - We want to be able to test from localhost in dev environment
+# - When we are ready to move to staging/prod with this, we will add an API key
+# - We may wire origins to a parameter populated per environment
+Globals:
+  Api:
+    Cors:
+      AllowMethods: "'GET'"
+      AllowHeaders: "'*'"
+      AllowOrigin: "'*'"
+
 Parameters:
   BucketNameParameter:
     Type: String

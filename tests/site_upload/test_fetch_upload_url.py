@@ -34,3 +34,4 @@ def test_fetch_upload_url(body, status, mock_bucket):
     )
     print(response)
     assert response["statusCode"] == status
+    assert "Access-Control-Allow-Origin" not in response["headers"]
