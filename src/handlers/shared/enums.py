@@ -8,6 +8,7 @@ class BucketPath(Enum):
     ADMIN = "admin"
     AGGREGATE = "aggregates"
     ARCHIVE = "archive"
+    CACHE = "cache"
     CSVAGGREGATE = "csv_aggregates"
     ERROR = "error"
     LAST_VALID = "last_valid"
@@ -17,8 +18,9 @@ class BucketPath(Enum):
     UPLOAD = "site_upload"
 
 
-class JsonDict(Enum):
-    """stores names of expected kinds of S3 json dictionaries"""
+class JsonFilename(Enum):
+    """stores names of expected kinds of persisted S3 JSON files"""
 
     TRANSACTIONS = "transactions"
+    DATA_PACKAGES = "data_packages"
     STUDY_PERIODS = "study_periods"

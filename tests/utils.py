@@ -5,8 +5,9 @@ TEST_WORKGROUP = "cumulus-aggregator-test-wg"
 TEST_GLUE_DB = "cumulus-aggregator-test-db"
 TEST_PROCESS_COUNTS_ARN = "arn:aws:sns:us-east-1:123456789012:test-counts"
 TEST_PROCESS_STUDY_META_ARN = "arn:aws:sns:us-east-1:123456789012:test-meta"
-ITEM_COUNT = 8
-SUBSCRIPTION_COUNT = 2
+TEST_CACHE_API_ARN = "arn:aws:sns:us-east-1:123456789012:test-cache"
+ITEM_COUNT = 9
+DATA_PACKAGE_COUNT = 2
 
 # This is a convenience for loading into os.environ with mock.patch.dict.
 # Other cases should probably use the getter version below.
@@ -16,6 +17,7 @@ MOCK_ENV = {
     "WORKGROUP_NAME": TEST_WORKGROUP,
     "TOPIC_PROCESS_COUNTS_ARN": TEST_PROCESS_COUNTS_ARN,
     "TOPIC_PROCESS_STUDY_META_ARN": TEST_PROCESS_STUDY_META_ARN,
+    "TOPIC_CACHE_API_ARN": TEST_CACHE_API_ARN,
 }
 
 
@@ -94,6 +96,10 @@ def get_mock_auth():
         # u/a: hope_3 test_3
         "aG9wZV8zOnRlc3RfMw==": {"site": "hope"},
     }
+
+
+def get_mock_data_packages_cache():
+    return ["covid__encounter", "lyme__encounter"]
 
 
 def get_mock_env():

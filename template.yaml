@@ -127,6 +127,7 @@ Resources:
       Environment:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+          TOPIC_CACHE_API_ARN: !Ref SNSTopicCacheAPI
       Events:
         ProcessUploadSNSEvent:
           Type: SNS
@@ -135,6 +136,8 @@ Resources:
       Policies:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt SNSTopicCacheAPI.TopicName
 
   StudyPeriodFunction:
     Type: AWS::Serverless::Function
@@ -157,6 +160,46 @@ Resources:
       Policies:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+
+  CacheAPIFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggCacheAPI-${DeployStage}'
+      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:1]
+      Handler: src/handlers/site_upload/cache_api.cache_api_handler
+      Runtime: python3.9
+      MemorySize: 512
+      Timeout: 800
+      Description: Caches selected database queries to S3
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+          GLUE_DB_NAME: !Sub '${GlueNameParameter}-${DeployStage}'
+          WORKGROUP_NAME: !Sub '${AthenaWorkgroupNameParameter}-${DeployStage}'
+      Events:
+        CacheAPISNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref SNSTopicCacheAPI
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+        - Statement:
+          - Sid: GluePermissionsPolicy
+            Effect: Allow
+            Action:
+              - glue:*Table*
+              - glue:*Partition*
+            Resource: 
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueNameParameter}-${DeployStage}'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueNameParameter}-${DeployStage}/*'
+        - Statement:
+          - Sid: AthenaExecuteQueryPermissionsPolicy
+            Effect: Allow
+            Action:
+              - athena:*
+            Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}'
 
   # Dashboard API
 
@@ -243,12 +286,12 @@ Resources:
         - S3ReadPolicy:
             BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
 
-  DashboardGetSubscriptionsFunction:
+  DashboardDataPackagesFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'CumulusAggDashboardGetSubscriptions-${DeployStage}'
+      FunctionName: !Sub 'CumulusAggDashboardDataPackages-${DeployStage}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:1]
-      Handler: src/handlers/dashboard/get_subscriptions.subscriptions_handler
+      Handler: src/handlers/dashboard/get_data_packages.data_packages_handler
       Runtime: python3.9
       MemorySize: 512
       Timeout: 100
@@ -259,11 +302,11 @@ Resources:
           GLUE_DB_NAME: !Sub '${GlueNameParameter}-${DeployStage}'
           WORKGROUP_NAME: !Sub '${AthenaWorkgroupNameParameter}-${DeployStage}'
       Events:
-        GetSubscriptionsAPI:
+        DataPackagesAPI:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /subscriptions
+            Path: /data_packages
             Method: GET
       # TODO: it :should: be possible to move these policies to a central role/policy
       # set that can be referenced in multiple places; see
@@ -357,6 +400,15 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub 'CumulusProcessStudyMeta-${DeployStage}'
+
+  SNSTopicCacheAPI:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'SNSTopicCacheAPI-${DeployStage}'
+      Tags:
+        - Key: Name
+          Value: !Sub 'SNSTopicCacheAPI-${DeployStage}'
+
 
 ### S3 Buckets
 

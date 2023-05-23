@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 import boto3
 
-from src.handlers.shared.enums import BucketPath, JsonDict
+from src.handlers.shared.enums import BucketPath, JsonFilename
 
 TRANSACTION_METADATA_TEMPLATE = {
     "version": "1.0",
@@ -50,13 +50,13 @@ def http_response(status: int, body: str, allow_cors: bool = False) -> Dict:
 
 def check_meta_type(meta_type: str) -> None:
     """helper for ensuring specified metadata types"""
-    types = [item.value for item in JsonDict]
+    types = [item.value for item in JsonFilename]
     if meta_type not in types:
         raise ValueError("invalid metadata type specified")
 
 
 def read_metadata(
-    s3_client, s3_bucket_name: str, meta_type: str = JsonDict.TRANSACTIONS.value
+    s3_client, s3_bucket_name: str, meta_type: str = JsonFilename.TRANSACTIONS.value
 ) -> Dict:
     """Reads transaction information from an s3 bucket as a dictionary"""
     check_meta_type(meta_type)
@@ -77,11 +77,11 @@ def update_metadata(
     data_package: str,
     target: str,
     dt: Optional[datetime] = None,
-    meta_type: str = JsonDict.TRANSACTIONS.value,
+    meta_type: str = JsonFilename.TRANSACTIONS.value,
 ):
     """Safely updates items in metadata dictionary"""
     check_meta_type(meta_type)
-    if meta_type == JsonDict.TRANSACTIONS.value:
+    if meta_type == JsonFilename.TRANSACTIONS.value:
         site_metadata = metadata.setdefault(site, {})
         study_metadata = site_metadata.setdefault(study, {})
         data_package_metadata = study_metadata.setdefault(
@@ -89,7 +89,7 @@ def update_metadata(
         )
         dt = dt or datetime.now(timezone.utc)
         data_package_metadata[target] = dt.isoformat()
-    elif meta_type == JsonDict.STUDY_PERIODS.value:
+    elif meta_type == JsonFilename.STUDY_PERIODS.value:
         site_metadata = metadata.setdefault(site, {})
         study_period_metadata = site_metadata.setdefault(
             study, STUDY_PERIOD_METADATA_TEMPLATE
@@ -103,7 +103,7 @@ def write_metadata(
     s3_client,
     s3_bucket_name: str,
     metadata: Dict,
-    meta_type: str = JsonDict.TRANSACTIONS.value,
+    meta_type: str = JsonFilename.TRANSACTIONS.value,
 ) -> None:
     """Writes transaction info from ∏a dictionary to an s3 bucket metadata location"""
     check_meta_type(meta_type)
@@ -139,8 +139,8 @@ def move_s3_file(s3_client, s3_bucket_name: str, old_key: str, new_key: str) -> 
 def get_s3_site_filename_suffix(s3_path: str):
     """Extracts site/filename data from s3 path"""
     # The expected s3 path for site data packages looks like:
-    #   s3://bucket_name/enum_value/site/study/subscription/file
-    # so this is returning subscription/file
+    #   s3://bucket_name/enum_value/site/study/data_package/file
+    # so this is returning data_package/file
     return "/".join(s3_path.split("/")[6:])
 
 
