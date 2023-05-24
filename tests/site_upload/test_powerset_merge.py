@@ -21,9 +21,6 @@ STUDY_NAME = "study"
 DATA_P_NAME = "encounter"
 
 
-""""""
-
-
 @freeze_time("2020-01-01")
 @pytest.mark.parametrize(
     "site,upload_file,upload_path,event_key,archives,status,expected_contents",
