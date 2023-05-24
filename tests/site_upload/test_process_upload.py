@@ -60,8 +60,14 @@ from tests.utils import TEST_BUCKET, ITEM_COUNT
         (  # Adding study metadata data package
             "princeton_plainsboro_teaching_hospital",
             "./tests/test_data/cube_simple_example.parquet",
-            "/covid/encounter/princeton_plainsboro_teaching_hospital/document_meta_date.parquet",
-            "/covid/encounter/princeton_plainsboro_teaching_hospital/document_meta_date.parquet",
+            (
+                "/covid/encounter/princeton_plainsboro_teaching_hospital/"
+                "document_meta_date.parquet"
+            ),
+            (
+                "/covid/encounter/princeton_plainsboro_teaching_hospital/"
+                "document_meta_date.parquet"
+            ),
             200,
             ITEM_COUNT + 1,
         ),

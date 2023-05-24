@@ -20,8 +20,14 @@ from tests.utils import get_mock_study_metadata, TEST_BUCKET
         (  # Adding a new study to an existing site
             "princeton_plainsboro_teaching_hospital",
             "./tests/test_data/meta_date.parquet",
-            "/test/test_meta_date/princeton_plainsboro_teaching_hospital/test_meta_date.parquet",
-            "/test/test_meta_date/princeton_plainsboro_teaching_hospital/test_meta_date.parquet",
+            (
+                "/test/test_meta_date/princeton_plainsboro_teaching_hospital/"
+                "test_meta_date.parquet"
+            ),
+            (
+                "/test/test_meta_date/princeton_plainsboro_teaching_hospital/"
+                "test_meta_date.parquet"
+            ),
             200,
             "test",
         ),
@@ -36,8 +42,14 @@ from tests.utils import get_mock_study_metadata, TEST_BUCKET
         (  # updating an existing study
             "princeton_plainsboro_teaching_hospital",
             "./tests/test_data/meta_date.parquet",
-            "/covid/test_meta_date/princeton_plainsboro_teaching_hospital/test_meta_date.parquet",
-            "/covid/test_meta_date/princeton_plainsboro_teaching_hospital/test_meta_date.parquet",
+            (
+                "/covid/test_meta_date/princeton_plainsboro_teaching_hospital/"
+                "test_meta_date.parquet"
+            ),
+            (
+                "/covid/test_meta_date/princeton_plainsboro_teaching_hospital/"
+                "test_meta_date.parquet"
+            ),
             200,
             "covid",
         ),
@@ -45,7 +57,10 @@ from tests.utils import get_mock_study_metadata, TEST_BUCKET
             "princeton_plainsboro_teaching_hospital",
             "./tests/test_data/meta_date.parquet",
             None,
-            "/covid/test_meta_date/princeton_plainsboro_teaching_hospital/wrong.parquet",
+            (
+                "/covid/test_meta_date/princeton_plainsboro_teaching_hospital/"
+                "wrong.parquet"
+            ),
             500,
             None,
         ),
