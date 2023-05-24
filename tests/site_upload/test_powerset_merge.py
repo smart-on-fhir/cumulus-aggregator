@@ -16,7 +16,7 @@ from src.handlers.site_upload.powerset_merge import powerset_merge_handler
 from tests.utils import get_mock_metadata, TEST_BUCKET, ITEM_COUNT, MOCK_ENV
 
 
-SITE_NAME = "general_hospital"
+SITE_NAME = "princeton_plainsboro_teaching_hospital"
 STUDY_NAME = "study"
 DATA_P_NAME = "encounter"
 
