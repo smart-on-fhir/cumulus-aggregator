@@ -1,6 +1,8 @@
 import boto3
 import os
 
+from unittest import mock
+
 import awswrangler
 import pytest
 
@@ -11,7 +13,7 @@ from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import read_metadata, write_metadata
 from src.handlers.site_upload.powerset_merge import powerset_merge_handler
 
-from tests.utils import get_mock_metadata, TEST_BUCKET, ITEM_COUNT
+from tests.utils import get_mock_metadata, TEST_BUCKET, ITEM_COUNT, MOCK_ENV
 
 
 SITE_NAME = "general_hospital"
@@ -61,6 +63,7 @@ DATA_P_NAME = "encounter"
         ),
     ],
 )
+@mock.patch.dict(os.environ, MOCK_ENV)
 def test_powerset_merge(
     site,
     upload_file,
@@ -70,6 +73,7 @@ def test_powerset_merge(
     status,
     expected_contents,
     mock_bucket,
+    mock_notification,
 ):
     s3_client = boto3.client("s3", region_name="us-east-1")
     if upload_file is not None:
@@ -137,6 +141,7 @@ def test_powerset_merge(
                 item["Key"].startswith(BucketPath.ARCHIVE.value)
                 or item["Key"].startswith(BucketPath.ERROR.value)
                 or item["Key"].startswith(BucketPath.ADMIN.value)
+                or item["Key"].startswith(BucketPath.CACHE.value)
                 or item["Key"].endswith("study_periods.json")
             )
     if archives:

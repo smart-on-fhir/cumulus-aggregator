@@ -77,7 +77,7 @@ def expand_and_concat_sets(
 
 
 def merge_powersets(
-    s3_client, s3_bucket_name: str, site: str, study: str, data_package: str
+    s3_client, sns_client, s3_bucket_name: str, site: str, study: str, data_package: str
 ) -> None:
     """Creates an aggregate powerset from all files with a given s3 prefix"""
     # TODO: this should be memory profiled for large datasets. We can use
@@ -108,6 +108,7 @@ def merge_powersets(
         timestamped_name = f".{date_str}.".join(site_specific_name.split("."))
         timestamped_path = f"{study}/{data_package}/{timestamped_name}"
         try:
+            is_new_data_package = False
             # if we're going to replace a file in last_valid, archive the old data
             if any(x.endswith(site_specific_name) for x in last_valid_file_list):
                 source = {
@@ -119,6 +120,11 @@ def merge_powersets(
                     Bucket=s3_bucket_name,
                     Key=f"{BucketPath.ARCHIVE.value}/{timestamped_path}",
                 )
+
+            # otherwise, this is the first instance - after it's in the database,
+            # we'll generate a new list of valid tables for the dashboard
+            else:
+                is_new_data_package = True
             df = expand_and_concat_sets(df, s3_path, site)
             move_s3_file(
                 s3_client,
@@ -171,6 +177,11 @@ def merge_powersets(
     # dataframe it's called on, so this should always be the last action applied
     # to this dataframe, or a deep copy could be made (though mind memory overhead).
     awswrangler.s3.to_parquet(df, aggregate_path, index=False)
+    if is_new_data_package:
+        topic_sns_arn = os.environ.get("TOPIC_CACHE_API_ARN")
+        sns_client.publish(
+            TopicArn=topic_sns_arn, Message="data_packages", Subject="data_packages"
+        )
 
 
 @generic_error_handler(msg="Error merging powersets")
@@ -184,6 +195,7 @@ def powerset_merge_handler(event, context):
     site = s3_key_array[3]
     study = s3_key_array[1]
     data_package = s3_key_array[2]
-    merge_powersets(s3_client, s3_bucket, site, study, data_package)
+    sns_client = boto3.client("sns")
+    merge_powersets(s3_client, sns_client, s3_bucket, site, study, data_package)
     res = http_response(200, "Merge successful")
     return res

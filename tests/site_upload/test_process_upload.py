@@ -115,5 +115,6 @@ def test_process_upload(
                 or item["Key"].startswith(BucketPath.LAST_VALID.value)
                 or item["Key"].startswith(BucketPath.ERROR.value)
                 or item["Key"].startswith(BucketPath.ADMIN.value)
+                or item["Key"].startswith(BucketPath.CACHE.value)
                 or item["Key"].endswith("study_periods.json")
             )

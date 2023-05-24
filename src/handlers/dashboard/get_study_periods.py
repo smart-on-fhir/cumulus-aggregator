@@ -5,7 +5,7 @@ import os
 import boto3
 
 from src.handlers.shared.decorators import generic_error_handler
-from src.handlers.shared.enums import JsonDict
+from src.handlers.shared.enums import JsonFilename
 from src.handlers.shared.functions import http_response, read_metadata
 
 
@@ -16,7 +16,7 @@ def study_periods_handler(event, context):
     s3_bucket = os.environ.get("BUCKET_NAME")
     s3_client = boto3.client("s3")
     metadata = read_metadata(
-        s3_client, s3_bucket, meta_type=JsonDict.STUDY_PERIODS.value
+        s3_client, s3_bucket, meta_type=JsonFilename.STUDY_PERIODS.value
     )
     if params := event["pathParameters"]:
         if "site" in params:

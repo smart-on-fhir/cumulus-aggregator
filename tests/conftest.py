@@ -10,7 +10,7 @@ import pytest
 from moto import mock_s3, mock_athena, mock_sns
 
 from scripts.credential_management import create_auth, create_meta
-from src.handlers.shared.enums import BucketPath
+from src.handlers.shared.enums import BucketPath, JsonFilename
 from src.handlers.shared.functions import write_metadata
 from tests.utils import get_mock_metadata, get_mock_study_metadata, ITEM_COUNT, MOCK_ENV
 
@@ -27,6 +27,11 @@ def _init_mock_data(s3_client, bucket_name, study, data_package):
         bucket_name,
         f"{BucketPath.CSVAGGREGATE.value}/{study}/"
         f"{study}__{data_package}/{study}__{data_package}__aggregate.csv",
+    )
+    s3_client.upload_file(
+        "./tests/test_data/data_packages_cache.json",
+        bucket_name,
+        f"{BucketPath.CACHE.value}/{JsonFilename.DATA_PACKAGES.value}.json",
     )
     create_auth(s3_client, bucket_name, "general_1", "test_1", "general")
     create_meta(s3_client, bucket_name, "general", "general_hospital")
@@ -67,11 +72,15 @@ def mock_bucket():
 
 @pytest.fixture
 def mock_notification():
+    """Mocks for SNS topics.
+
+    Make sure the topic name matches the end of the ARN defined in utils.py"""
     sns = mock_sns()
     sns.start()
     sns_client = boto3.client("sns", region_name="us-east-1")
     sns_client.create_topic(Name="test-counts")
     sns_client.create_topic(Name="test-meta")
+    sns_client.create_topic(Name="test-cache")
     yield
     sns.stop()
 

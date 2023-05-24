@@ -26,8 +26,71 @@ paths:
         required: true
         schema:
           type: "string"
+    options:
+      parameters:
+      - name: "study"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "subscription"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+  /data_packages:
+    get: {}
+    options:
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
   /metadata:
     get: {}
+    options:
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
   /chart-data/{subscription_name}:
     get:
       parameters:
@@ -36,6 +99,27 @@ paths:
         required: true
         schema:
           type: "string"
+    options:
+      parameters:
+      - name: "subscription_name"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
   /study-periods/{site}:
     get:
       parameters:
@@ -44,8 +128,27 @@ paths:
         required: true
         schema:
           type: "string"
-  /subscriptions:
-    get: {}
+    options:
+      parameters:
+      - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
   /metadata/{site}/{study}:
     get:
       parameters:
@@ -59,6 +162,32 @@ paths:
         required: true
         schema:
           type: "string"
+    options:
+      parameters:
+      - name: "study"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
   /metadata/{site}:
     get:
       parameters:
@@ -67,6 +196,27 @@ paths:
         required: true
         schema:
           type: "string"
+    options:
+      parameters:
+      - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
   /study-periods/{site}/{study}:
     get:
       parameters:
@@ -80,6 +230,48 @@ paths:
         required: true
         schema:
           type: "string"
+    options:
+      parameters:
+      - name: "study"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
   /study-periods:
     get: {}
+    options:
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
 components: {}
+
