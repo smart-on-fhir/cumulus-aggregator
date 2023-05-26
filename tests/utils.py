@@ -89,8 +89,8 @@ def get_mock_study_metadata():
 
 def get_mock_auth():
     return {
-        # u/a: general_1 test_1
-        "Z2VuZXJhbF8xOnRlc3RfMQ==": {"site": "general"},
+        # u/a: ppth_1 test_1
+        "cHB0aF8xOnRlc3RfMQ==": {"site": "ppth"},
         # u/a: elsewhere_2 test_2
         "ZWxzZXdoZXJlXzI6dGVzdF8y": {"site": "elsewhere"},
         # u/a: hope_3 test_3

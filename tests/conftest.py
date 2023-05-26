@@ -33,8 +33,10 @@ def _init_mock_data(s3_client, bucket_name, study, data_package):
         bucket_name,
         f"{BucketPath.CACHE.value}/{JsonFilename.DATA_PACKAGES.value}.json",
     )
-    create_auth(s3_client, bucket_name, "general_1", "test_1", "general")
-    create_meta(s3_client, bucket_name, "general", "general_hospital")
+    create_auth(s3_client, bucket_name, "ppth_1", "test_1", "ppth")
+    create_meta(
+        s3_client, bucket_name, "ppth", "princeton_plainsboro_teaching_hospital"
+    )
     create_auth(s3_client, bucket_name, "elsewhere_2", "test_2", "elsewhere")
     create_meta(s3_client, bucket_name, "elsewhere", "st_elsewhere")
     create_auth(s3_client, bucket_name, "hope_3", "test_3", "hope")

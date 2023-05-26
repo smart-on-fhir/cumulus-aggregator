@@ -26,7 +26,7 @@ from tests.utils import TEST_BUCKET, get_mock_metadata
 def test_fetch_upload_url(body, status, mock_bucket):
     context = {
         "authorizer": {
-            "principalId": "general",
+            "principalId": "ppth",
         }
     }
     response = upload_url_handler(
