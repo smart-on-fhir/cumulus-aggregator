@@ -20,6 +20,7 @@ To create a new user, you would need to run the following two commands:
 
 Creating a user:
 `./scripts/cumulus_upload_data.py --ca user_name auth_secret site_short_name`
+
 Associating a site with an s3 directory:
 `./scripts/cumulus_upload_data.py --cm site_short_name s3_folder_name`
 

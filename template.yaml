@@ -39,10 +39,16 @@ Parameters:
       - prod
   AggregatorDomainName:
     Type: String
+  DashboardApiDomainName:
+    Type: String    
   AggregatorCertArn:
     Type: String
+  DashboardApiCertArn:
+    Type: String    
   AggregatorHostedZoneID:
     Type: String
+  RetentionTime:
+    Type: Number
 
 
 Resources:
@@ -66,7 +72,13 @@ Resources:
           REGION: !Ref "AWS::Region"
       Policies:
         - S3ReadPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'       
+
+  FetchAuthorizerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/lambda/${FetchAuthorizerFunction}"
+      RetentionInDays: !Ref RetentionTime
 
   FetchUploadUrlFunction:
     Type: AWS::Serverless::Function
@@ -92,6 +104,12 @@ Resources:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
 
+  FetchUploadUrlLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/lambda/${FetchUploadUrlFunction}"
+      RetentionInDays: !Ref RetentionTime
+
   ProcessUploadFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -113,6 +131,12 @@ Resources:
             TopicName: !GetAtt SNSTopicProcessCounts.TopicName
         - SNSPublishMessagePolicy:
             TopicName: !GetAtt SNSTopicProcessStudyMeta.TopicName
+
+  ProcessUploadLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/lambda/${ProcessUploadFunction}"
+      RetentionInDays: !Ref RetentionTime
 
   PowersetMergeFunction:
     Type: AWS::Serverless::Function
@@ -139,6 +163,12 @@ Resources:
         - SNSPublishMessagePolicy:
             TopicName: !GetAtt SNSTopicCacheAPI.TopicName
 
+  PowersetMergeLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/lambda/${PowersetMergeFunction}"
+      RetentionInDays: !Ref RetentionTime
+
   StudyPeriodFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -160,6 +190,12 @@ Resources:
       Policies:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+
+  StudyPeriodLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/lambda/${StudyPeriodFunction}"
+      RetentionInDays: !Ref RetentionTime
 
   CacheAPIFunction:
     Type: AWS::Serverless::Function
@@ -200,6 +236,12 @@ Resources:
             Action:
               - athena:*
             Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}'
+
+  CacheAPILogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/lambda/${CacheAPIFunction}"
+      RetentionInDays: !Ref RetentionTime
 
   # Dashboard API
 
@@ -245,6 +287,12 @@ Resources:
               - athena:*
             Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}'
 
+  DashboardGetChartDataLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/lambda/${DashboardGetChartDataFunction}"
+      RetentionInDays: !Ref RetentionTime
+
   DashboardGetMetadataFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -285,6 +333,12 @@ Resources:
       Policies:
         - S3ReadPolicy:
             BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+
+  DashboardGetMetadataLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/lambda/${DashboardGetMetadataFunction}"
+      RetentionInDays: !Ref RetentionTime
 
   DashboardDataPackagesFunction:
     Type: AWS::Serverless::Function
@@ -337,6 +391,12 @@ Resources:
               - athena:StopQueryExecution
             Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}'
 
+  DashboardDataPackagesLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/lambda/${DashboardDataPackagesFunction}"
+      RetentionInDays: !Ref RetentionTime  
+
   DashboardGetStudyPeriodsFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -371,6 +431,12 @@ Resources:
       Policies:
         - S3ReadPolicy:
             BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+
+  DashboardGetStudyPeriodsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/lambda/${DashboardGetStudyPeriodsFunction}"
+      RetentionInDays: !Ref RetentionTime 
 
 ### Lambda permissions
 
@@ -548,6 +614,32 @@ Resources:
 #          ResourcePath: '/*' # allows for logging on any resource
 #          HttpMethod: '*' # allows for logging on any method
 
+  DashboardApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref DeployStage
+      Name: !Sub "CumulusAggregatorDashboardApi-${DeployStage}"
+      Auth:
+        ApiKeyRequired: true
+        UsagePlan:
+          CreateUsagePlan: PER_API
+          Description: !Sub "Usage plan for Cumulus dashboard ${DeployStage} API"
+          UsagePlanName: !Sub "CumulusAggregatorDashboardUsagePlan-${DeployStage}"
+# If your data API does not require external access, remove/comment this domain node
+      Domain:
+        DomainName: !Ref DashboardApiDomainName
+        CertificateArn: !Ref DashboardApiCertArn
+        EndpointConfiguration: EDGE
+        Route53:
+          HostedZoneId: !Ref AggregatorHostedZoneID
+
+#      MethodSettings:
+#        - LoggingLevel: INFO
+#          MetricsEnabled: True
+#          DataTraceEnabled: True
+#          ResourcePath: '/*' # allows for logging on any resource
+#          HttpMethod: '*' # allows for logging on any method
+
 ### Cloudwatch Logging infra for API gateway
 
 # The following ensures that logs generated by SiteAPIGateway will actually get
@@ -572,14 +664,6 @@ Resources:
 #        ManagedPolicyArns:
 #          - 'arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
 
-
-  # TODO: we will add a gateway API key to this when the dashboard is ready
-  # to handle it
-  DashboardApiGateway:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: !Ref DeployStage
-      Name: !Sub "CumulusAggregatorDashboardApi-${DeployStage}"
 
 Outputs:
   SiteWebEndpoint:

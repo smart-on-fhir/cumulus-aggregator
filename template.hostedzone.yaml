@@ -89,6 +89,33 @@ Resources:
           HostedZoneId: !Ref CumulusHostedZone
       ValidationMethod: DNS
 
+  AcmApiCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub "api.${Domain}"
+      DomainValidationOptions:
+        - DomainName: !Sub "api.${Domain}"
+          HostedZoneId: !Ref CumulusHostedZone
+      ValidationMethod: DNS
+
+  AcmStagingApiCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub "staging.api.${Domain}"
+      DomainValidationOptions:
+        - DomainName: !Sub "staging.api.${Domain}"
+          HostedZoneId: !Ref CumulusHostedZone
+      ValidationMethod: DNS
+
+  AcmDevApiCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub "dev.api.${Domain}"
+      DomainValidationOptions:
+        - DomainName: !Sub "dev.api.${Domain}"
+          HostedZoneId: !Ref CumulusHostedZone
+      ValidationMethod: DNS
+
 Outputs:
   RootCertificateArn:
     Description: "ACM Root Certificate ARN"
@@ -121,6 +148,18 @@ Outputs:
   AggDevCertificateArn:
     Description: "ACM Dev Aggregator Certificate ARN"
     Value: !Ref AcmDevAggCertificate
+
+  ApiCertificateArn:
+    Description: "ACM Aggregator Certificate ARN"
+    Value: !Ref AcmApiCertificate
+
+  ApiStagingCertificateArn:
+    Description: "ACM Staging Aggregator Certificate ARN"
+    Value: !Ref AcmStagingApiCertificate
+
+  ApiDevCertificateArn:
+    Description: "ACM Dev Aggregator Certificate ARN"
+    Value: !Ref AcmDevApiCertificate
 
   CumulusHostedZoneId:
     Description: "Cumulus Hosted Zone ID"

@@ -58,7 +58,7 @@ s3_prefix = "cumulus-aggregator-dev"
 region = "us-east-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
-parameter_overrides = "DeployStage=\"dev\" AggregatorDomainName=\"dev.aggregator.yourdomain.org\" AggregatorHostedZoneID=\"1234567890ABCDEFHIJ\" AggregatorCertArn=\"arn:aws:acm:us-east-1:1234567890:certificate/12345678-90AB-CDEF-0123-4567890ABCD\""
+parameter_overrides = "RetentionTime=7 DeployStage=\"dev\" AggregatorDomainName=\"dev.aggregator.yourdomain.org\" AggregatorHostedZoneID=\"1234567890ABCDEFHIJ\" AggregatorCertArn=\"arn:aws:acm:us-east-1:1234567890:certificate/12345678-90AB-CDEF-0123-4567890ABCD\" DashboardApiDomainName=\"dev.api.yourdomain.org\" DashboardApiCertArn=\"arn:aws:acm:us-east-1:1234567890:certificate/11112222-3333-CDEF-0123-FECDBA0987654\""
 image_repositories = []
 
 [staging]
@@ -70,14 +70,14 @@ s3_prefix = "cumulus-aggregator-staging"
 region = "us-east-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
-parameter_overrides = "DeployStage=\"staging\" AggregatorDomainName=\"staging.aggregator.yourdomain.org\" AggregatorHostedZoneID=\"1234567890ABCDEFHIJ\" AggregatorCertArn=\"aarn:aws:acm:us-east-1:1234567890:certificate/12345678-90AB-CDEF-0123-FECDBA0987654\""
+parameter_overrides = "RetentionTime=7 DeployStage=\"staging\" AggregatorDomainName=\"staging.aggregator.yourdomain.org\" AggregatorHostedZoneID=\"1234567890ABCDEFHIJ\" AggregatorCertArn=\"aarn:aws:acm:us-east-1:1234567890:certificate/12345678-90AB-CDEF-0123-FECDBA0987654\" DashboardApiDomainName=\"staging.api.yourdomain.org\" DashboardApiCertArn=\"arn:aws:acm:us-east-1:1234567890:certificate/11112222-3333-CDEF-0123-FECDBA0987654\""
 image_repositories = []
 ```
 Note that you'll use the same hosted zone for each stage, but a different certificate arn, one per environment. If you skipped external domain setup, just omit those entries
 
 
 If for some reason you don't want to use the samconfig.toml, you could instead do these things, but it's much more error-prone, so please be careful:
-- Add default parameters for `AggregatorCertArn`, `AggregatorHostedZoneID`, `DeployStage`, and `AggregatorHostedDomainName` (if using)
+- Add default parameters for `RetentionTime`, `AggregatorCertArn`, `AggregatorHostedZoneID`, `DashboardApiCertArn`, `DeployStage`, and if using, `AggregatorHostedDomainName` and `DashboardApiDomainName`
 - Create environment variables and assign values to those parameters. Then, whenever you run `sam`, provide a parameter override in place of `--config-env`, with `--parameter-overrides AggregatorCertArn=$CUMULUS_AGG_CERT_ARN AggregatorHostedZoneID=$CUMULUS_AGG_ZONE_ID` (and deploy/domain if using.
 
 
@@ -119,7 +119,7 @@ s3_prefix = "cumulus-aggregator-dev"
 region = "us-east-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
-parameter_overrides = "DeployStage=\"dev\" AggregatorDomainName=\"dev.aggregator.yourdomain.org\" AggregatorHostedZoneID=\"1234567890ABCDEFHIJ\" AggregatorCertArn=\"arn:aws:acm:us-east-1:1234567890:certificate/12345678-90AB-CDEF-0123-4567890ABCD\""
+parameter_overrides = "RetentionTime=7 DeployStage=\"dev\" AggregatorDomainName=\"dev.aggregator.yourdomain.org\" AggregatorHostedZoneID=\"1234567890ABCDEFHIJ\" AggregatorCertArn=\"arn:aws:acm:us-east-1:1234567890:certificate/12345678-90AB-CDEF-0123-4567890ABCD\" DashboardApiDomainName=\"dev.api.yourdomain.org\" DashboardApiCertArn=\"arn:aws:acm:us-east-1:1234567890:certificate/11112222-3333-CDEF-0123-FECDBA0987654\""
 image_repositories = []
 
 ```
