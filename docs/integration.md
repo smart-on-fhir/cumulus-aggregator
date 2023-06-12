@@ -55,4 +55,7 @@ If the quick test was successful, you can test your processing pipeline entirely
 - When the export completes, you should have folders in `./library/data_export` corresponding to the currently configured exportable studies (at the time of this writing, `core` and `covid`). 
 - Run the bulk uploader with `./data_export/bulk_upload.py`
 
-If this works, then you've proved out the whole data export flow and should be able to run a production export flow, just changing the `CUMUMULUS_AGGREGATOR_*` environment variables to point to the production instance.
+If this works, then you've proved out the whole data export flow and should be able to run a production export flow, 
+just changing the `CUMUMULUS_AGGREGATOR_*` environment variables to point to the production instance. 
+If you're using the BCH aggregator, you do not need to specify `CUMULUS_AGGREGATOR_URL`, as that URL is the default
+value in the bulk upload tool.
