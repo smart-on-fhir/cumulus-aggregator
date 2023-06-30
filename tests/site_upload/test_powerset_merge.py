@@ -61,6 +61,15 @@ DATA_P_NAME = "encounter"
             500,
             ITEM_COUNT + 1,
         ),
+        (  # Adding a new data package to a site with uploads
+            f"{SITE_NAME}",
+            "./tests/test_data/cube_strings_with_commas.parquet",
+            f"/{STUDY_NAME}/{DATA_P_NAME}/{SITE_NAME}/encounter.parquet",
+            f"/{STUDY_NAME}/{DATA_P_NAME}/{SITE_NAME}/encounter.parquet",
+            False,
+            200,
+            ITEM_COUNT + 3,
+        ),
     ],
 )
 @mock.patch.dict(os.environ, MOCK_ENV)

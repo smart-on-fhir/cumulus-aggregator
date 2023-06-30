@@ -76,6 +76,23 @@ def expand_and_concat_sets(
     return agg_df
 
 
+def write_parquet(
+    df: pandas.DataFrame, path: str, sns_client, is_new_data_package: bool
+) -> None:
+    awswrangler.s3.to_parquet(df, path, index=False)
+    if is_new_data_package:
+        topic_sns_arn = os.environ.get("TOPIC_CACHE_API_ARN")
+        sns_client.publish(
+            TopicArn=topic_sns_arn, Message="data_packages", Subject="data_packages"
+        )
+
+
+def write_csv(df: pandas.DataFrame, path) -> None:
+    df = df.apply(lambda x: x.strip() if isinstance(x, str) else x).replace('""', nan)
+    df = df.replace(to_replace=r",", value="", regex=True)
+    awswrangler.s3.to_csv(df, path, index=False, quoting=csv.QUOTE_NONE)
+
+
 def merge_powersets(
     s3_client, sns_client, s3_bucket_name: str, site: str, study: str, data_package: str
 ) -> None:
@@ -163,25 +180,25 @@ def merge_powersets(
                     metadata, site, study, data_package, "last_aggregation"
                 )
     write_metadata(s3_client, s3_bucket_name, metadata)
+
+    # In this section, we are trying to accomplish two things:
+    #   - Prepare a csv that can be loaded manually into the dashboard (requiring no
+    #     quotes, which means removing commas from strings)
+    #   - Make a parquet file from the dataframe, which may mutate the dataframe
+    # So we're making a deep copy to isolate these two mutation paths from each other.
+
+    parquet_aggregate_path = (
+        f"s3://{s3_bucket_name}/{BucketPath.AGGREGATE.value}/"
+        f"{study}/{study}__{data_package}/{study}__{data_package}__aggregate.parquet"
+    )
+    write_parquet(
+        df.copy(deep=True), parquet_aggregate_path, sns_client, is_new_data_package
+    )
     csv_aggregate_path = (
         f"s3://{s3_bucket_name}/{BucketPath.CSVAGGREGATE.value}/"
         f"{study}/{study}__{data_package}/{study}__{data_package}__aggregate.csv"
     )
-    df = df.apply(lambda x: x.strip() if isinstance(x, str) else x).replace('""', nan)
-    awswrangler.s3.to_csv(df, csv_aggregate_path, index=False, quoting=csv.QUOTE_NONE)
-    aggregate_path = (
-        f"s3://{s3_bucket_name}/{BucketPath.AGGREGATE.value}/"
-        f"{study}/{study}__{data_package}/{study}__{data_package}__aggregate.parquet"
-    )
-    # Note: the to_parquet function is noted in the docs as potentially mutating the
-    # dataframe it's called on, so this should always be the last action applied
-    # to this dataframe, or a deep copy could be made (though mind memory overhead).
-    awswrangler.s3.to_parquet(df, aggregate_path, index=False)
-    if is_new_data_package:
-        topic_sns_arn = os.environ.get("TOPIC_CACHE_API_ARN")
-        sns_client.publish(
-            TopicArn=topic_sns_arn, Message="data_packages", Subject="data_packages"
-        )
+    write_csv(df, csv_aggregate_path)
 
 
 @generic_error_handler(msg="Error merging powersets")
