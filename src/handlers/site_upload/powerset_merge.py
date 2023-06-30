@@ -163,19 +163,29 @@ def merge_powersets(
                     metadata, site, study, data_package, "last_aggregation"
                 )
     write_metadata(s3_client, s3_bucket_name, metadata)
+
+    # In this section, we are trying to accomplish two things:
+    #   - Prepare a csv that can be loaded manually into the dashboard (requiring no
+    #     quotes, which means removing commas from strings)
+    #   - Make a parquet file from the dataframe, which may mutate the dataframe
+    # So we're making a deep copy to isolate these two mutation paths from each other.
+    df_csv_output = df.copy(deep=True)
     csv_aggregate_path = (
         f"s3://{s3_bucket_name}/{BucketPath.CSVAGGREGATE.value}/"
         f"{study}/{study}__{data_package}/{study}__{data_package}__aggregate.csv"
     )
-    df = df.apply(lambda x: x.strip() if isinstance(x, str) else x).replace('""', nan)
-    awswrangler.s3.to_csv(df, csv_aggregate_path, index=False, quoting=csv.QUOTE_NONE)
+    df_csv_output = df_csv_output.apply(
+        lambda x: x.strip() if isinstance(x, str) else x
+    ).replace('""', nan)
+    df_csv_output = df_csv_output.replace(to_replace=r",", value=";", regex=True)
+    awswrangler.s3.to_csv(
+        df_csv_output, csv_aggregate_path, index=False, quoting=csv.QUOTE_NONE
+    )
+
     aggregate_path = (
         f"s3://{s3_bucket_name}/{BucketPath.AGGREGATE.value}/"
         f"{study}/{study}__{data_package}/{study}__{data_package}__aggregate.parquet"
     )
-    # Note: the to_parquet function is noted in the docs as potentially mutating the
-    # dataframe it's called on, so this should always be the last action applied
-    # to this dataframe, or a deep copy could be made (though mind memory overhead).
     awswrangler.s3.to_parquet(df, aggregate_path, index=False)
     if is_new_data_package:
         topic_sns_arn = os.environ.get("TOPIC_CACHE_API_ARN")
