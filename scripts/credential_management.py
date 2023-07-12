@@ -119,13 +119,13 @@ if __name__ == "__main__":
         if succeeded:
             print(f"Removed {args.delete_auth}")
         else:
-            print(f"{args.da} not found")
+            print(f"{args.delete_auth} not found")
     elif args.create_meta:
         create_meta(s3_client, bucket, args.create_meta[0], args.create_meta[1])
         print(f"{args.create_meta[0]} mapped to S3 folder {args.create_meta[1]}")
     elif args.delete_meta:
         succeeded = delete_meta(s3_client, bucket, args.delete_meta)
         if succeeded:
-            print(f"Unmapped {args.dm}")
+            print(f"Unmapped {args.delete_meta}")
         else:
-            print(f"{args.dm} not found")
+            print(f"{args.delete_meta} not found")

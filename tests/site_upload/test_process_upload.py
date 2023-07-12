@@ -92,7 +92,10 @@ def test_process_upload(
         )
     event = {
         "Records": [
-            {"s3": {"object": {"key": f"{BucketPath.UPLOAD.value}{event_key}"}}}
+            {
+                "awsRegion": "us-east-1",
+                "s3": {"object": {"key": f"{BucketPath.UPLOAD.value}{event_key}"}},
+            }
         ]
     }
 
