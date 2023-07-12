@@ -11,6 +11,15 @@ st_elsewhere - this is a site with prior data, which is usually not
 involved in the current upload
 chicago_hope - this is a site that has no prior data, and may be
 used to test creation of resources
+
+Similarly, we have three study names that are used to express a similar
+set of states:
+- 'study', which has existing data, and is fine for uploading data to
+- 'other_study', which also has existing data, but should not be uploaded
+  to - this helps check for unintended side effects
+- 'new_study' - not mentioned in this file, but this is for uploading 
+  data in the mode of a study which heretofore has not existed in the
+  aggregator
 """
 import os
 
