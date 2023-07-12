@@ -4,6 +4,7 @@ import logging
 import os
 
 from datetime import datetime, timezone
+from typing import Dict
 
 import awswrangler
 import boto3
@@ -25,9 +26,32 @@ from src.handlers.shared.functions import (
 )
 
 
-def get_static_string_series(static_str: str, index: RangeIndex):
+def get_static_string_series(static_str: str, index: RangeIndex) -> pandas.Series:
     """Helper for the verbose way of defining a pandas string series"""
     return pandas.Series([static_str] * len(index)).astype("string")
+
+
+def merge_error_handler(
+    s3_client,
+    s3_path: str,
+    s3_bucket_name: str,
+    bucket_path: BucketPath,
+    subbucket_path: str,
+    metadata: Dict,
+    site: str,
+    study: str,
+    data_package: str,
+    error: Exception,
+) -> None:
+    """Helper for logging errors and moving files"""
+    logging.error("File %s failed to aggregate: %s", s3_path, str(error))
+    move_s3_file(
+        s3_client,
+        s3_bucket_name,
+        f"{bucket_path.value}/{subbucket_path}",
+        f"{BucketPath.ERROR.value}/{subbucket_path}",
+    )
+    metadata = update_metadata(metadata, site, study, data_package, "last_error")
 
 
 def expand_and_concat_sets(
@@ -48,11 +72,19 @@ def expand_and_concat_sets(
         values since the powerset, by definition, contains lots of them.
 
     """
-    #
     site_df = awswrangler.s3.read_parquet(file_path)
+    if site_df.empty:
+        raise ValueError("Uploaded data file is empty")
     df_copy = site_df.copy()
     site_df["site"] = get_static_string_series(None, site_df.index)
     df_copy["site"] = get_static_string_series(site_name, df_copy.index)
+
+    # TODO: we should introduce some kind of data versioning check to see if datasets
+    # are generated from the same vintage. This naive approach will cause a decent
+    # amount of data churn we'll have to manage in the interim.
+    if df.empty is False and set(site_df.columns) != set(df.columns):
+        raise ValueError("Uploaded data has a different schema than last aggregate")
+
     # concating in this way adds a new column we want to explictly drop
     # from the final set
     site_df = pandas.concat([site_df, df_copy]).reset_index().drop("index", axis=1)
@@ -66,7 +98,7 @@ def expand_and_concat_sets(
     agg_df = (
         pandas.concat([df, site_df])
         .groupby(data_cols, dropna=False)
-        .sum()
+        .sum(numeric_only=False)
         .sort_values(by=["cnt", "site"], ascending=False, na_position="first")
         .reset_index()
         # this last line makes "cnt" the first column in the set, matching the
@@ -99,6 +131,8 @@ def merge_powersets(
     """Creates an aggregate powerset from all files with a given s3 prefix"""
     # TODO: this should be memory profiled for large datasets. We can use
     # chunking to lower memory usage during merges.
+
+    is_new_data_package = False
     metadata = read_metadata(s3_client, s3_bucket_name)
     df = pandas.DataFrame()
     latest_file_list = get_s3_data_package_list(
@@ -109,14 +143,31 @@ def merge_powersets(
     )
     for s3_path in last_valid_file_list:
         site_specific_name = get_s3_site_filename_suffix(s3_path)
+        subbucket_path = f"{study}/{data_package}/{site_specific_name}"
         last_valid_site = site_specific_name.split("/", maxsplit=1)[0]
 
         # If the latest uploads don't include this site, we'll use the last-valid
         # one instead
-        if not any(x.endswith(site_specific_name) for x in latest_file_list):
-            df = expand_and_concat_sets(df, s3_path, last_valid_site)
-            metadata = update_metadata(
-                metadata, last_valid_site, study, data_package, "last_uploaded_date"
+        try:
+            if not any(x.endswith(site_specific_name) for x in latest_file_list):
+                df = expand_and_concat_sets(df, s3_path, last_valid_site)
+                metadata = update_metadata(
+                    metadata, last_valid_site, study, data_package, "last_uploaded_date"
+                )
+        except Exception as e:  # pylint: disable=broad-except
+            # This is expected to trigger if there's an issue in expand_and_concat_sets;
+            # this usually means there's a data problem.
+            merge_error_handler(
+                s3_client,
+                s3_path,
+                s3_bucket_name,
+                BucketPath.LATEST,
+                subbucket_path,
+                metadata,
+                site,
+                study,
+                data_package,
+                e,
             )
     for s3_path in latest_file_list:
         site_specific_name = get_s3_site_filename_suffix(s3_path)
@@ -157,15 +208,17 @@ def merge_powersets(
                 metadata, latest_site, study, data_package, "last_aggregation"
             )
         except Exception as e:  # pylint: disable=broad-except
-            logging.error("File %s failed to aggregate: %s", s3_path, str(e))
-            move_s3_file(
+            merge_error_handler(
                 s3_client,
+                s3_path,
                 s3_bucket_name,
-                f"{BucketPath.LATEST.value}/{subbucket_path}",
-                f"{BucketPath.ERROR.value}/{subbucket_path}",
-            )
-            metadata = update_metadata(
-                metadata, site, study, data_package, "last_error"
+                BucketPath.LATEST,
+                subbucket_path,
+                metadata,
+                site,
+                study,
+                data_package,
+                e,
             )
             # if a new file fails, we want to replace it with the last valid
             # for purposes of aggregation
@@ -212,7 +265,7 @@ def powerset_merge_handler(event, context):
     site = s3_key_array[3]
     study = s3_key_array[1]
     data_package = s3_key_array[2]
-    sns_client = boto3.client("sns")
+    sns_client = boto3.client("sns", region_name=event["Records"][0]["awsRegion"])
     merge_powersets(s3_client, sns_client, s3_bucket, site, study, data_package)
     res = http_response(200, "Merge successful")
     return res

@@ -24,7 +24,7 @@ MOCK_ENV = {
 def get_mock_metadata():
     return {
         "general_hospital": {
-            "covid": {
+            "study": {
                 "encounter": {
                     "version": "1.0",
                     "last_upload": "2023-02-24T15:03:34+00:00",
@@ -34,7 +34,7 @@ def get_mock_metadata():
                     "deleted": None,
                 }
             },
-            "lyme": {
+            "other_study": {
                 "encounter": {
                     "version": "1.0",
                     "last_upload": "2023-02-24T15:43:57+00:00",
@@ -46,7 +46,7 @@ def get_mock_metadata():
             },
         },
         "st_elsewhere": {
-            "covid": {
+            "study": {
                 "encounter": {
                     "version": "1.0",
                     "last_upload": "2023-02-24T15:08:06+00:00",
@@ -63,13 +63,13 @@ def get_mock_metadata():
 def get_mock_study_metadata():
     return {
         "general_hospital": {
-            "covid": {
+            "study": {
                 "version": "1.0",
                 "last_data_update": "2023-02-24T15:03:40.657583+00:00",
                 "earliest_data": "2020-02-24T15:03:40.657583+00:00",
                 "latest_data": "2023-02-24T15:03:40.657583+00:00",
             },
-            "lyme": {
+            "other_study": {
                 "version": "1.0",
                 "last_data_update": "2023-02-24T15:44:03.861574+00:00",
                 "earliest_data": "2020-02-24T15:03:40.657583+00:00",
@@ -77,7 +77,7 @@ def get_mock_study_metadata():
             },
         },
         "st_elsewhere": {
-            "covid": {
+            "study": {
                 "version": "1.0",
                 "last_data_update": "2023-02-24T15:08:07.771080+00:00",
                 "earliest_data": "2020-02-24T15:03:40.657583+00:00",
@@ -99,7 +99,7 @@ def get_mock_auth():
 
 
 def get_mock_data_packages_cache():
-    return ["covid__encounter", "lyme__encounter"]
+    return ["study__encounter", "other_study__encounter"]
 
 
 def get_mock_env():

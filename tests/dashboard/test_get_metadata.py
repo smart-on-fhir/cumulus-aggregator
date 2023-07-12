@@ -18,16 +18,16 @@ from tests.utils import get_mock_metadata, TEST_BUCKET
         (None, 200, get_mock_metadata()),
         ({"site": "general_hospital"}, 200, get_mock_metadata()["general_hospital"]),
         (
-            {"site": "general_hospital", "study": "covid"},
+            {"site": "general_hospital", "study": "study"},
             200,
-            get_mock_metadata()["general_hospital"]["covid"],
+            get_mock_metadata()["general_hospital"]["study"],
         ),
         (
-            {"site": "general_hospital", "study": "covid", "data_package": "encounter"},
+            {"site": "general_hospital", "study": "study", "data_package": "encounter"},
             200,
-            get_mock_metadata()["general_hospital"]["covid"]["encounter"],
+            get_mock_metadata()["general_hospital"]["study"]["encounter"],
         ),
-        ({"site": "chicago_hope", "study": "covid"}, 500, None),
+        ({"site": "chicago_hope", "study": "study"}, 500, None),
         ({"site": "general_hospital", "study": "flu"}, 500, None),
     ],
 )

@@ -1,4 +1,16 @@
 """Fixture generation for support of unit testing standardization
+
+One bit of implicit logic here is in relation to the three fake sites used
+(all of which reference fictional TV hospitals, so no one is accidentally
+confused by the presence of their institution). Their starting state is
+as follows:
+
+princeton_plainsboro_teaching_hospital - this is a site with prior
+data, which is usually the one that is doing the uploading
+st_elsewhere - this is a site with prior data, which is usually not
+involved in the current upload
+chicago_hope - this is a site that has no prior data, and may be
+used to test creation of resources
 """
 import os
 
@@ -16,14 +28,24 @@ from tests.utils import get_mock_metadata, get_mock_study_metadata, ITEM_COUNT, 
 
 
 def _init_mock_data(s3_client, bucket_name, study, data_package):
+    """Creates data in bucket for use in unit tests
+
+    The following items are added:
+        - Aggregates, with a site of plainsboro, in parquet and csv, for the
+          study provided
+        - a data_package cache for api testing
+        - credentials for the 3 unit test hospitals (princeton, elsewhere, hope)
+
+    This can be lazily reinvoked for multiple sites.
+    """
     s3_client.upload_file(
-        "./tests/test_data/count_synthea_patient.parquet",
+        "./tests/test_data/count_synthea_patient_agg.parquet",
         bucket_name,
         f"{BucketPath.AGGREGATE.value}/{study}/"
         f"{study}__{data_package}/{study}__{data_package}__aggregate.parquet",
     )
     s3_client.upload_file(
-        "./tests/test_data/count_synthea_patient.csv",
+        "./tests/test_data/count_synthea_patient_agg.csv",
         bucket_name,
         f"{BucketPath.CSVAGGREGATE.value}/{study}/"
         f"{study}__{data_package}/{study}__{data_package}__aggregate.csv",
@@ -59,8 +81,8 @@ def mock_bucket():
     bucket = os.environ["BUCKET_NAME"]
     s3_client.create_bucket(Bucket=bucket)
     aggregate_params = [
-        ["covid", "encounter"],
-        ["lyme", "encounter"],
+        ["study", "encounter"],
+        ["other_study", "encounter"],
     ]
     for param_list in aggregate_params:
         _init_mock_data(s3_client, bucket, *param_list)

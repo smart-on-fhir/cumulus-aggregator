@@ -22,11 +22,11 @@ from tests.utils import get_mock_study_metadata
             get_mock_study_metadata()["general_hospital"],
         ),
         (
-            {"site": "general_hospital", "study": "covid"},
+            {"site": "general_hospital", "study": "study"},
             200,
-            get_mock_study_metadata()["general_hospital"]["covid"],
+            get_mock_study_metadata()["general_hospital"]["study"],
         ),
-        ({"site": "chicago_hope", "study": "covid"}, 500, None),
+        ({"site": "chicago_hope", "study": "study"}, 500, None),
         ({"site": "general_hospital", "study": "flu"}, 500, None),
     ],
 )
