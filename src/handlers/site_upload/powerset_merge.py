@@ -132,7 +132,9 @@ def merge_powersets(
     # TODO: this should be memory profiled for large datasets. We can use
     # chunking to lower memory usage during merges.
 
+    # initializing this early in case an empty file causes us to never set it
     is_new_data_package = False
+
     metadata = read_metadata(s3_client, s3_bucket_name)
     df = pandas.DataFrame()
     latest_file_list = get_s3_data_package_list(
