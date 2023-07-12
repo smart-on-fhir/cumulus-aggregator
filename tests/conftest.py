@@ -17,7 +17,7 @@ set of states:
 - 'study', which has existing data, and is fine for uploading data to
 - 'other_study', which also has existing data, but should not be uploaded
   to - this helps check for unintended side effects
-- 'new_study' - not mentioned in this file, but this is for uploading 
+- 'new_study' - not mentioned in this file, but this is for uploading
   data in the mode of a study which heretofore has not existed in the
   aggregator
 """
