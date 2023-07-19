@@ -1,37 +1,21 @@
 {
     "Records": [
         {
-            "eventVersion": "2.1",
-            "eventSource": "aws:s3",
-            "awsRegion": "us-east-1",
-            "eventTime": "2023-01-18T14:38:23.302Z",
-            "eventName": "ObjectCreated:Post",
-            "userIdentity": {
-                "principalId": "AWS:AWS12345678:user@domain.edu"
-            },
-            "requestParameters": {
-                "sourceIPAddress": "10.0.0.10"
-            },
-            "responseElements": {
-                "x-amz-request-id": "NSTCMA1Y7GD9ZAM0",
-                "x-amz-id-2": "QAIpNs0Xuj3GP98nuBkAYA70yRR5PP9S8yQGZ7r+8SJuSpUVHZIgbfsmfxdu+4PXbcPADwFL/Mx8YjzwrP3pasekS0FGNhM7"
-            },
-            "s3": {
-                "s3SchemaVersion": "1.0",
-                "configurationId": "74a75ce1-8a87-4d7d-a735-8d59f665560a",
-                "bucket": {
-                    "name": "cumulus-aggregator",
-                    "ownerIdentity": {
-                        "principalId": "ABCDEF1236"
-                    },
-                    "arn": "arn:aws:s3:::cumulus-aggregator"
-                },
-                "object": {
-                    "key": "site_uploads/cube_simple_example.csv",
-                    "size": 450,
-                    "eTag": "95df988edffedcc62e22ce3fec64e017",
-                    "sequencer": "0063C8045F37A4A210"
-                }
+            "EventSource": "aws:sns",
+            "EventVersion": "1.0",
+            "EventSubscriptionArn": "arn:aws:sns:us-east-1:316333106222:CumulusProcessCounts-dev:3da1c6e6-61a5-44ea-9d9b-a1468d41e719",
+            "Sns": {
+                "Type": "Notification",
+                "MessageId": "0b6cba47-b5a2-5ffe-ba4c-e775b03a5eba",
+                "TopicArn": "arn:aws:sns:us-east-1:316333106222:CumulusProcessCounts-dev",
+                "Subject": "Process counts upload event",
+                "Message": "latest/htn/htn__count_bp_week/site/filename.parquet",
+                "Timestamp": "2023-07-19T15:38:00.233Z",
+                "SignatureVersion": "1",
+                "Signature": "FXlUwUqu7I7PQ3l3skdchTc+yuMuNJ2uGZguojNl+DpSALbYnoHV6rDZGK8DGOe9tK6rIlxBc6RNOtMpHGfhJRVQnbOwPdbIYcvOW3AalGyK6Jwaxf98xEO/maRdq2SROyUoy9dDjQW8AU3zkCz9v+DsMcSd1ND7OpK+bh+3kc/7gORLC0ycbEdujTCmeEliipVNOy6W9eHZ/vjDTpgM4y6CC8VCmsxRkfm0XfGoD++JkGmtf2bMG/d/hne87icImIUFRasbPk5a1UyQn+8slff4sVCYUGrpBq6864x3NpK0jrHsbAb4IprzK/YZpLVj8TP/WUsYjKvgclvt17SMsg==",
+                "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-01d088a6f77103d0fe307c0069e40ed6.pem",
+                "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:316333106222:CumulusProcessCounts-dev:3da1c6e6-61a5-44ea-9d9b-a1468d41e719",
+                "MessageAttributes": {}
             }
         }
     ]

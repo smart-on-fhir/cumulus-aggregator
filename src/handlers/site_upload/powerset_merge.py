@@ -267,7 +267,7 @@ def powerset_merge_handler(event, context):
     site = s3_key_array[3]
     study = s3_key_array[1]
     data_package = s3_key_array[2]
-    sns_client = boto3.client("sns", region_name=event["Records"][0]["awsRegion"])
+    sns_client = boto3.client("sns", region_name=s3_client.meta.region_name)
     merge_powersets(s3_client, sns_client, s3_bucket, site, study, data_package)
     res = http_response(200, "Merge successful")
     return res
