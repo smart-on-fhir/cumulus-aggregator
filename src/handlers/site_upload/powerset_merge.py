@@ -185,7 +185,7 @@ def expand_and_concat_sets(
     return agg_df
 
 
-def merge_powersets(manager: DataManager) -> None:
+def merge_powersets(manager: S3Manager) -> None:
     """Creates an aggregate powerset from all files with a given s3 prefix"""
     # TODO: this should be memory profiled for large datasets. We can use
     # chunking to lower memory usage during merges.
