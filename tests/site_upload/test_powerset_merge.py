@@ -24,9 +24,6 @@ NEW_STUDY_NAME = "new_study"
 EXISTING_STUDY_NAME = "study"
 DATA_P_NAME = "encounter"
 
-"""
-"""
-
 
 @freeze_time("2020-01-01")
 @pytest.mark.parametrize(
@@ -124,7 +121,6 @@ def test_powerset_merge_single_upload(
     event = {
         "Records": [
             {
-                "awsRegion": "us-east-1",
                 "Sns": {"Message": f"{BucketPath.LATEST.value}{event_key}"},
             }
         ]
@@ -235,7 +231,6 @@ def test_powerset_merge_join_study_data(
     event = {
         "Records": [
             {
-                "awsRegion": "us-east-1",
                 "Sns": {
                     "Message": f"{BucketPath.LATEST.value}/{EXISTING_STUDY_NAME}"
                     f"/{DATA_P_NAME}/{NEW_SITE_NAME}/encounter.parquet"
