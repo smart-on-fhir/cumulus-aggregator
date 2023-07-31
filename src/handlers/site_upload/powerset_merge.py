@@ -26,7 +26,7 @@ from src.handlers.shared.functions import (
 
 
 class S3Manager:
-    """Convenience class for managing support infrastrucutre"""
+    """Convenience class for managing S3 Access"""
 
     def __init__(self, event):
         self.s3_bucket_name = os.environ.get("BUCKET_NAME")
