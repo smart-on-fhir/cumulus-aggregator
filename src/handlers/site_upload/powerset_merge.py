@@ -4,7 +4,6 @@ import logging
 import os
 
 from datetime import datetime, timezone
-from typing import Dict
 
 import awswrangler
 import boto3
@@ -100,7 +99,7 @@ class S3Manager:
     # metadata
     def update_local_metadata(self, key, site=None):
         """convenience wrapper for update_metadata"""
-        if site == None:
+        if site is None:
             site = self.site
         self.metadata = update_metadata(
             self.metadata, site, self.study, self.data_package, key
