@@ -46,17 +46,17 @@ class S3Manager:
 
     # S3 Filesystem operations
     def get_data_package_list(self, path) -> list:
+        """convenience wrapper for get_s3_data_package_list"""
         return get_s3_data_package_list(
             path, self.s3_bucket_name, self.study, self.data_package
         )
 
     def move_file(self, from_path: str, to_path: str) -> None:
-        print(from_path)
-        print(to_path)
-
+        """convenience wrapper for move_s3_file"""
         move_s3_file(self.s3_client, self.s3_bucket_name, from_path, to_path)
 
     def copy_file(self, from_path: str, to_path: str) -> None:
+        """convenience wrapper for copy_s3_file"""
         source = {
             "Bucket": self.s3_bucket_name,
             "Key": from_path,
@@ -69,6 +69,7 @@ class S3Manager:
 
     # parquet/csv output creation
     def write_parquet(self, df: pandas.DataFrame, is_new_data_package: bool) -> None:
+        """writes dataframe as parquet to s3 and sends an SNS notification if new"""
         parquet_aggregate_path = (
             f"s3://{self.s3_bucket_name}/{BucketPath.AGGREGATE.value}/"
             f"{self.study}/{self.study}__{self.data_package}/"
@@ -82,6 +83,7 @@ class S3Manager:
             )
 
     def write_csv(self, df: pandas.DataFrame) -> None:
+        """writes dataframe as csv to s3"""
         csv_aggregate_path = (
             f"s3://{self.s3_bucket_name}/{BucketPath.CSVAGGREGATE.value}/"
             f"{self.study}/{self.study}__{self.data_package}/"
@@ -97,6 +99,7 @@ class S3Manager:
 
     # metadata
     def update_local_metadata(self, key, site=None):
+        """convenience wrapper for update_metadata"""
         if site == None:
             site = self.site
         self.metadata = update_metadata(
@@ -104,6 +107,7 @@ class S3Manager:
         )
 
     def write_local_metadata(self):
+        """convenience wrapper for write_metadata"""
         write_metadata(self.s3_client, self.s3_bucket_name, self.metadata)
 
     def merge_error_handler(
