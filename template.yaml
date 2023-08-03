@@ -145,7 +145,7 @@ Resources:
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:1]
       Handler: src/handlers/site_upload/powerset_merge.powerset_merge_handler
       Runtime: python3.9
-      MemorySize: 4096
+      MemorySize: 8192
       Timeout: 800
       Description: Merges and aggregates powerset count data
       Environment:

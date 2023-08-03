@@ -2,6 +2,7 @@
 import csv
 import logging
 import os
+import traceback
 
 from datetime import datetime, timezone
 
@@ -23,6 +24,12 @@ from src.handlers.shared.functions import (
     update_metadata,
     write_metadata,
 )
+
+
+class MergeError(ValueError):
+    def __init__(self, message, filename):
+        super().__init__(message)
+        self.filename = filename
 
 
 class S3Manager:
@@ -112,14 +119,14 @@ class S3Manager:
     def merge_error_handler(
         self,
         s3_path: str,
-        bucket_path: BucketPath,
         subbucket_path: str,
         error: Exception,
     ) -> None:
         """Helper for logging errors and moving files"""
         logging.error("File %s failed to aggregate: %s", s3_path, str(error))
+        logging.error(traceback.print_exc())
         self.move_file(
-            f"{bucket_path.value}/{subbucket_path}",
+            s3_path.replace(f"s3://{self.s3_bucket_name}/", ""),
             f"{BucketPath.ERROR.value}/{subbucket_path}",
         )
         self.update_local_metadata("last_error")
@@ -150,7 +157,7 @@ def expand_and_concat_sets(
     """
     site_df = awswrangler.s3.read_parquet(file_path)
     if site_df.empty:
-        raise ValueError("Uploaded data file is empty")
+        raise MergeError("Uploaded data file is empty", filename=file_path)
     df_copy = site_df.copy()
     site_df["site"] = get_static_string_series(None, site_df.index)
     df_copy["site"] = get_static_string_series(site_name, df_copy.index)
@@ -159,7 +166,10 @@ def expand_and_concat_sets(
     # are generated from the same vintage. This naive approach will cause a decent
     # amount of data churn we'll have to manage in the interim.
     if df.empty is False and set(site_df.columns) != set(df.columns):
-        raise ValueError("Uploaded data has a different schema than last aggregate")
+        raise MergeError(
+            "Uploaded data has a different schema than last aggregate",
+            filename=file_path,
+        )
 
     # concating in this way adds a new column we want to explictly drop
     # from the final set
@@ -198,7 +208,6 @@ def merge_powersets(manager: S3Manager) -> None:
         site_specific_name = get_s3_site_filename_suffix(last_valid_path)
         subbucket_path = f"{manager.study}/{manager.data_package}/{site_specific_name}"
         last_valid_site = site_specific_name.split("/", maxsplit=1)[0]
-
         # If the latest uploads don't include this site, we'll use the last-valid
         # one instead
         try:
@@ -207,12 +216,11 @@ def merge_powersets(manager: S3Manager) -> None:
                 manager.update_local_metadata(
                     "last_uploaded_date", site=last_valid_site
                 )
-        except Exception as e:  # pylint: disable=broad-except
+        except MergeError as e:
             # This is expected to trigger if there's an issue in expand_and_concat_sets;
             # this usually means there's a data problem.
             manager.merge_error_handler(
-                last_valid_path,
-                BucketPath.LATEST,
+                e.filename,
                 subbucket_path,
                 e,
             )
@@ -246,7 +254,6 @@ def merge_powersets(manager: S3Manager) -> None:
         except Exception as e:  # pylint: disable=broad-except
             manager.merge_error_handler(
                 latest_path,
-                BucketPath.LATEST,
                 subbucket_path,
                 e,
             )
