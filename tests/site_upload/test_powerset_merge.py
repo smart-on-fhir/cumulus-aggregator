@@ -2,18 +2,23 @@ import boto3
 import io
 import os
 
+from contextlib import nullcontext as does_not_raise
 from unittest import mock
 
 import awswrangler
 import pytest
 
 from datetime import datetime, timezone
-from pandas import DataFrame
+from pandas import DataFrame, read_parquet
 from freezegun import freeze_time
 
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import read_metadata, write_metadata
-from src.handlers.site_upload.powerset_merge import powerset_merge_handler
+from src.handlers.site_upload.powerset_merge import (
+    powerset_merge_handler,
+    expand_and_concat_sets,
+    MergeError,
+)
 
 from tests.utils import get_mock_metadata, TEST_BUCKET, ITEM_COUNT, MOCK_ENV
 
@@ -254,3 +259,34 @@ def test_powerset_merge_join_study_data(
             else:
                 assert len(agg_df["site"].unique() == 3)
     assert errors == expected_errors
+
+
+# Explicitly testing for raising errors during concat due to them being appropriately
+# handled by the generic error handler
+@pytest.mark.parametrize(
+    "upload_file,load_empty,raises",
+    [
+        ("./tests/test_data/count_synthea_patient.parquet", False, does_not_raise()),
+        (
+            "./tests/test_data/cube_simple_example.parquet",
+            False,
+            pytest.raises(MergeError),
+        ),
+        (
+            "./tests/test_data/count_synthea_empty.parquet",
+            True,
+            pytest.raises(MergeError),
+        ),
+    ],
+)
+def test_expand_and_concat(mock_bucket, upload_file, load_empty, raises):
+    with raises:
+        df = read_parquet("./tests/test_data/count_synthea_patient_agg.parquet")
+        s3_path = f"/test/uploaded.parquet"
+        s3_client = boto3.client("s3", region_name="us-east-1")
+        s3_client.upload_file(
+            upload_file,
+            TEST_BUCKET,
+            s3_path,
+        )
+        expand_and_concat_sets(df, f"s3://{TEST_BUCKET}/{s3_path}", EXISTING_STUDY_NAME)
