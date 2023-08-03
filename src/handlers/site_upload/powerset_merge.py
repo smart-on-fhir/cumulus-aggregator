@@ -165,8 +165,6 @@ def expand_and_concat_sets(
     # TODO: we should introduce some kind of data versioning check to see if datasets
     # are generated from the same vintage. This naive approach will cause a decent
     # amount of data churn we'll have to manage in the interim.
-    print(df.head)
-    print(site_df.head)
     if df.empty is False and set(site_df.columns) != set(df.columns):
         raise MergeError(
             "Uploaded data has a different schema than last aggregate",
@@ -218,7 +216,7 @@ def merge_powersets(manager: S3Manager) -> None:
                 manager.update_local_metadata(
                     "last_uploaded_date", site=last_valid_site
                 )
-        except MergeError as e:  # pylint: disable=broad-except
+        except MergeError as e:
             # This is expected to trigger if there's an issue in expand_and_concat_sets;
             # this usually means there's a data problem.
             manager.merge_error_handler(
