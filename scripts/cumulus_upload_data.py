@@ -4,7 +4,6 @@
 import argparse
 import os
 import sys
-
 from pathlib import Path
 
 import boto3

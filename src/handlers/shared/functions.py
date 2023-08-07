@@ -1,10 +1,9 @@
 """ Functions used across different lambdas"""
 import io
-import logging
 import json
-
-from typing import Dict, Optional
+import logging
 from datetime import datetime, timezone
+from typing import Optional
 
 import boto3
 
@@ -26,7 +25,7 @@ STUDY_PERIOD_METADATA_TEMPLATE = {
 }
 
 
-def http_response(status: int, body: str, allow_cors: bool = False) -> Dict:
+def http_response(status: int, body: str, allow_cors: bool = False) -> dict:
     """Generates the payload AWS lambda expects as a return value"""
     headers = {"Content-Type": "application/json"}
     if allow_cors:
@@ -57,7 +56,7 @@ def check_meta_type(meta_type: str) -> None:
 
 def read_metadata(
     s3_client, s3_bucket_name: str, meta_type: str = JsonFilename.TRANSACTIONS.value
-) -> Dict:
+) -> dict:
     """Reads transaction information from an s3 bucket as a dictionary"""
     check_meta_type(meta_type)
     s3_path = f"{BucketPath.META.value}/{meta_type}.json"
@@ -71,10 +70,11 @@ def read_metadata(
 
 
 def update_metadata(
-    metadata: Dict,
+    metadata: dict,
     site: str,
     study: str,
     data_package: str,
+    version: str,
     target: str,
     dt: Optional[datetime] = None,
     meta_type: str = JsonFilename.TRANSACTIONS.value,
@@ -84,25 +84,27 @@ def update_metadata(
     if meta_type == JsonFilename.TRANSACTIONS.value:
         site_metadata = metadata.setdefault(site, {})
         study_metadata = site_metadata.setdefault(study, {})
-        data_package_metadata = study_metadata.setdefault(
-            data_package, TRANSACTION_METADATA_TEMPLATE
+        data_package_metadata = study_metadata.setdefault(data_package, {})
+        version_metadata = data_package_metadata.setdefault(
+            version, TRANSACTION_METADATA_TEMPLATE
         )
         dt = dt or datetime.now(timezone.utc)
-        data_package_metadata[target] = dt.isoformat()
+        version_metadata[target] = dt.isoformat()
     elif meta_type == JsonFilename.STUDY_PERIODS.value:
         site_metadata = metadata.setdefault(site, {})
-        study_period_metadata = site_metadata.setdefault(
-            study, STUDY_PERIOD_METADATA_TEMPLATE
+        study_period_metadata = site_metadata.setdefault(study, {})
+        version_metadata = study_period_metadata.setdefault(
+            version, STUDY_PERIOD_METADATA_TEMPLATE
         )
         dt = dt or datetime.now(timezone.utc)
-        study_period_metadata[target] = dt.isoformat()
+        version_metadata[target] = dt.isoformat()
     return metadata
 
 
 def write_metadata(
     s3_client,
     s3_bucket_name: str,
-    metadata: Dict,
+    metadata: dict,
     meta_type: str = JsonFilename.TRANSACTIONS.value,
 ) -> None:
     """Writes transaction info from ∏a dictionary to an s3 bucket metadata location"""

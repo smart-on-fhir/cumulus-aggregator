@@ -1,12 +1,18 @@
-import boto3
 import json
 import os
-import pytest
-
 from unittest import mock
 
+import boto3
+import pytest
+
 from src.handlers.site_upload.fetch_upload_url import upload_url_handler
-from tests.utils import TEST_BUCKET, get_mock_metadata
+from tests.utils import (
+    EXISTING_DATA_P,
+    EXISTING_STUDY,
+    EXISTING_VERSION,
+    TEST_BUCKET,
+    get_mock_metadata,
+)
 
 
 @pytest.mark.parametrize(
@@ -14,9 +20,10 @@ from tests.utils import TEST_BUCKET, get_mock_metadata
     [
         (
             {
-                "study": "covid",
-                "data_package": "encounter",
+                "study": EXISTING_STUDY,
+                "data_package": EXISTING_DATA_P,
                 "filename": "encounter.parquet",
+                "version": EXISTING_VERSION,
             },
             200,
         ),

@@ -1,10 +1,9 @@
 import json
 import os
+from unittest import mock
 
 import pandas
 import pytest
-
-from unittest import mock
 
 from src.handlers.dashboard import get_chart_data
 from tests.utils import MOCK_ENV, TEST_BUCKET, TEST_GLUE_DB, TEST_WORKGROUP

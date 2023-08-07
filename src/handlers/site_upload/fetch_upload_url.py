@@ -46,6 +46,6 @@ def upload_url_handler(event, context):
     res = create_presigned_post(
         os.environ.get("BUCKET_NAME"),
         f"{BucketPath.UPLOAD.value}/{body['study']}/{body['data_package']}/"
-        f"{metadata_db[user]['path']}/{body['filename']}",
+        f"{body['version']}/{metadata_db[user]['path']}/{body['filename']}",
     )
     return res

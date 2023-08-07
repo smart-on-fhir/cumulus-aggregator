@@ -3,19 +3,17 @@ import csv
 import logging
 import os
 import traceback
-
 from datetime import datetime, timezone
 
 import awswrangler
 import boto3
 import pandas
-
 from numpy import nan
 from pandas.core.indexes.range import RangeIndex
 
+from src.handlers.shared.awswrangler_functions import get_s3_data_package_list
 from src.handlers.shared.decorators import generic_error_handler
 from src.handlers.shared.enums import BucketPath
-from src.handlers.shared.awswrangler_functions import get_s3_data_package_list
 from src.handlers.shared.functions import (
     get_s3_site_filename_suffix,
     http_response,
@@ -47,7 +45,7 @@ class S3Manager:
         self.site = s3_key_array[3]
         self.study = s3_key_array[1]
         self.data_package = s3_key_array[2]
-
+        self.version = s3_key_array[4]
         self.metadata = read_metadata(self.s3_client, self.s3_bucket_name)
 
     # S3 Filesystem operations
@@ -78,7 +76,7 @@ class S3Manager:
         """writes dataframe as parquet to s3 and sends an SNS notification if new"""
         parquet_aggregate_path = (
             f"s3://{self.s3_bucket_name}/{BucketPath.AGGREGATE.value}/"
-            f"{self.study}/{self.study}__{self.data_package}/"
+            f"{self.study}/{self.study}__{self.data_package}/{self.version}/"
             f"{self.study}__{self.data_package}__aggregate.parquet"
         )
         awswrangler.s3.to_parquet(df, parquet_aggregate_path, index=False)
@@ -92,7 +90,7 @@ class S3Manager:
         """writes dataframe as csv to s3"""
         csv_aggregate_path = (
             f"s3://{self.s3_bucket_name}/{BucketPath.CSVAGGREGATE.value}/"
-            f"{self.study}/{self.study}__{self.data_package}/"
+            f"{self.study}/{self.study}__{self.data_package}/{self.version}/"
             f"{self.study}__{self.data_package}__aggregate.csv"
         )
         df = df.apply(lambda x: x.strip() if isinstance(x, str) else x).replace(
@@ -109,7 +107,7 @@ class S3Manager:
         if site is None:
             site = self.site
         self.metadata = update_metadata(
-            self.metadata, site, self.study, self.data_package, key
+            self.metadata, site, self.study, self.data_package, self.version, key
         )
 
     def write_local_metadata(self):
@@ -162,9 +160,7 @@ def expand_and_concat_sets(
     site_df["site"] = get_static_string_series(None, site_df.index)
     df_copy["site"] = get_static_string_series(site_name, df_copy.index)
 
-    # TODO: we should introduce some kind of data versioning check to see if datasets
-    # are generated from the same vintage. This naive approach will cause a decent
-    # amount of data churn we'll have to manage in the interim.
+    # Did we change the schema without updating the version?
     if df.empty is False and set(site_df.columns) != set(df.columns):
         raise MergeError(
             "Uploaded data has a different schema than last aggregate",
