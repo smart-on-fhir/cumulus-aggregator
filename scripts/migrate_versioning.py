@@ -49,7 +49,6 @@ def migrate_bucket_versioning(bucket: str):
                 client.delete_object(Bucket=bucket, Key=key)
                 moved_files += 1
     print(f"Moved {moved_files} uploads")
-
     study_periods = _get_s3_data("metadata/study_periods.json", bucket, client)
 
     if _get_depth(study_periods) == 3:
@@ -59,6 +58,9 @@ def migrate_bucket_versioning(bucket: str):
             for study in study_periods[site]:
                 new_sp[site][study] = {}
                 new_sp[site][study]["000"] = study_periods[site][study]
+                new_sp[site][study]["000"].pop("version")
+                new_sp[site][study]["000"]["study_period_format_version"] = 2
+        # print(json.dumps(new_sp, indent=2))
         _put_s3_data("metadata/study_periods.json", bucket, client, new_sp)
         print("study_periods.json updated")
     else:
@@ -74,6 +76,9 @@ def migrate_bucket_versioning(bucket: str):
                 for dp in transactions[site][study]:
                     new_t[site][study][dp] = {}
                     new_t[site][study][dp]["000"] = transactions[site][study][dp]
+                    new_t[site][study][dp]["000"].pop("version")
+                    new_t[site][study][dp]["000"]["transacton_format_version"] = 2
+        # print(json.dumps(new_t, indent=2))
         _put_s3_data("metadata/transactions.json", bucket, client, new_t)
         print("transactions.json updated")
     else:

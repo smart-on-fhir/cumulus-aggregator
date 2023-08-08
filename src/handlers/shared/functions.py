@@ -10,7 +10,7 @@ import boto3
 from src.handlers.shared.enums import BucketPath, JsonFilename
 
 TRANSACTION_METADATA_TEMPLATE = {
-    "version": "1.0",
+    "transacton_format_version": "2",
     "last_upload": None,
     "last_data_update": None,
     "last_aggregation": None,
@@ -18,7 +18,7 @@ TRANSACTION_METADATA_TEMPLATE = {
     "deleted": None,
 }
 STUDY_PERIOD_METADATA_TEMPLATE = {
-    "version": "1.0",
+    "study_period_format_version": "2",
     "earliest_date": None,
     "latest_date": None,
     "last_data_update": None,
@@ -79,25 +79,30 @@ def update_metadata(
     dt: Optional[datetime] = None,
     meta_type: str = JsonFilename.TRANSACTIONS.value,
 ):
-    """Safely updates items in metadata dictionary"""
+    """Safely updates items in metadata dictionary
+
+
+    It's assumed that, other than the version field itself, every item in one
+    of these metadata dicts is a datetime corresponding to an S3 event timestamp
+    """
     check_meta_type(meta_type)
     if meta_type == JsonFilename.TRANSACTIONS.value:
         site_metadata = metadata.setdefault(site, {})
         study_metadata = site_metadata.setdefault(study, {})
         data_package_metadata = study_metadata.setdefault(data_package, {})
-        version_metadata = data_package_metadata.setdefault(
+        data_version_metadata = data_package_metadata.setdefault(
             version, TRANSACTION_METADATA_TEMPLATE
         )
         dt = dt or datetime.now(timezone.utc)
-        version_metadata[target] = dt.isoformat()
+        data_version_metadata[target] = dt.isoformat()
     elif meta_type == JsonFilename.STUDY_PERIODS.value:
         site_metadata = metadata.setdefault(site, {})
         study_period_metadata = site_metadata.setdefault(study, {})
-        version_metadata = study_period_metadata.setdefault(
+        data_version_metadata = study_period_metadata.setdefault(
             version, STUDY_PERIOD_METADATA_TEMPLATE
         )
         dt = dt or datetime.now(timezone.utc)
-        version_metadata[target] = dt.isoformat()
+        data_version_metadata[target] = dt.isoformat()
     return metadata
 
 

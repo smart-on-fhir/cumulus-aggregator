@@ -23,7 +23,7 @@ from tests.utils import (
                 "study": EXISTING_STUDY,
                 "data_package": EXISTING_DATA_P,
                 "filename": "encounter.parquet",
-                "version": EXISTING_VERSION,
+                "data_package_version": EXISTING_VERSION,
             },
             200,
         ),
