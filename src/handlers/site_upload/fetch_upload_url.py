@@ -43,10 +43,21 @@ def upload_url_handler(event, context):
     )
     user = event["requestContext"]["authorizer"]["principalId"]
     body = json.loads(event["body"])
+    for key in ["study", "data_package", "filename"]:
+        if body[key] is None:
+            return http_response(
+                400,
+                "Malformed data payload. See "
+                "https://docs.smarthealthit.org/cumulus/library/sharing-data.html "
+                "for more information about uploading data.",
+            )
+    if "data_package_version" in body:
+        version = body["data_package_version"]
+    else:
+        version = "0"
     res = create_presigned_post(
         os.environ.get("BUCKET_NAME"),
         f"{BucketPath.UPLOAD.value}/{body['study']}/{body['data_package']}/"
-        f"{int(body['data_package_version']):03d}/{metadata_db[user]['path']}"
-        f"/{body['filename']}",
+        f"{int(version):03d}/{metadata_db[user]['path']}/{body['filename']}",
     )
     return res
