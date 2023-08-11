@@ -8,7 +8,7 @@ import boto3
 
 from src.handlers.shared.awswrangler_functions import get_s3_study_meta_list
 from src.handlers.shared.decorators import generic_error_handler
-from src.handlers.shared.enums import BucketPath, JsonFilename
+from src.handlers.shared.enums import JsonFilename
 from src.handlers.shared.functions import (
     http_response,
     read_metadata,

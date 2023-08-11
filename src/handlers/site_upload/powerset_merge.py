@@ -207,7 +207,7 @@ def merge_powersets(manager: S3Manager) -> None:
     last_valid_file_list = manager.get_data_package_list(BucketPath.LAST_VALID.value)
     for last_valid_path in last_valid_file_list:
         if manager.version not in last_valid_path:
-            next
+            continue
         site_specific_name = get_s3_site_filename_suffix(last_valid_path)
         subbucket_path = f"{manager.study}/{manager.data_package}/{site_specific_name}"
         last_valid_site = site_specific_name.split("/", maxsplit=1)[0]
@@ -230,12 +230,18 @@ def merge_powersets(manager: S3Manager) -> None:
     for latest_path in latest_file_list:
 
         if manager.version not in latest_path:
-            next
+            continue
         site_specific_name = get_s3_site_filename_suffix(latest_path)
-        subbucket_path = f"{manager.study}/{manager.study}__{manager.data_package}/{site_specific_name}"
+        subbucket_path = (
+            f"{manager.study}/{manager.study}__{manager.data_package}"
+            f"/{site_specific_name}"
+        )
         date_str = datetime.now(timezone.utc).isoformat()
         timestamped_name = f".{date_str}.".join(site_specific_name.split("."))
-        timestamped_path = f"{manager.study}/{manager.study}__{manager.data_package}/{timestamped_name}"
+        timestamped_path = (
+            f"{manager.study}/{manager.study}__{manager.data_package}"
+            f"/{timestamped_name}"
+        )
         try:
             is_new_data_package = False
             # if we're going to replace a file in last_valid, archive the old data

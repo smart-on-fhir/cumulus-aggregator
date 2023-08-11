@@ -102,10 +102,10 @@ from tests.utils import (
         (  # ensuring that a data package that is a substring does not get
             # merged by substr match
             "./tests/test_data/count_synthea_patient.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/{EXISTING_SITE}/"
-            f"{EXISTING_VERSION}/encount.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/{EXISTING_SITE}/"
-            f"{EXISTING_VERSION}/encount.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/"
+            f"{EXISTING_SITE}/{EXISTING_VERSION}/encount.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/"
+            f"{EXISTING_SITE}/{EXISTING_VERSION}/encount.parquet",
             False,
             200,
             ITEM_COUNT + 3,
