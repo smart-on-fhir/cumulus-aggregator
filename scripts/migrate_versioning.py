@@ -8,7 +8,14 @@ import json
 
 import boto3
 
-UPLOAD_ROOT_BUCKETS = ["archive", "error", "last_valid", "latest", "site_upload"]
+UPLOAD_ROOT_BUCKETS = [
+    "archive",
+    "error",
+    "last_valid",
+    "latest",
+    "site_upload",
+    "study_metadata",
+]
 
 
 def _get_s3_data(key: str, bucket_name: str, client) -> dict:

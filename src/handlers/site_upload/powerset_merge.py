@@ -42,10 +42,11 @@ class S3Manager:
 
         s3_key = event["Records"][0]["Sns"]["Message"]
         s3_key_array = s3_key.split("/")
-        self.site = s3_key_array[3]
         self.study = s3_key_array[1]
-        self.data_package = s3_key_array[2]
+        self.data_package = s3_key_array[2].split("__")[1]
+        self.site = s3_key_array[3]
         self.version = s3_key_array[4]
+
         self.metadata = read_metadata(self.s3_client, self.s3_bucket_name)
 
     # S3 Filesystem operations
@@ -121,8 +122,11 @@ class S3Manager:
         error: Exception,
     ) -> None:
         """Helper for logging errors and moving files"""
-        logging.error("File %s failed to aggregate: %s", s3_path, str(error))
-        logging.error(traceback.print_exc())
+        log_level = os.environ.get("LAMBDA_LOG_LEVEL", "ERROR")
+        logger = logging.getLogger()
+        logger.setLevel(log_level)
+        logger.error("File %s failed to aggregate: %s", s3_path, str(error))
+        logger.error(traceback.print_exc())
         self.move_file(
             s3_path.replace(f"s3://{self.s3_bucket_name}/", ""),
             f"{BucketPath.ERROR.value}/{subbucket_path}",
@@ -177,6 +181,7 @@ def expand_and_concat_sets(
     # but at some point, we may have different kinds of counts, like "cnt_encounter".
     # We'll need to modify this once we know a bit more about the final design.
     data_cols.remove("cnt")
+
     agg_df = (
         pandas.concat([df, site_df])
         .groupby(data_cols, dropna=False)
@@ -201,6 +206,8 @@ def merge_powersets(manager: S3Manager) -> None:
     latest_file_list = manager.get_data_package_list(BucketPath.LATEST.value)
     last_valid_file_list = manager.get_data_package_list(BucketPath.LAST_VALID.value)
     for last_valid_path in last_valid_file_list:
+        if manager.version not in last_valid_path:
+            next
         site_specific_name = get_s3_site_filename_suffix(last_valid_path)
         subbucket_path = f"{manager.study}/{manager.data_package}/{site_specific_name}"
         last_valid_site = site_specific_name.split("/", maxsplit=1)[0]
@@ -221,11 +228,14 @@ def merge_powersets(manager: S3Manager) -> None:
                 e,
             )
     for latest_path in latest_file_list:
+
+        if manager.version not in latest_path:
+            next
         site_specific_name = get_s3_site_filename_suffix(latest_path)
-        subbucket_path = f"{manager.study}/{manager.data_package}/{site_specific_name}"
+        subbucket_path = f"{manager.study}/{manager.study}__{manager.data_package}/{site_specific_name}"
         date_str = datetime.now(timezone.utc).isoformat()
         timestamped_name = f".{date_str}.".join(site_specific_name.split("."))
-        timestamped_path = f"{manager.study}/{manager.data_package}/{timestamped_name}"
+        timestamped_path = f"{manager.study}/{manager.study}__{manager.data_package}/{timestamped_name}"
         try:
             is_new_data_package = False
             # if we're going to replace a file in last_valid, archive the old data
@@ -234,7 +244,6 @@ def merge_powersets(manager: S3Manager) -> None:
                     f"{BucketPath.LAST_VALID.value}/{subbucket_path}",
                     f"{BucketPath.ARCHIVE.value}/{timestamped_path}",
                 )
-
             # otherwise, this is the first instance - after it's in the database,
             # we'll generate a new list of valid tables for the dashboard
             else:

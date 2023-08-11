@@ -41,19 +41,19 @@ from tests.utils import (
     [
         (  # Adding a new data package to a site with uploads
             "./tests/test_data/count_synthea_patient.parquet",
-            f"/{NEW_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}/"
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}/"
             f"{EXISTING_VERSION}/encounter.parquet",
-            f"/{NEW_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}/"
-            "{EXISTING_VERSION}/encounter.parquet",
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}/"
+            f"{EXISTING_VERSION}/encounter.parquet",
             False,
             200,
             ITEM_COUNT + 3,
         ),
         (  # Adding a new data package to a site without uploads
             "./tests/test_data/count_synthea_patient.parquet",
-            f"/{NEW_STUDY}/{EXISTING_DATA_P}/{NEW_SITE}"
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}"
             f"/{EXISTING_VERSION}/encounter.parquet",
-            f"/{NEW_STUDY}/{EXISTING_DATA_P}/{NEW_SITE}"
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}"
             f"/{EXISTING_VERSION}/encounter.parquet",
             False,
             200,
@@ -61,19 +61,19 @@ from tests.utils import (
         ),
         (  # Updating an existing data package
             "./tests/test_data/count_synthea_patient.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
             f"/{EXISTING_VERSION}/encounter.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
             f"/{EXISTING_VERSION}/encounter.parquet",
             True,
             200,
             ITEM_COUNT + 2,
         ),
-        (  # Updating an existing data package
+        (  # New version of existing data package
             "./tests/test_data/count_synthea_patient.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
             f"/{NEW_VERSION}/encounter.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
             f"/{NEW_VERSION}/encounter.parquet",
             True,
             200,
@@ -81,9 +81,9 @@ from tests.utils import (
         ),
         (  # Invalid parquet file
             "./tests/site_upload/test_powerset_merge.py",
-            f"/{NEW_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
             f"/{EXISTING_VERSION}/patient.parquet",
-            f"/{NEW_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
             f"/{EXISTING_VERSION}/patient.parquet",
             False,
             500,
@@ -91,19 +91,30 @@ from tests.utils import (
         ),
         (  # Checks presence of commas in strings does not cause an error
             "./tests/test_data/cube_strings_with_commas.parquet",
-            f"/{NEW_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
             f"/{EXISTING_VERSION}/encounter.parquet",
-            f"/{NEW_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
             f"/{EXISTING_VERSION}/encounter.parquet",
+            False,
+            200,
+            ITEM_COUNT + 3,
+        ),
+        (  # ensuring that a data package that is a substring does not get
+            # merged by substr match
+            "./tests/test_data/count_synthea_patient.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/{EXISTING_SITE}/"
+            f"{EXISTING_VERSION}/encount.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/{EXISTING_SITE}/"
+            f"{EXISTING_VERSION}/encount.parquet",
             False,
             200,
             ITEM_COUNT + 3,
         ),
         (  # Empty file upload
             None,
-            f"/{NEW_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
             f"/{EXISTING_VERSION}/encounter.parquet",
-            f"/{NEW_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
             f"/{EXISTING_VERSION}/encounter.parquet",
             False,
             500,
@@ -112,7 +123,7 @@ from tests.utils import (
         (  # Race condition - file deleted before job starts
             None,
             None,
-            f"/{NEW_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
             f"/{EXISTING_VERSION}/encounter.parquet",
             False,
             500,
@@ -163,7 +174,7 @@ def test_powerset_merge_single_upload(
     # ['', 'study', 'package', 'site', 'file']
     event_list = event_key.split("/")
     study = event_list[1]
-    package = event_list[2]
+    data_package = event_list[2]
     site = event_list[3]
     version = event_list[4]
     res = powerset_merge_handler(event, {})
@@ -185,8 +196,11 @@ def test_powerset_merge_single_upload(
             assert item["Key"].startswith(BucketPath.META.value)
             metadata = read_metadata(s3_client, TEST_BUCKET)
             if res["statusCode"] == 200:
+                print(metadata[site][study])
                 assert (
-                    metadata[site][study][EXISTING_DATA_P][version]["last_aggregation"]
+                    metadata[site][study][data_package.split("__")[1]][version][
+                        "last_aggregation"
+                    ]
                     == datetime.now(timezone.utc).isoformat()
                 )
             else:
@@ -240,14 +254,16 @@ def test_powerset_merge_join_study_data(
         upload_file,
         TEST_BUCKET,
         f"{BucketPath.LATEST.value}/{EXISTING_STUDY}/"
-        f"{EXISTING_DATA_P}/{NEW_SITE}/{EXISTING_VERSION}/encounter.parquet",
+        f"{EXISTING_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}/"
+        f"{EXISTING_VERSION}/encounter.parquet",
     )
 
     s3_client.upload_file(
         "./tests/test_data/count_synthea_patient.parquet",
         TEST_BUCKET,
         f"{BucketPath.LAST_VALID.value}/{EXISTING_STUDY}/"
-        f"{EXISTING_DATA_P}/{EXISTING_SITE}/{EXISTING_VERSION}/encounter.parquet",
+        f"{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}/"
+        f"{EXISTING_VERSION}/encounter.parquet",
     )
 
     if archives:
@@ -255,7 +271,8 @@ def test_powerset_merge_join_study_data(
             "./tests/test_data/count_synthea_patient.parquet",
             TEST_BUCKET,
             f"{BucketPath.LAST_VALID.value}/{EXISTING_STUDY}/"
-            f"{EXISTING_DATA_P}/{NEW_SITE}/{EXISTING_VERSION}/encounter.parquet",
+            f"{EXISTING_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}/"
+            f"{EXISTING_VERSION}/encounter.parquet",
         )
 
     event = {
@@ -263,7 +280,7 @@ def test_powerset_merge_join_study_data(
             {
                 "Sns": {
                     "Message": f"{BucketPath.LATEST.value}/{EXISTING_STUDY}"
-                    f"/{EXISTING_DATA_P}/{NEW_SITE}"
+                    f"/{EXISTING_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}"
                     f"/{EXISTING_VERSION}/encounter.parquet"
                 },
             }

@@ -32,44 +32,44 @@ from tests.utils import (
         (  # Adding a new study to an existing site
             "./tests/test_data/meta_date.parquet",
             (
-                f"/{NEW_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
+                f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
                 f"/{EXISTING_VERSION}/test_meta_date.parquet"
             ),
             (
-                f"/{NEW_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
+                f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
                 f"/{EXISTING_VERSION}/test_meta_date.parquet"
             ),
             200,
         ),
         (  # Adding a new study to a new site
             "./tests/test_data/meta_date.parquet",
-            f"/{NEW_STUDY}/{EXISTING_DATA_P}/{NEW_SITE}"
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}"
             f"/{EXISTING_VERSION}/test_meta_date.parquet",
-            f"/{NEW_STUDY}/{EXISTING_DATA_P}/{NEW_SITE}"
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}"
             f"/{EXISTING_VERSION}/test_meta_date.parquet",
             200,
         ),
         (  # newer version of existing study
             "./tests/test_data/meta_date.parquet",
             (
-                f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
-                f"/{NEW_VERSION}/test_meta_date.parquet"
+                f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}"
+                f"/{EXISTING_SITE}/{NEW_VERSION}/test_meta_date.parquet"
             ),
             (
-                f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
-                f"/{NEW_VERSION}/test_meta_date.parquet"
+                f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}"
+                f"/{EXISTING_SITE}/{NEW_VERSION}/test_meta_date.parquet"
             ),
             200,
         ),
         (  # updating an existing study
             "./tests/test_data/meta_date.parquet",
             (
-                f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
-                f"/{EXISTING_VERSION}/test_meta_date.parquet"
+                f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}"
+                f"/{EXISTING_SITE}/{EXISTING_VERSION}/test_meta_date.parquet"
             ),
             (
-                f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
-                f"/{EXISTING_VERSION}/test_meta_date.parquet"
+                f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}"
+                f"/{EXISTING_SITE}/{EXISTING_VERSION}/test_meta_date.parquet"
             ),
             200,
         ),
@@ -77,8 +77,8 @@ from tests.utils import (
             "./tests/test_data/meta_date.parquet",
             None,
             (
-                f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
-                f"/{EXISTING_VERSION}/wrong.parquet"
+                f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}"
+                f"/{EXISTING_SITE}/{EXISTING_VERSION}/wrong.parquet"
             ),
             500,
         ),
