@@ -46,8 +46,8 @@ class S3Manager:
         self.data_package = s3_key_array[2].split("__")[1]
         self.site = s3_key_array[3]
         self.version = s3_key_array[4]
-
         self.metadata = read_metadata(self.s3_client, self.s3_bucket_name)
+        print(s3_key_array)
 
     # S3 Filesystem operations
     def get_data_package_list(self, path) -> list:

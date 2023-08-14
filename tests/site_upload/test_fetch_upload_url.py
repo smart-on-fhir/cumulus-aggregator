@@ -5,9 +5,11 @@ from unittest import mock
 import boto3
 import pytest
 
+from src.handlers.shared.enums import BucketPath
 from src.handlers.site_upload.fetch_upload_url import upload_url_handler
 from tests.utils import (
     EXISTING_DATA_P,
+    EXISTING_SITE,
     EXISTING_STUDY,
     EXISTING_VERSION,
     TEST_BUCKET,
@@ -36,9 +38,16 @@ def test_fetch_upload_url(body, status, mock_bucket):
             "principalId": "ppth",
         }
     }
+
     response = upload_url_handler(
         {"body": json.dumps(body), "requestContext": context}, None
     )
-    print(response)
     assert response["statusCode"] == status
+    if response["statusCode"] == 200:
+        res_body = json.loads(response["body"])
+        assert res_body["fields"]["key"] == (
+            f"{BucketPath.UPLOAD.value}/{body['study']}/{body['data_package']}/"
+            f"{EXISTING_SITE}/{body['data_package_version']}/encounter.parquet"
+        )
+
     assert "Access-Control-Allow-Origin" not in response["headers"]
