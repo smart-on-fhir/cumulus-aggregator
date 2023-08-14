@@ -6,7 +6,6 @@ import json
 import sys
 
 import boto3
-
 from requests.auth import _basic_auth_str
 
 

@@ -1,14 +1,12 @@
 import os
-
 from unittest import mock
 
 import awswrangler
 import pandas
-
 from pytest_mock import MockerFixture
 
 from src.handlers.dashboard.get_data_packages import data_packages_handler
-from tests.utils import get_mock_metadata, MOCK_ENV, DATA_PACKAGE_COUNT
+from tests.utils import DATA_PACKAGE_COUNT, MOCK_ENV, get_mock_metadata
 
 
 @mock.patch.dict(os.environ, MOCK_ENV)

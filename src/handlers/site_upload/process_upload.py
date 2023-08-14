@@ -28,8 +28,9 @@ def process_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> N
     study = path_params[1]
     data_package = path_params[2]
     site = path_params[3]
+    version = path_params[4]
     if s3_key.endswith(".parquet"):
-        if "_meta_" in s3_key:
+        if "__meta_" in s3_key:
             new_key = f"{BucketPath.STUDY_META.value}/{s3_key.split('/', 1)[-1]}"
             topic_sns_arn = os.environ.get("TOPIC_PROCESS_STUDY_META_ARN")
             sns_subject = "Process study medata upload event"
@@ -43,6 +44,7 @@ def process_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> N
             site,
             study,
             data_package,
+            version,
             "last_upload",
             last_uploaded_date,
         )
@@ -56,11 +58,18 @@ def process_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> N
             site,
             study,
             data_package,
+            version,
             "last_upload",
             last_uploaded_date,
         )
         metadata = update_metadata(
-            metadata, site, study, data_package, "last_error", last_uploaded_date
+            metadata,
+            site,
+            study,
+            data_package,
+            version,
+            "last_error",
+            last_uploaded_date,
         )
         write_metadata(s3_client, s3_bucket_name, metadata)
         raise UnexpectedFileTypeError

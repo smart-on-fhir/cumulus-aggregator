@@ -1,15 +1,25 @@
-import boto3
 import json
 import os
-
-import pytest
 from datetime import datetime, timezone
 from unittest import mock
 
+import boto3
+import pytest
+
+from src.handlers.dashboard.get_study_periods import study_periods_handler
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import read_metadata, write_metadata
-from src.handlers.dashboard.get_study_periods import study_periods_handler
-from tests.utils import get_mock_study_metadata
+from tests.utils import (
+    EXISTING_DATA_P,
+    EXISTING_SITE,
+    EXISTING_STUDY,
+    EXISTING_VERSION,
+    NEW_SITE,
+    NEW_STUDY,
+    OTHER_SITE,
+    OTHER_STUDY,
+    get_mock_study_metadata,
+)
 
 
 @pytest.mark.parametrize(
@@ -17,17 +27,17 @@ from tests.utils import get_mock_study_metadata
     [
         (None, 200, get_mock_study_metadata()),
         (
-            {"site": "general_hospital"},
+            {"site": EXISTING_SITE},
             200,
-            get_mock_study_metadata()["general_hospital"],
+            get_mock_study_metadata()[EXISTING_SITE],
         ),
         (
-            {"site": "general_hospital", "study": "study"},
+            {"site": EXISTING_SITE, "study": EXISTING_STUDY},
             200,
-            get_mock_study_metadata()["general_hospital"]["study"],
+            get_mock_study_metadata()[EXISTING_SITE][EXISTING_STUDY],
         ),
-        ({"site": "chicago_hope", "study": "study"}, 500, None),
-        ({"site": "general_hospital", "study": "flu"}, 500, None),
+        ({"site": NEW_SITE, "study": EXISTING_STUDY}, 500, None),
+        ({"site": EXISTING_SITE, "study": NEW_STUDY}, 500, None),
     ],
 )
 def test_get_study_periods(mock_bucket, params, status, expected):

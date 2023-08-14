@@ -1,5 +1,6 @@
 [project]
 name = "aggregator"
+requires-python = ">= 3.9"
 version = "0.1.3"
 # This project is designed to run on the AWS serverless application framework (SAM).
 # The project dependencies are handled via AWS layers. These are only required for
@@ -44,7 +45,13 @@ test = [
 dev = [
     "bandit",
     "black==22.12.0",
+    "isort==5.12.0",
     "pre-commit",
     "pylint",
     "pycodestyle"
 ]
+
+[tool.isort]
+profile = "black"
+src_paths = ["src", "tests"]
+skip_glob = [".aws_sam"]

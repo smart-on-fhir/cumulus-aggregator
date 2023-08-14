@@ -1,98 +1,138 @@
-import boto3
 import io
 import os
-
 from contextlib import nullcontext as does_not_raise
+from datetime import datetime, timezone
 from unittest import mock
 
 import awswrangler
+import boto3
 import pytest
-
-from datetime import datetime, timezone
-from pandas import DataFrame, read_parquet
 from freezegun import freeze_time
+from pandas import DataFrame, read_parquet
 
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import read_metadata, write_metadata
 from src.handlers.site_upload.powerset_merge import (
-    powerset_merge_handler,
-    expand_and_concat_sets,
     MergeError,
+    expand_and_concat_sets,
+    powerset_merge_handler,
 )
-
-from tests.utils import get_mock_metadata, TEST_BUCKET, ITEM_COUNT, MOCK_ENV
-
-
-SITE_NAME = "princeton_plainsboro_teaching_hospital"
-NEW_SITE_NAME = "chicago_hope"
-NEW_STUDY_NAME = "new_study"
-EXISTING_STUDY_NAME = "study"
-DATA_P_NAME = "encounter"
+from tests.utils import (
+    EXISTING_DATA_P,
+    EXISTING_SITE,
+    EXISTING_STUDY,
+    EXISTING_VERSION,
+    ITEM_COUNT,
+    MOCK_ENV,
+    NEW_DATA_P,
+    NEW_SITE,
+    NEW_STUDY,
+    NEW_VERSION,
+    OTHER_SITE,
+    OTHER_STUDY,
+    TEST_BUCKET,
+    get_mock_metadata,
+)
 
 
 @freeze_time("2020-01-01")
 @pytest.mark.parametrize(
-    "site,upload_file,upload_path,event_key,archives,status,expected_contents",
+    "upload_file,upload_path,event_key,archives,status,expected_contents",
     [
         (  # Adding a new data package to a site with uploads
-            f"{SITE_NAME}",
             "./tests/test_data/count_synthea_patient.parquet",
-            f"/{NEW_STUDY_NAME}/{DATA_P_NAME}/{SITE_NAME}/encounter.parquet",
-            f"/{NEW_STUDY_NAME}/{DATA_P_NAME}/{SITE_NAME}/encounter.parquet",
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}/"
+            f"{EXISTING_VERSION}/encounter.parquet",
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}/"
+            f"{EXISTING_VERSION}/encounter.parquet",
             False,
             200,
             ITEM_COUNT + 3,
         ),
         (  # Adding a new data package to a site without uploads
-            f"{NEW_SITE_NAME}",
             "./tests/test_data/count_synthea_patient.parquet",
-            f"/{NEW_STUDY_NAME}/{DATA_P_NAME}/{NEW_SITE_NAME}/encounter.parquet",
-            f"/{NEW_STUDY_NAME}/{DATA_P_NAME}/{NEW_SITE_NAME}/encounter.parquet",
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}"
+            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}"
+            f"/{EXISTING_VERSION}/encounter.parquet",
             False,
             200,
             ITEM_COUNT + 3,
         ),
         (  # Updating an existing data package
-            f"{SITE_NAME}",
             "./tests/test_data/count_synthea_patient.parquet",
-            f"/{EXISTING_STUDY_NAME}/{DATA_P_NAME}/{SITE_NAME}/encounter.parquet",
-            f"/{EXISTING_STUDY_NAME}/{DATA_P_NAME}/{SITE_NAME}/encounter.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/encounter.parquet",
             True,
             200,
             ITEM_COUNT + 2,
         ),
+        (  # New version of existing data package
+            "./tests/test_data/count_synthea_patient.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{NEW_VERSION}/encounter.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{NEW_VERSION}/encounter.parquet",
+            True,
+            200,
+            ITEM_COUNT + 4,
+        ),
         (  # Invalid parquet file
-            f"{SITE_NAME}",
             "./tests/site_upload/test_powerset_merge.py",
-            f"/{NEW_STUDY_NAME}/{DATA_P_NAME}/{SITE_NAME}/patient.parquet",
-            f"/{NEW_STUDY_NAME}/{DATA_P_NAME}/{SITE_NAME}/patient.parquet",
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/patient.parquet",
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/patient.parquet",
             False,
             500,
             ITEM_COUNT + 1,
         ),
         (  # Checks presence of commas in strings does not cause an error
-            f"{SITE_NAME}",
             "./tests/test_data/cube_strings_with_commas.parquet",
-            f"/{NEW_STUDY_NAME}/{DATA_P_NAME}/{SITE_NAME}/encounter.parquet",
-            f"/{NEW_STUDY_NAME}/{DATA_P_NAME}/{SITE_NAME}/encounter.parquet",
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/encounter.parquet",
+            False,
+            200,
+            ITEM_COUNT + 3,
+        ),
+        (  # ensuring that a data package that is a substring does not get
+            # merged by substr match
+            "./tests/test_data/count_synthea_patient.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/"
+            f"{EXISTING_SITE}/{EXISTING_VERSION}/encount.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/"
+            f"{EXISTING_SITE}/{EXISTING_VERSION}/encount.parquet",
             False,
             200,
             ITEM_COUNT + 3,
         ),
         (  # Empty file upload
-            f"{SITE_NAME}",
             None,
-            f"/{NEW_STUDY_NAME}/{DATA_P_NAME}/{SITE_NAME}/encounter.parquet",
-            f"/{NEW_STUDY_NAME}/{DATA_P_NAME}/{SITE_NAME}/encounter.parquet",
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/encounter.parquet",
             False,
             500,
             ITEM_COUNT + 1,
+        ),
+        (  # Race condition - file deleted before job starts
+            None,
+            None,
+            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/encounter.parquet",
+            False,
+            500,
+            ITEM_COUNT,
         ),
     ],
 )
 @mock.patch.dict(os.environ, MOCK_ENV)
 def test_powerset_merge_single_upload(
-    site,
     upload_file,
     upload_path,
     event_key,
@@ -109,7 +149,7 @@ def test_powerset_merge_single_upload(
             TEST_BUCKET,
             f"{BucketPath.LATEST.value}{upload_path}",
         )
-    else:
+    elif upload_path is not None:
         with io.BytesIO(DataFrame().to_parquet()) as upload_fileobj:
             s3_client.upload_fileobj(
                 upload_fileobj,
@@ -133,9 +173,10 @@ def test_powerset_merge_single_upload(
     # This array looks like:
     # ['', 'study', 'package', 'site', 'file']
     event_list = event_key.split("/")
-    expected_study = event_list[1]
-    expected_package = event_list[2]
-    expected_site = event_list[3]
+    study = event_list[1]
+    data_package = event_list[2]
+    site = event_list[3]
+    version = event_list[4]
     res = powerset_merge_handler(event, {})
     assert res["statusCode"] == status
     s3_res = s3_client.list_objects_v2(Bucket=TEST_BUCKET)
@@ -144,34 +185,32 @@ def test_powerset_merge_single_upload(
         if item["Key"].endswith("aggregate.parquet"):
             assert item["Key"].startswith(BucketPath.AGGREGATE.value)
             # This finds the aggregate that was created/updated - ie it skips mocks
-            if (
-                expected_study in item["Key"]
-                and expected_study in item["Key"]
-                and status == 200
-            ):
+            if study in item["Key"] and status == 200:
                 agg_df = awswrangler.s3.read_parquet(
                     f"s3://{TEST_BUCKET}/{item['Key']}"
                 )
-                assert (agg_df["site"].eq(expected_site)).any()
+                assert (agg_df["site"].eq(site)).any()
         elif item["Key"].endswith("aggregate.csv"):
             assert item["Key"].startswith(BucketPath.CSVAGGREGATE.value)
         elif item["Key"].endswith("transactions.json"):
             assert item["Key"].startswith(BucketPath.META.value)
             metadata = read_metadata(s3_client, TEST_BUCKET)
             if res["statusCode"] == 200:
-                study = event_key.split("/")[1]
+                print(metadata[site][study])
                 assert (
-                    metadata[site][study][DATA_P_NAME]["last_aggregation"]
+                    metadata[site][study][data_package.split("__")[1]][version][
+                        "last_aggregation"
+                    ]
                     == datetime.now(timezone.utc).isoformat()
                 )
             else:
                 assert (
-                    metadata["general_hospital"]["study"]["encounter"][
-                        "last_aggregation"
-                    ]
-                    == get_mock_metadata()["general_hospital"]["study"]["encounter"][
-                        "last_aggregation"
-                    ]
+                    metadata["princeton_plainsboro_teaching_hospital"]["study"][
+                        "encounter"
+                    ]["099"]["last_aggregation"]
+                    == get_mock_metadata()["princeton_plainsboro_teaching_hospital"][
+                        "study"
+                    ]["encounter"]["099"]["last_aggregation"]
                 )
         elif item["Key"].startswith(BucketPath.LAST_VALID.value):
             assert item["Key"] == (f"{BucketPath.LAST_VALID.value}{upload_path}")
@@ -214,31 +253,35 @@ def test_powerset_merge_join_study_data(
     s3_client.upload_file(
         upload_file,
         TEST_BUCKET,
-        f"{BucketPath.LATEST.value}/{EXISTING_STUDY_NAME}/"
-        f"{DATA_P_NAME}/{NEW_SITE_NAME}/encounter.parquet",
+        f"{BucketPath.LATEST.value}/{EXISTING_STUDY}/"
+        f"{EXISTING_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}/"
+        f"{EXISTING_VERSION}/encounter.parquet",
     )
 
     s3_client.upload_file(
         "./tests/test_data/count_synthea_patient.parquet",
         TEST_BUCKET,
-        f"{BucketPath.LAST_VALID.value}/{EXISTING_STUDY_NAME}/"
-        f"{DATA_P_NAME}/{SITE_NAME}/encounter.parquet",
+        f"{BucketPath.LAST_VALID.value}/{EXISTING_STUDY}/"
+        f"{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}/"
+        f"{EXISTING_VERSION}/encounter.parquet",
     )
 
     if archives:
         s3_client.upload_file(
             "./tests/test_data/count_synthea_patient.parquet",
             TEST_BUCKET,
-            f"{BucketPath.LAST_VALID.value}/{EXISTING_STUDY_NAME}/"
-            f"{DATA_P_NAME}/{NEW_SITE_NAME}/encounter.parquet",
+            f"{BucketPath.LAST_VALID.value}/{EXISTING_STUDY}/"
+            f"{EXISTING_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}/"
+            f"{EXISTING_VERSION}/encounter.parquet",
         )
 
     event = {
         "Records": [
             {
                 "Sns": {
-                    "Message": f"{BucketPath.LATEST.value}/{EXISTING_STUDY_NAME}"
-                    f"/{DATA_P_NAME}/{NEW_SITE_NAME}/encounter.parquet"
+                    "Message": f"{BucketPath.LATEST.value}/{EXISTING_STUDY}"
+                    f"/{EXISTING_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}"
+                    f"/{EXISTING_VERSION}/encounter.parquet"
                 },
             }
         ]
@@ -289,4 +332,4 @@ def test_expand_and_concat(mock_bucket, upload_file, load_empty, raises):
             TEST_BUCKET,
             s3_path,
         )
-        expand_and_concat_sets(df, f"s3://{TEST_BUCKET}/{s3_path}", EXISTING_STUDY_NAME)
+        expand_and_concat_sets(df, f"s3://{TEST_BUCKET}/{s3_path}", EXISTING_STUDY)

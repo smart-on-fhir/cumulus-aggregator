@@ -3,8 +3,6 @@ This is intended to provide an implementation of the logic described in docs/api
 """
 import os
 
-from typing import List, Dict
-
 import awswrangler
 import boto3
 import pandas
@@ -15,7 +13,7 @@ from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import http_response
 
 
-def _get_table_cols(table_name: str) -> List:
+def _get_table_cols(table_name: str) -> list:
     """Returns the columns associated with a table.
 
     Since running an athena query takes a decent amount of time due to queueing
@@ -34,7 +32,7 @@ def _get_table_cols(table_name: str) -> List:
     return next(s3_iter).decode().split(",")
 
 
-def _build_query(query_params: Dict, filters: List, path_params: Dict) -> str:
+def _build_query(query_params: dict, filters: list, path_params: dict) -> str:
     """Creates a query from the dashboard API spec"""
     table = path_params["subscription_name"]
     columns = _get_table_cols(table)
@@ -67,7 +65,7 @@ def _build_query(query_params: Dict, filters: List, path_params: Dict) -> str:
     return query_str
 
 
-def _format_payload(df: pandas.DataFrame, query_params: Dict, filters: List) -> Dict:
+def _format_payload(df: pandas.DataFrame, query_params: dict, filters: list) -> dict:
     """Coerces query results into the return format defined by the dashboard"""
     payload = {}
     payload["column"] = query_params["column"]

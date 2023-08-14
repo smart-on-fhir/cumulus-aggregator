@@ -1,72 +1,95 @@
-import boto3
 import os
-
-import pytest
-
 from datetime import datetime, timezone
+
+import boto3
+import pytest
 from freezegun import freeze_time
 
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import read_metadata, write_metadata
 from src.handlers.site_upload.process_upload import process_upload_handler
-
-from tests.utils import TEST_BUCKET, ITEM_COUNT
+from tests.utils import (
+    EXISTING_DATA_P,
+    EXISTING_SITE,
+    EXISTING_STUDY,
+    EXISTING_VERSION,
+    ITEM_COUNT,
+    NEW_DATA_P,
+    NEW_SITE,
+    NEW_STUDY,
+    NEW_VERSION,
+    OTHER_SITE,
+    OTHER_STUDY,
+    TEST_BUCKET,
+)
 
 
 @freeze_time("2020-01-01")
 @pytest.mark.parametrize(
-    "site,upload_file,upload_path,event_key,status,expected_contents",
+    "upload_file,upload_path,event_key,status,expected_contents",
     [
         (  # Adding a new data package to a site with uploads
-            "princeton_plainsboro_teaching_hospital",
             "./tests/test_data/cube_simple_example.parquet",
-            "/covid/encounter/princeton_plainsboro_teaching_hospital/document.parquet",
-            "/covid/encounter/princeton_plainsboro_teaching_hospital/document.parquet",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/document.parquet",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/document.parquet",
             200,
             ITEM_COUNT + 1,
         ),
         (  # Adding a new data package to a site without uploads
-            "chicago_hope",
             "./tests/test_data/cube_simple_example.parquet",
-            "/covid/encounter/chicago_hope/document.parquet",
-            "/covid/encounter/chicago_hope/document.parquet",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{NEW_SITE}"
+            f"/{EXISTING_VERSION}/document.parquet",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{NEW_SITE}"
+            f"/{EXISTING_VERSION}/document.parquet",
             200,
             ITEM_COUNT + 1,
         ),
         (  # Updating an existing data package
-            "princeton_plainsboro_teaching_hospital",
             "./tests/test_data/cube_simple_example.parquet",
-            "/covid/encounter/princeton_plainsboro_teaching_hospital/encounter.parquet",
-            "/covid/encounter/princeton_plainsboro_teaching_hospital/encounter.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/encounter.parquet",
+            200,
+            ITEM_COUNT + 1,
+        ),
+        (  # New version of an existing data package
+            "./tests/test_data/cube_simple_example.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{NEW_VERSION}/encounter.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{NEW_VERSION}/encounter.parquet",
             200,
             ITEM_COUNT + 1,
         ),
         (  # Non-parquet file
-            "princeton_plainsboro_teaching_hospital",
             "./tests/test_data/cube_simple_example.csv",
-            "/covid/encounter/princeton_plainsboro_teaching_hospital/document.csv",
-            "/covid/encounter/princeton_plainsboro_teaching_hospital/document.csv",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/document.csv",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/document.csv",
             500,
             ITEM_COUNT + 1,
         ),
         (  # S3 event dispatched when file is not present
-            "princeton_plainsboro_teaching_hospital",
             None,
             None,
-            "/covid/encounter/princeton_plainsboro_teaching_hospital/missing.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/missing.parquet",
             500,
             ITEM_COUNT,
         ),
-        (  # Adding study metadata data package
-            "princeton_plainsboro_teaching_hospital",
+        (  # Adding metadata data package
             "./tests/test_data/cube_simple_example.parquet",
             (
-                "/covid/encounter/princeton_plainsboro_teaching_hospital/"
-                "document_meta_date.parquet"
+                f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}/"
+                f"{EXISTING_VERSION}/document_meta_date.parquet"
             ),
             (
-                "/covid/encounter/princeton_plainsboro_teaching_hospital/"
-                "document_meta_date.parquet"
+                f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}/"
+                f"{EXISTING_VERSION}/document_meta_date.parquet"
             ),
             200,
             ITEM_COUNT + 1,
@@ -74,7 +97,6 @@ from tests.utils import TEST_BUCKET, ITEM_COUNT
     ],
 )
 def test_process_upload(
-    site,
     upload_file,
     upload_path,
     event_key,
@@ -111,9 +133,14 @@ def test_process_upload(
         elif item["Key"].endswith("transactions.json"):
             assert item["Key"].startswith(BucketPath.META.value)
             metadata = read_metadata(s3_client, TEST_BUCKET)
-            if upload_file is not None:
+            if upload_file is not None and upload_path is not None:
+                path_params = upload_path.split("/")
+                study = path_params[1]
+                data_package = path_params[2]
+                site = path_params[3]
+                version = path_params[4]
                 assert (
-                    metadata[site]["covid"]["encounter"]["last_upload"]
+                    metadata[site][study][data_package][version]["last_upload"]
                     == datetime.now(timezone.utc).isoformat()
                 )
         elif item["Key"].startswith(BucketPath.STUDY_META.value):

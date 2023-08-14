@@ -22,21 +22,28 @@ set of states:
   aggregator
 """
 import os
-
 from unittest import mock
 
 import boto3
 import pytest
-
-from moto import mock_s3, mock_athena, mock_sns
-
+from moto import mock_athena, mock_s3, mock_sns
 from scripts.credential_management import create_auth, create_meta
+
 from src.handlers.shared.enums import BucketPath, JsonFilename
 from src.handlers.shared.functions import write_metadata
-from tests.utils import get_mock_metadata, get_mock_study_metadata, ITEM_COUNT, MOCK_ENV
+from tests.utils import (
+    EXISTING_DATA_P,
+    EXISTING_STUDY,
+    EXISTING_VERSION,
+    ITEM_COUNT,
+    MOCK_ENV,
+    OTHER_STUDY,
+    get_mock_metadata,
+    get_mock_study_metadata,
+)
 
 
-def _init_mock_data(s3_client, bucket_name, study, data_package):
+def _init_mock_data(s3_client, bucket, study, data_package, version):
     """Creates data in bucket for use in unit tests
 
     The following items are added:
@@ -49,29 +56,21 @@ def _init_mock_data(s3_client, bucket_name, study, data_package):
     """
     s3_client.upload_file(
         "./tests/test_data/count_synthea_patient_agg.parquet",
-        bucket_name,
+        bucket,
         f"{BucketPath.AGGREGATE.value}/{study}/"
-        f"{study}__{data_package}/{study}__{data_package}__aggregate.parquet",
+        f"{study}__{data_package}/{version}/{study}__{data_package}__aggregate.parquet",
     )
     s3_client.upload_file(
         "./tests/test_data/count_synthea_patient_agg.csv",
-        bucket_name,
+        bucket,
         f"{BucketPath.CSVAGGREGATE.value}/{study}/"
-        f"{study}__{data_package}/{study}__{data_package}__aggregate.csv",
+        f"{study}__{data_package}/{version}/{study}__{data_package}__aggregate.csv",
     )
     s3_client.upload_file(
         "./tests/test_data/data_packages_cache.json",
-        bucket_name,
+        bucket,
         f"{BucketPath.CACHE.value}/{JsonFilename.DATA_PACKAGES.value}.json",
     )
-    create_auth(s3_client, bucket_name, "ppth_1", "test_1", "ppth")
-    create_meta(
-        s3_client, bucket_name, "ppth", "princeton_plainsboro_teaching_hospital"
-    )
-    create_auth(s3_client, bucket_name, "elsewhere_2", "test_2", "elsewhere")
-    create_meta(s3_client, bucket_name, "elsewhere", "st_elsewhere")
-    create_auth(s3_client, bucket_name, "hope_3", "test_3", "hope")
-    create_meta(s3_client, bucket_name, "hope", "chicago_hope")
 
 
 @pytest.fixture(autouse=True)
@@ -90,11 +89,19 @@ def mock_bucket():
     bucket = os.environ["BUCKET_NAME"]
     s3_client.create_bucket(Bucket=bucket)
     aggregate_params = [
-        ["study", "encounter"],
-        ["other_study", "encounter"],
+        [EXISTING_STUDY, EXISTING_DATA_P, EXISTING_VERSION],
+        [OTHER_STUDY, EXISTING_DATA_P, EXISTING_VERSION],
     ]
     for param_list in aggregate_params:
         _init_mock_data(s3_client, bucket, *param_list)
+
+    create_auth(s3_client, bucket, "ppth_1", "test_1", "ppth")
+    create_meta(s3_client, bucket, "ppth", "princeton_plainsboro_teaching_hospital")
+    create_auth(s3_client, bucket, "elsewhere_2", "test_2", "elsewhere")
+    create_meta(s3_client, bucket, "elsewhere", "st_elsewhere")
+    create_auth(s3_client, bucket, "hope_3", "test_3", "hope")
+    create_meta(s3_client, bucket, "hope", "chicago_hope")
+
     metadata = get_mock_metadata()
     write_metadata(s3_client, bucket, metadata)
     study_metadata = get_mock_study_metadata()

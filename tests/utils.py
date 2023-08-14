@@ -9,6 +9,17 @@ TEST_CACHE_API_ARN = "arn:aws:sns:us-east-1:123456789012:test-cache"
 ITEM_COUNT = 9
 DATA_PACKAGE_COUNT = 2
 
+EXISTING_SITE = "princeton_plainsboro_teaching_hospital"
+NEW_SITE = "chicago_hope"
+OTHER_SITE = "st_elsewhere"
+NEW_STUDY = "new_study"
+EXISTING_STUDY = "study"
+OTHER_STUDY = "other_study"
+EXISTING_DATA_P = "encounter"
+NEW_DATA_P = "document"
+EXISTING_VERSION = "099"
+NEW_VERSION = "100"
+
 # This is a convenience for loading into os.environ with mock.patch.dict.
 # Other cases should probably use the getter version below.
 MOCK_ENV = {
@@ -23,37 +34,43 @@ MOCK_ENV = {
 
 def get_mock_metadata():
     return {
-        "general_hospital": {
-            "study": {
-                "encounter": {
-                    "version": "1.0",
-                    "last_upload": "2023-02-24T15:03:34+00:00",
-                    "last_data_update": "2023-02-24T15:03:40.657583+00:00",
-                    "last_aggregation": "2023-02-24T15:08:07.504595+00:00",
-                    "last_error": None,
-                    "deleted": None,
+        EXISTING_SITE: {
+            EXISTING_STUDY: {
+                EXISTING_DATA_P: {
+                    EXISTING_VERSION: {
+                        "transacton_format_version": "2",
+                        "last_upload": "2023-02-24T15:03:34+00:00",
+                        "last_data_update": "2023-02-24T15:03:40.657583+00:00",
+                        "last_aggregation": "2023-02-24T15:08:07.504595+00:00",
+                        "last_error": None,
+                        "deleted": None,
+                    }
                 }
             },
-            "other_study": {
-                "encounter": {
-                    "version": "1.0",
-                    "last_upload": "2023-02-24T15:43:57+00:00",
-                    "last_data_update": "2023-02-24T15:44:03.861574+00:00",
-                    "last_aggregation": "2023-02-24T15:44:03.861574+00:00",
-                    "last_error": None,
-                    "deleted": None,
+            OTHER_STUDY: {
+                EXISTING_DATA_P: {
+                    EXISTING_VERSION: {
+                        "transacton_format_version": "2",
+                        "last_upload": "2023-02-24T15:43:57+00:00",
+                        "last_data_update": "2023-02-24T15:44:03.861574+00:00",
+                        "last_aggregation": "2023-02-24T15:44:03.861574+00:00",
+                        "last_error": None,
+                        "deleted": None,
+                    }
                 }
             },
         },
-        "st_elsewhere": {
-            "study": {
-                "encounter": {
-                    "version": "1.0",
-                    "last_upload": "2023-02-24T15:08:06+00:00",
-                    "last_data_update": "2023-02-24T15:08:07.771080+00:00",
-                    "last_aggregation": "2023-02-24T15:08:07.771080+00:00",
-                    "last_error": None,
-                    "deleted": None,
+        OTHER_SITE: {
+            EXISTING_STUDY: {
+                EXISTING_DATA_P: {
+                    EXISTING_VERSION: {
+                        "transacton_format_version": "2",
+                        "last_upload": "2023-02-24T15:08:06+00:00",
+                        "last_data_update": "2023-02-24T15:08:07.771080+00:00",
+                        "last_aggregation": "2023-02-24T15:08:07.771080+00:00",
+                        "last_error": None,
+                        "deleted": None,
+                    }
                 }
             }
         },
@@ -62,26 +79,32 @@ def get_mock_metadata():
 
 def get_mock_study_metadata():
     return {
-        "general_hospital": {
-            "study": {
-                "version": "1.0",
-                "last_data_update": "2023-02-24T15:03:40.657583+00:00",
-                "earliest_data": "2020-02-24T15:03:40.657583+00:00",
-                "latest_data": "2023-02-24T15:03:40.657583+00:00",
+        EXISTING_SITE: {
+            EXISTING_STUDY: {
+                EXISTING_VERSION: {
+                    "study_period_format_version": "2",
+                    "last_data_update": "2023-02-24T15:03:40.657583+00:00",
+                    "earliest_data": "2020-02-24T15:03:40.657583+00:00",
+                    "latest_data": "2023-02-24T15:03:40.657583+00:00",
+                }
             },
-            "other_study": {
-                "version": "1.0",
-                "last_data_update": "2023-02-24T15:44:03.861574+00:00",
-                "earliest_data": "2020-02-24T15:03:40.657583+00:00",
-                "latest_data": "2023-02-24T15:03:40.657583+00:00",
+            OTHER_STUDY: {
+                EXISTING_VERSION: {
+                    "study_period_format_version": "2",
+                    "last_data_update": "2023-02-24T15:44:03.861574+00:00",
+                    "earliest_data": "2020-02-24T15:03:40.657583+00:00",
+                    "latest_data": "2023-02-24T15:03:40.657583+00:00",
+                }
             },
         },
-        "st_elsewhere": {
-            "study": {
-                "version": "1.0",
-                "last_data_update": "2023-02-24T15:08:07.771080+00:00",
-                "earliest_data": "2020-02-24T15:03:40.657583+00:00",
-                "latest_data": "2023-02-24T15:03:40.657583+00:00",
+        OTHER_SITE: {
+            EXISTING_STUDY: {
+                EXISTING_VERSION: {
+                    "study_period_format_version": "2",
+                    "last_data_update": "2023-02-24T15:08:07.771080+00:00",
+                    "earliest_data": "2020-02-24T15:03:40.657583+00:00",
+                    "latest_data": "2023-02-24T15:03:40.657583+00:00",
+                }
             }
         },
     }

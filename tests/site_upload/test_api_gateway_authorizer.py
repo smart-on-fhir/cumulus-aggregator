@@ -1,14 +1,13 @@
 import json
 import os
-import pytest
-
 from contextlib import nullcontext as does_not_raise
 from unittest import mock
 
+import pytest
 from pytest_mock import MockerFixture
 
 from src.handlers.site_upload.api_gateway_authorizer import lambda_handler
-from tests.utils import get_mock_auth, TEST_BUCKET
+from tests.utils import TEST_BUCKET, get_mock_auth
 
 
 @pytest.mark.parametrize(
