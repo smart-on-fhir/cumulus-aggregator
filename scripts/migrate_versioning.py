@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """ Utility for adding versioning to an existing aggregator data store
 
 This is a one time thing for us, so the CLI/Boto creds are not robust.
