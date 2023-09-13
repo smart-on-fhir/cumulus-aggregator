@@ -196,13 +196,13 @@ def test_powerset_merge_single_upload(
             assert item["Key"].startswith(BucketPath.META.value)
             metadata = read_metadata(s3_client, TEST_BUCKET)
             if res["statusCode"] == 200:
-                print(metadata[site][study])
                 assert (
                     metadata[site][study][data_package.split("__")[1]][version][
                         "last_aggregation"
                     ]
                     == datetime.now(timezone.utc).isoformat()
                 )
+
             else:
                 assert (
                     metadata["princeton_plainsboro_teaching_hospital"]["study"][
@@ -212,6 +212,15 @@ def test_powerset_merge_single_upload(
                         "study"
                     ]["encounter"]["099"]["last_aggregation"]
                 )
+            if upload_file is not None:
+                # checking to see that merge powerset didn't touch last upload
+                assert (
+                    metadata[site][study][data_package.split("__")[1]][version][
+                        "last_upload"
+                    ]
+                    != datetime.now(timezone.utc).isoformat()
+                )
+
         elif item["Key"].startswith(BucketPath.LAST_VALID.value):
             assert item["Key"] == (f"{BucketPath.LAST_VALID.value}{upload_path}")
         else:
@@ -236,8 +245,8 @@ def test_powerset_merge_single_upload(
     "upload_file,archives,expected_errors",
     [
         ("./tests/test_data/count_synthea_patient.parquet", False, 0),
-        ("./tests/test_data/cube_simple_example.parquet", False, 1),
-        ("./tests/test_data/cube_simple_example.parquet", True, 1),
+        ("./tests/test_data/other_schema.parquet", False, 1),
+        ("./tests/test_data/other_schema.parquet", True, 1),
     ],
 )
 @mock.patch.dict(os.environ, MOCK_ENV)
@@ -293,7 +302,7 @@ def test_powerset_merge_join_study_data(
     for item in s3_res["Contents"]:
         if item["Key"].startswith(BucketPath.ERROR.value):
             errors += 1
-        if item["Key"].startswith(f"{BucketPath.AGGREGATE.value}/study"):
+        elif item["Key"].startswith(f"{BucketPath.AGGREGATE.value}/study"):
             agg_df = awswrangler.s3.read_parquet(f"s3://{TEST_BUCKET}/{item['Key']}")
             # if a file cant be merged and there's no fallback, we expect
             # [<NA>, site_name], otherwise, [<NA>, site_name, uploading_site_name]

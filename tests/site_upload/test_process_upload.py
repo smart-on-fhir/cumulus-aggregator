@@ -64,6 +64,15 @@ from tests.utils import (
             200,
             ITEM_COUNT + 1,
         ),
+        (  # Upload of the template study
+            "./tests/test_data/cube_simple_example.parquet",
+            f"/template/{NEW_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/document.parquet",
+            f"/template/{NEW_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/document.parquet",
+            200,
+            ITEM_COUNT + 1,
+        ),
         (  # Non-parquet file
             "./tests/test_data/cube_simple_example.csv",
             f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}"
@@ -125,6 +134,7 @@ def test_process_upload(
     assert res["statusCode"] == status
     s3_res = s3_client.list_objects_v2(Bucket=TEST_BUCKET)
     assert len(s3_res["Contents"]) == expected_contents
+    found_archive = False
     for item in s3_res["Contents"]:
         if item["Key"].endswith("aggregate.parquet"):
             assert item["Key"].startswith(BucketPath.AGGREGATE.value)
@@ -132,19 +142,22 @@ def test_process_upload(
             assert item["Key"].startswith(BucketPath.CSVAGGREGATE.value)
         elif item["Key"].endswith("transactions.json"):
             assert item["Key"].startswith(BucketPath.META.value)
-            metadata = read_metadata(s3_client, TEST_BUCKET)
-            if upload_file is not None and upload_path is not None:
-                path_params = upload_path.split("/")
-                study = path_params[1]
-                data_package = path_params[2]
-                site = path_params[3]
-                version = path_params[4]
-                assert (
-                    metadata[site][study][data_package][version]["last_upload"]
-                    == datetime.now(timezone.utc).isoformat()
-                )
+            if upload_path is not None and "template" not in upload_path:
+                metadata = read_metadata(s3_client, TEST_BUCKET)
+                if upload_file is not None and upload_path is not None:
+                    path_params = upload_path.split("/")
+                    study = path_params[1]
+                    data_package = path_params[2]
+                    site = path_params[3]
+                    version = path_params[4]
+                    assert (
+                        metadata[site][study][data_package][version]["last_upload"]
+                        == datetime.now(timezone.utc).isoformat()
+                    )
         elif item["Key"].startswith(BucketPath.STUDY_META.value):
             assert "_meta_" in item["Key"]
+        elif item["Key"].startswith(BucketPath.ARCHIVE.value):
+            found_archive = True
         else:
             assert (
                 item["Key"].startswith(BucketPath.LATEST.value)
@@ -154,3 +167,5 @@ def test_process_upload(
                 or item["Key"].startswith(BucketPath.CACHE.value)
                 or item["Key"].endswith("study_periods.json")
             )
+        if found_archive:
+            assert "template" in upload_path

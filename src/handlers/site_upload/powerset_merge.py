@@ -47,7 +47,6 @@ class S3Manager:
         self.site = s3_key_array[3]
         self.version = s3_key_array[4]
         self.metadata = read_metadata(self.s3_client, self.s3_bucket_name)
-        print(s3_key_array)
 
     # S3 Filesystem operations
     def get_data_package_list(self, path) -> list:
@@ -216,9 +215,7 @@ def merge_powersets(manager: S3Manager) -> None:
         try:
             if not any(x.endswith(site_specific_name) for x in latest_file_list):
                 df = expand_and_concat_sets(df, last_valid_path, last_valid_site)
-                manager.update_local_metadata(
-                    "last_uploaded_date", site=last_valid_site
-                )
+                manager.update_local_metadata("last_aggregation", site=last_valid_site)
         except MergeError as e:
             # This is expected to trigger if there's an issue in expand_and_concat_sets;
             # this usually means there's a data problem.

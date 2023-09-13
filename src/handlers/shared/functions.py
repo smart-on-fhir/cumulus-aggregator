@@ -10,7 +10,7 @@ import boto3
 from src.handlers.shared.enums import BucketPath, JsonFilename
 
 TRANSACTION_METADATA_TEMPLATE = {
-    "transacton_format_version": "2",
+    "transaction_format_version": "2",
     "last_upload": None,
     "last_data_update": None,
     "last_aggregation": None,
