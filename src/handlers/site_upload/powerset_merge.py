@@ -216,9 +216,7 @@ def merge_powersets(manager: S3Manager) -> None:
         try:
             if not any(x.endswith(site_specific_name) for x in latest_file_list):
                 df = expand_and_concat_sets(df, last_valid_path, last_valid_site)
-                manager.update_local_metadata(
-                    "last_uploaded_date", site=last_valid_site
-                )
+                manager.update_local_metadata("last_upload", site=last_valid_site)
         except MergeError as e:
             # This is expected to trigger if there's an issue in expand_and_concat_sets;
             # this usually means there's a data problem.

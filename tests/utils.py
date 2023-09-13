@@ -38,7 +38,7 @@ def get_mock_metadata():
             EXISTING_STUDY: {
                 EXISTING_DATA_P: {
                     EXISTING_VERSION: {
-                        "transacton_format_version": "2",
+                        "transaction_format_version": "2",
                         "last_upload": "2023-02-24T15:03:34+00:00",
                         "last_data_update": "2023-02-24T15:03:40.657583+00:00",
                         "last_aggregation": "2023-02-24T15:08:07.504595+00:00",
@@ -50,7 +50,7 @@ def get_mock_metadata():
             OTHER_STUDY: {
                 EXISTING_DATA_P: {
                     EXISTING_VERSION: {
-                        "transacton_format_version": "2",
+                        "transaction_format_version": "2",
                         "last_upload": "2023-02-24T15:43:57+00:00",
                         "last_data_update": "2023-02-24T15:44:03.861574+00:00",
                         "last_aggregation": "2023-02-24T15:44:03.861574+00:00",
@@ -64,7 +64,7 @@ def get_mock_metadata():
             EXISTING_STUDY: {
                 EXISTING_DATA_P: {
                     EXISTING_VERSION: {
-                        "transacton_format_version": "2",
+                        "transaction_format_version": "2",
                         "last_upload": "2023-02-24T15:08:06+00:00",
                         "last_data_update": "2023-02-24T15:08:07.771080+00:00",
                         "last_aggregation": "2023-02-24T15:08:07.771080+00:00",
