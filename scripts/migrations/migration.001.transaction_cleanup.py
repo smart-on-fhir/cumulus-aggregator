@@ -45,12 +45,11 @@ def transaction_cleanup(bucket: str):
     for site in transactions:
         if site in EXPECTED_UPLOADERS:
             site_dict = transactions[site]
-            if "template" in site_dict:
-                site_dict.pop("template")
-            print(site_dict)
+            site_dict.pop("template". None)
             new_t[site] = site_dict
 
     # updating incorrectly spelled keys
+    # for future migrations, start from scratch with items rather than ignoring
     for site in new_t:  # pylint: disable=consider-using-dict-items
         for study in new_t[site]:
             for dp in new_t[site][study]:

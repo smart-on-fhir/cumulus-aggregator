@@ -32,18 +32,9 @@ def process_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> N
     # If someone runs an upload on the template study, we'll just move it
     # to archive - we don't care about metadata for this, but can look there to
     # verify transmission if it's a connectivity test
-    if s3_key.startswith("template__"):
+    if study == "template":
         new_key = f"{BucketPath.ARCHIVE.value}/{s3_key.split('/', 1)[-1]}"
         move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
-        metadata = update_metadata(
-            metadata,
-            site,
-            study,
-            data_package,
-            version,
-            "last_upload",
-            last_uploaded_date,
-        )
     elif s3_key.endswith(".parquet"):
         if "__meta_" in s3_key:
             new_key = f"{BucketPath.STUDY_META.value}/{s3_key.split('/', 1)[-1]}"
