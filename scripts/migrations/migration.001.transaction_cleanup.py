@@ -45,7 +45,7 @@ def transaction_cleanup(bucket: str):
     for site in transactions:
         if site in EXPECTED_UPLOADERS:
             site_dict = transactions[site]
-            site_dict.pop("template". None)
+            site_dict.pop("template", None)
             new_t[site] = site_dict
 
     # updating incorrectly spelled keys
@@ -76,8 +76,8 @@ def transaction_cleanup(bucket: str):
                             "transaction_format_version"
                         ] = new_t[site][study][dp][version]["transacton_format_version"]
                         new_t[site][study][dp][version].pop("transacton_format_version")
-        # print(json.dumps(new_t, indent=2))
-        _put_s3_data("metadata/transactions.json", bucket, client, new_t)
+        print(json.dumps(new_t, indent=2))
+        # _put_s3_data("metadata/transactions.json", bucket, client, new_t)
         print("transactions.json updated")
 
 

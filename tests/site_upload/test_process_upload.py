@@ -142,7 +142,7 @@ def test_process_upload(
             assert item["Key"].startswith(BucketPath.CSVAGGREGATE.value)
         elif item["Key"].endswith("transactions.json"):
             assert item["Key"].startswith(BucketPath.META.value)
-            if "template" not in upload_path:
+            if upload_path is not None and "template" not in upload_path:
                 metadata = read_metadata(s3_client, TEST_BUCKET)
                 if upload_file is not None and upload_path is not None:
                     path_params = upload_path.split("/")
