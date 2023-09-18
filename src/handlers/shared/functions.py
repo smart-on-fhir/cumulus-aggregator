@@ -179,5 +179,5 @@ def get_latest_data_package_version(bucket, prefix):
                 if int(highest_ver) < int(ver_str):
                     highest_ver = ver_str
     if highest_ver is None:
-    logging.error("No data package versions found for %s", prefix)
+        logging.error("No data package versions found for %s", prefix)
     return highest_ver
