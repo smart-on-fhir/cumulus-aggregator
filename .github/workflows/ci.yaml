@@ -19,6 +19,7 @@ jobs:
       - name: Test with pytest
         run: |
           export AWS_DEFAULT_REGION=us-east-1; python -m pytest
+
   lint:
     runs-on: ubuntu-22.04
     steps:

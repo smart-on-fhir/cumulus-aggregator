@@ -38,6 +38,7 @@ test = [
     # TODO: We are investigating some new features around athena mocks, 
     # which currently only exist in 4.1.5 and are broken in 4.1.6dev. Swing back
     # around on this as the functionality matures.
+    "coverage >=7.3.1",
     "freezegun",
     "moto[s3,athena,sns] == 4.1.5",
     "pytest",
@@ -52,7 +53,15 @@ dev = [
     "pycodestyle"
 ]
 
+[tool.coverage.run]
+command_line="-m pytest"
+source=["./src/"]
+
+[tool.coverage.report]
+show_missing=true
+
 [tool.isort]
 profile = "black"
 src_paths = ["src", "tests"]
 skip_glob = [".aws_sam"]
+

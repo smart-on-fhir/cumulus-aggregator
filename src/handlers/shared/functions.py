@@ -161,3 +161,23 @@ def get_s3_json_as_dict(bucket, key: str):
         Fileobj=bytes_buffer,
     )
     return json.loads(bytes_buffer.getvalue().decode())
+
+
+def get_latest_data_package_version(bucket, prefix):
+    """Returns the newest version in a data package folder"""
+    s3_client = boto3.client("s3")
+    if not prefix.endswith("/"):
+        prefix = prefix + "/"
+    s3_res = s3_client.list_objects_v2(Bucket=bucket, Prefix=prefix)
+    highest_ver = None
+    for item in s3_res["Contents"]:
+        ver_str = item["Key"].replace(prefix, "").split("/")[0]
+        if ver_str.isdigit():
+            if highest_ver is None:
+                highest_ver = ver_str
+            else:
+                if int(highest_ver) < int(ver_str):
+                    highest_ver = ver_str
+    if highest_ver is None:
+        logging.error("No data package versions found for %s", prefix)
+    return highest_ver

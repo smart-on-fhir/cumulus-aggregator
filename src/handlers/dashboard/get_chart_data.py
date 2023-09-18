@@ -10,21 +10,23 @@ import pandas
 from src.handlers.dashboard.filter_config import get_filter_string
 from src.handlers.shared.decorators import generic_error_handler
 from src.handlers.shared.enums import BucketPath
-from src.handlers.shared.functions import http_response
+from src.handlers.shared.functions import get_latest_data_package_version, http_response
 
 
-def _get_table_cols(table_name: str) -> list:
+def _get_table_cols(table_name: str, version: str = None) -> list:
     """Returns the columns associated with a table.
 
     Since running an athena query takes a decent amount of time due to queueing
     a query with the execution engine, and we already have this data at the top
     of a CSV, we're getting table cols directly from S3 for speed reasons.
     """
+
     s3_bucket_name = os.environ.get("BUCKET_NAME")
-    s3_key = (
-        f"{BucketPath.CSVAGGREGATE.value}/{table_name.split('__')[0]}"
-        f"/{table_name}/{table_name}__aggregate.csv"
-    )
+    prefix = f"{BucketPath.CSVAGGREGATE.value}/{table_name.split('__')[0]}/{table_name}"
+    if version is None:
+        version = get_latest_data_package_version(s3_bucket_name, prefix)
+        print(f"{prefix}/{version}/{table_name}__aggregate.csv")
+    s3_key = f"{prefix}/{version}/{table_name}__aggregate.csv"
     s3_client = boto3.client("s3")
     s3_iter = s3_client.get_object(
         Bucket=s3_bucket_name, Key=s3_key  # type: ignore[arg-type]
