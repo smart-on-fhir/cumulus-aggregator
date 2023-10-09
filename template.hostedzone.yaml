@@ -34,33 +34,7 @@ Resources:
       ValidationMethod: DNS
 
 
-# Dashboard
-  AcmDashCertificate:
-    Type: AWS::CertificateManager::Certificate
-    Properties:
-      DomainName: !Sub "dashboard.${Domain}"
-      DomainValidationOptions:
-        - DomainName: !Sub "dashboard.${Domain}"
-          HostedZoneId: !Ref CumulusHostedZone
-      ValidationMethod: DNS
-
-  AcmStagingDashCertificate:
-    Type: AWS::CertificateManager::Certificate
-    Properties:
-      DomainName: !Sub "staging.dashboard.${Domain}"
-      DomainValidationOptions:
-        - DomainName: !Sub "staging.dashboard.${Domain}"
-          HostedZoneId: !Ref CumulusHostedZone
-      ValidationMethod: DNS
-
-  AcmDevDashCertificate:
-    Type: AWS::CertificateManager::Certificate
-    Properties:
-      DomainName: !Sub "dev.dashboard.${Domain}"
-      DomainValidationOptions:
-        - DomainName: !Sub "dev.dashboard.${Domain}"
-          HostedZoneId: !Ref CumulusHostedZone
-      ValidationMethod: DNS
+# Aggregator
 
   AcmAggCertificate:
     Type: AWS::CertificateManager::Certificate
@@ -88,6 +62,9 @@ Resources:
         - DomainName: !Sub "dev.aggregator.${Domain}"
           HostedZoneId: !Ref CumulusHostedZone
       ValidationMethod: DNS
+
+
+#Upload API
 
   AcmApiCertificate:
     Type: AWS::CertificateManager::Certificate
@@ -124,18 +101,6 @@ Outputs:
   WwwCertificateArn:
     Description: "ACM Www Certificate ARN"
     Value: !Ref AcmWwwCertificate
-
-  DashCertificateArn:
-    Description: "ACM Dashboard Certificate ARN"
-    Value: !Ref AcmDashCertificate
-
-  DashStagingCertificateArn:
-    Description: "ACM Staging Dashboard Certificate ARN"
-    Value: !Ref AcmStagingDashCertificate
-
-  DashDevCertificateArn:
-    Description: "ACM Dev Dashboard Certificate ARN"
-    Value: !Ref AcmDevDashCertificate
 
   AggCertificateArn:
     Description: "ACM Aggregator Certificate ARN"

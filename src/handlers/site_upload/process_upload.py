@@ -3,9 +3,9 @@ import os
 
 import boto3
 
-from src.handlers.shared.decorators import generic_error_handler
-from src.handlers.shared.enums import BucketPath
-from src.handlers.shared.functions import (
+from ..shared.decorators import generic_error_handler
+from ..shared.enums import BucketPath, TransactionKeys
+from ..shared.functions import (
     http_response,
     move_s3_file,
     read_metadata,
@@ -51,7 +51,7 @@ def process_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> N
             study,
             data_package,
             version,
-            "last_upload",
+            TransactionKeys.LAST_UPLOAD.value,
             last_uploaded_date,
         )
         sns_client.publish(TopicArn=topic_sns_arn, Message=new_key, Subject=sns_subject)
@@ -65,7 +65,7 @@ def process_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> N
             study,
             data_package,
             version,
-            "last_upload",
+            TransactionKeys.LAST_UPLOAD.value,
             last_uploaded_date,
         )
         metadata = update_metadata(
@@ -74,7 +74,7 @@ def process_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> N
             study,
             data_package,
             version,
-            "last_error",
+            TransactionKeys.LAST_ERROR.value,
             last_uploaded_date,
         )
         write_metadata(s3_client, s3_bucket_name, metadata)

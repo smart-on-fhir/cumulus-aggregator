@@ -11,10 +11,10 @@ import pandas
 from numpy import nan
 from pandas.core.indexes.range import RangeIndex
 
-from src.handlers.shared.awswrangler_functions import get_s3_data_package_list
-from src.handlers.shared.decorators import generic_error_handler
-from src.handlers.shared.enums import BucketPath
-from src.handlers.shared.functions import (
+from ..shared.awswrangler_functions import get_s3_data_package_list
+from ..shared.decorators import generic_error_handler
+from ..shared.enums import BucketPath, TransactionKeys
+from ..shared.functions import (
     get_s3_site_filename_suffix,
     http_response,
     move_s3_file,
@@ -130,7 +130,7 @@ class S3Manager:
             s3_path.replace(f"s3://{self.s3_bucket_name}/", ""),
             f"{BucketPath.ERROR.value}/{subbucket_path}",
         )
-        self.update_local_metadata("last_error")
+        self.update_local_metadata(TransactionKeys.LAST_ERROR.value)
 
 
 def get_static_string_series(static_str: str, index: RangeIndex) -> pandas.Series:
@@ -215,7 +215,9 @@ def merge_powersets(manager: S3Manager) -> None:
         try:
             if not any(x.endswith(site_specific_name) for x in latest_file_list):
                 df = expand_and_concat_sets(df, last_valid_path, last_valid_site)
-                manager.update_local_metadata("last_aggregation", site=last_valid_site)
+                manager.update_local_metadata(
+                    TransactionKeys.LAST_AGGREGATION.value, site=last_valid_site
+                )
         except MergeError as e:
             # This is expected to trigger if there's an issue in expand_and_concat_sets;
             # this usually means there's a data problem.
@@ -257,8 +259,12 @@ def merge_powersets(manager: S3Manager) -> None:
                 f"{BucketPath.LAST_VALID.value}/{subbucket_path}",
             )
             latest_site = site_specific_name.split("/", maxsplit=1)[0]
-            manager.update_local_metadata("last_data_update", site=latest_site)
-            manager.update_local_metadata("last_aggregation", site=latest_site)
+            manager.update_local_metadata(
+                TransactionKeys.LAST_DATA_UPDATE.value, site=latest_site
+            )
+            manager.update_local_metadata(
+                TransactionKeys.LAST_AGGREGATION.value, site=latest_site
+            )
         except Exception as e:  # pylint: disable=broad-except
             manager.merge_error_handler(
                 latest_path,
@@ -274,7 +280,7 @@ def merge_powersets(manager: S3Manager) -> None:
                     f"/{subbucket_path}",
                     manager.site,
                 )
-                manager.update_local_metadata("last_aggregation")
+                manager.update_local_metadata(TransactionKeys.LAST_AGGREGATION.value)
     manager.write_local_metadata()
 
     # In this section, we are trying to accomplish two things:
