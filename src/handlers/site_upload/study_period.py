@@ -6,10 +6,10 @@ from datetime import datetime, timezone
 import awswrangler
 import boto3
 
-from src.handlers.shared.awswrangler_functions import get_s3_study_meta_list
-from src.handlers.shared.decorators import generic_error_handler
-from src.handlers.shared.enums import JsonFilename
-from src.handlers.shared.functions import (
+from ..shared.awswrangler_functions import get_s3_study_meta_list
+from ..shared.decorators import generic_error_handler
+from ..shared.enums import JsonFilename, StudyPeriodMetadataKeys
+from ..shared.functions import (
     http_response,
     read_metadata,
     update_metadata,
@@ -33,7 +33,7 @@ def update_study_period(s3_client, s3_bucket, site, study, data_package, version
         study,
         data_package,
         version,
-        "earliest_date",
+        StudyPeriodMetadataKeys.EARLIEST_DATE.value,
         df["min_date"][0],
         meta_type=JsonFilename.STUDY_PERIODS.value,
     )
@@ -43,7 +43,7 @@ def update_study_period(s3_client, s3_bucket, site, study, data_package, version
         study,
         data_package,
         version,
-        "latest_date",
+        StudyPeriodMetadataKeys.LATEST_DATE.value,
         df["max_date"][0],
         meta_type=JsonFilename.STUDY_PERIODS.value,
     )
@@ -53,7 +53,7 @@ def update_study_period(s3_client, s3_bucket, site, study, data_package, version
         study,
         data_package,
         version,
-        "last_data_update",
+        StudyPeriodMetadataKeys.LAST_DATA_UPDATE.value,
         datetime.now(timezone.utc),
         meta_type=JsonFilename.STUDY_PERIODS.value,
     )

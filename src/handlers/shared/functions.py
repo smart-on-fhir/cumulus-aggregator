@@ -7,21 +7,22 @@ from typing import Optional
 
 import boto3
 
-from src.handlers.shared.enums import BucketPath, JsonFilename
+from .enums import BucketPath, JsonFilename, StudyPeriodMetadataKeys, TransactionKeys
 
 TRANSACTION_METADATA_TEMPLATE = {
-    "transaction_format_version": "2",
-    "last_upload": None,
-    "last_data_update": None,
-    "last_aggregation": None,
-    "last_error": None,
-    "deleted": None,
+    TransactionKeys.TRANSACTION_FORMAT_VERSION.value: "2",
+    TransactionKeys.LAST_UPLOAD.value: None,
+    TransactionKeys.LAST_DATA_UPDATE.value: None,
+    TransactionKeys.LAST_AGGREGATION.value: None,
+    TransactionKeys.LAST_ERROR.value: None,
+    TransactionKeys.DELETED.value: None,
 }
+
 STUDY_PERIOD_METADATA_TEMPLATE = {
-    "study_period_format_version": "2",
-    "earliest_date": None,
-    "latest_date": None,
-    "last_data_update": None,
+    StudyPeriodMetadataKeys.STUDY_PERIOD_FORMAT_VERSION.value: "2",
+    StudyPeriodMetadataKeys.EARLIEST_DATE.value: None,
+    StudyPeriodMetadataKeys.LATEST_DATE.value: None,
+    StudyPeriodMetadataKeys.LAST_DATA_UPDATE.value: None,
 }
 
 

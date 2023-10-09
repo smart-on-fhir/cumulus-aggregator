@@ -4,8 +4,8 @@ import os
 
 import boto3
 
-from src.handlers.shared.decorators import generic_error_handler
-from src.handlers.shared.functions import http_response, read_metadata
+from ..shared.decorators import generic_error_handler
+from ..shared.functions import http_response, read_metadata
 
 
 @generic_error_handler(msg="Error retrieving metadata")

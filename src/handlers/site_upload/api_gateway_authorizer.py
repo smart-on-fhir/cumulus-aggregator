@@ -8,8 +8,8 @@ from __future__ import print_function
 import os
 import re
 
-from src.handlers.shared.enums import BucketPath
-from src.handlers.shared.functions import get_s3_json_as_dict
+from ..shared.enums import BucketPath
+from ..shared.functions import get_s3_json_as_dict
 
 
 class AuthError(Exception):
