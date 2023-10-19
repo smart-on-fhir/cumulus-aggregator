@@ -36,10 +36,10 @@ def process_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> N
         new_key = f"{BucketPath.ARCHIVE.value}/{s3_key.split('/', 1)[-1]}"
         move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
     elif s3_key.endswith(".parquet"):
-        if "__meta_" in s3_key:
+        if "__meta_" in s3_key or "/discovery__" in s3_key:
             new_key = f"{BucketPath.STUDY_META.value}/{s3_key.split('/', 1)[-1]}"
             topic_sns_arn = os.environ.get("TOPIC_PROCESS_STUDY_META_ARN")
-            sns_subject = "Process study medata upload event"
+            sns_subject = "Process study metadata upload event"
         else:
             new_key = f"{BucketPath.LATEST.value}/{s3_key.split('/', 1)[-1]}"
             topic_sns_arn = os.environ.get("TOPIC_PROCESS_COUNTS_ARN")
