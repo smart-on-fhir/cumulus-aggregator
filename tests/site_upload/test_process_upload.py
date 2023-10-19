@@ -167,11 +167,7 @@ def test_process_upload(
                         metadata[site][study][data_package][version]["last_upload"]
                         == datetime.now(timezone.utc).isoformat()
                     )
-        elif (
-            item["Key"].startswith(BucketPath.STUDY_META.value)
-            or "discovery__" in item["Key"]
-        ):
-            print(item["Key"])
+        elif item["Key"].startswith(BucketPath.STUDY_META.value):
             assert any(x in item["Key"] for x in ["_meta_", "/discovery__"])
         elif item["Key"].startswith(BucketPath.ARCHIVE.value):
             found_archive = True
