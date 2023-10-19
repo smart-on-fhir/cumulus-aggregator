@@ -103,6 +103,19 @@ from tests.utils import (
             200,
             ITEM_COUNT + 1,
         ),
+        (  # Adding discovery data package
+            "./tests/test_data/cube_simple_example.parquet",
+            (
+                f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}/"
+                f"{EXISTING_VERSION}/discovery__file.parquet"
+            ),
+            (
+                f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}/"
+                f"{EXISTING_VERSION}/discovery__file.parquet"
+            ),
+            200,
+            ITEM_COUNT + 1,
+        ),
     ],
 )
 def test_process_upload(
@@ -155,7 +168,7 @@ def test_process_upload(
                         == datetime.now(timezone.utc).isoformat()
                     )
         elif item["Key"].startswith(BucketPath.STUDY_META.value):
-            assert "_meta_" in item["Key"]
+            assert any(x in item["Key"] for x in ["_meta_", "/discovery__"])
         elif item["Key"].startswith(BucketPath.ARCHIVE.value):
             found_archive = True
         else:
