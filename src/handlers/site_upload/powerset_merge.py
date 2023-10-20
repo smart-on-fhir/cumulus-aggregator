@@ -258,6 +258,31 @@ def merge_powersets(manager: S3Manager) -> None:
                 f"{BucketPath.LATEST.value}/{subbucket_path}",
                 f"{BucketPath.LAST_VALID.value}/{subbucket_path}",
             )
+            ####################
+            # For now, we'll create a csv of the file we just put in last valid.
+            # This is occasionally useful for uploading to the dashboard.
+            # TODO: remove as soon as we support either parquet upload or
+            # the API is supported by the dashboard
+            last_valid_df = awswrangler.s3.read_parquet(
+                f"s3://{manager.s3_bucket_name}/{BucketPath.LAST_VALID.value}"
+                f"/{subbucket_path}"
+            )
+            last_valid_df = last_valid_df.apply(
+                lambda x: x.strip() if isinstance(x, str) else x
+            ).replace('""', nan)
+            last_valid_df = last_valid_df.replace(to_replace=r",", value="", regex=True)
+            awswrangler.s3.to_csv(
+                last_valid_df,
+                (
+                    f"s3://{manager.s3_bucket_name}/{BucketPath.LAST_VALID.value}/"
+                    f"{subbucket_path}".replace(".parquet", ".csv")
+                ),
+                index=False,
+                quoting=csv.QUOTE_NONE,
+            )
+
+            ####################
+
             latest_site = site_specific_name.split("/", maxsplit=1)[0]
             manager.update_local_metadata(
                 TransactionKeys.LAST_DATA_UPDATE.value, site=latest_site

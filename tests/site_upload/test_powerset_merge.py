@@ -47,7 +47,7 @@ from tests.utils import (
             f"{EXISTING_VERSION}/encounter.parquet",
             False,
             200,
-            ITEM_COUNT + 3,
+            ITEM_COUNT + 4,
         ),
         (  # Adding a new data package to a site without uploads
             "./tests/test_data/count_synthea_patient.parquet",
@@ -57,7 +57,7 @@ from tests.utils import (
             f"/{EXISTING_VERSION}/encounter.parquet",
             False,
             200,
-            ITEM_COUNT + 3,
+            ITEM_COUNT + 4,
         ),
         (  # Updating an existing data package
             "./tests/test_data/count_synthea_patient.parquet",
@@ -67,7 +67,7 @@ from tests.utils import (
             f"/{EXISTING_VERSION}/encounter.parquet",
             True,
             200,
-            ITEM_COUNT + 2,
+            ITEM_COUNT + 3,
         ),
         (  # New version of existing data package
             "./tests/test_data/count_synthea_patient.parquet",
@@ -77,7 +77,7 @@ from tests.utils import (
             f"/{NEW_VERSION}/encounter.parquet",
             True,
             200,
-            ITEM_COUNT + 4,
+            ITEM_COUNT + 5,
         ),
         (  # Invalid parquet file
             "./tests/site_upload/test_powerset_merge.py",
@@ -97,7 +97,7 @@ from tests.utils import (
             f"/{EXISTING_VERSION}/encounter.parquet",
             False,
             200,
-            ITEM_COUNT + 3,
+            ITEM_COUNT + 4,
         ),
         (  # ensuring that a data package that is a substring does not get
             # merged by substr match
@@ -108,7 +108,7 @@ from tests.utils import (
             f"{EXISTING_SITE}/{EXISTING_VERSION}/encount.parquet",
             False,
             200,
-            ITEM_COUNT + 3,
+            ITEM_COUNT + 4,
         ),
         (  # Empty file upload
             None,
@@ -222,7 +222,12 @@ def test_powerset_merge_single_upload(
                 )
 
         elif item["Key"].startswith(BucketPath.LAST_VALID.value):
-            assert item["Key"] == (f"{BucketPath.LAST_VALID.value}{upload_path}")
+            if item["Key"].endswith(".parquet"):
+                assert item["Key"] == (f"{BucketPath.LAST_VALID.value}{upload_path}")
+            elif item["Key"].endswith(".csv"):
+                assert f"{upload_path.replace('.parquet','')}" in item["Key"]
+            else:
+                raise Exception("Invalid csv found at " f"{item['Key']}")
         else:
             assert (
                 item["Key"].startswith(BucketPath.ARCHIVE.value)
