@@ -15,6 +15,7 @@ from src.handlers.shared.functions import read_metadata, write_metadata
 from src.handlers.site_upload.powerset_merge import (
     MergeError,
     expand_and_concat_sets,
+    generate_csv_from_parquet,
     powerset_merge_handler,
 )
 from tests.utils import (
@@ -47,7 +48,7 @@ from tests.utils import (
             f"{EXISTING_VERSION}/encounter.parquet",
             False,
             200,
-            ITEM_COUNT + 3,
+            ITEM_COUNT + 4,
         ),
         (  # Adding a new data package to a site without uploads
             "./tests/test_data/count_synthea_patient.parquet",
@@ -57,7 +58,7 @@ from tests.utils import (
             f"/{EXISTING_VERSION}/encounter.parquet",
             False,
             200,
-            ITEM_COUNT + 3,
+            ITEM_COUNT + 4,
         ),
         (  # Updating an existing data package
             "./tests/test_data/count_synthea_patient.parquet",
@@ -67,7 +68,7 @@ from tests.utils import (
             f"/{EXISTING_VERSION}/encounter.parquet",
             True,
             200,
-            ITEM_COUNT + 2,
+            ITEM_COUNT + 3,
         ),
         (  # New version of existing data package
             "./tests/test_data/count_synthea_patient.parquet",
@@ -77,7 +78,7 @@ from tests.utils import (
             f"/{NEW_VERSION}/encounter.parquet",
             True,
             200,
-            ITEM_COUNT + 4,
+            ITEM_COUNT + 5,
         ),
         (  # Invalid parquet file
             "./tests/site_upload/test_powerset_merge.py",
@@ -97,7 +98,7 @@ from tests.utils import (
             f"/{EXISTING_VERSION}/encounter.parquet",
             False,
             200,
-            ITEM_COUNT + 3,
+            ITEM_COUNT + 4,
         ),
         (  # ensuring that a data package that is a substring does not get
             # merged by substr match
@@ -108,7 +109,7 @@ from tests.utils import (
             f"{EXISTING_SITE}/{EXISTING_VERSION}/encount.parquet",
             False,
             200,
-            ITEM_COUNT + 3,
+            ITEM_COUNT + 4,
         ),
         (  # Empty file upload
             None,
@@ -222,7 +223,12 @@ def test_powerset_merge_single_upload(
                 )
 
         elif item["Key"].startswith(BucketPath.LAST_VALID.value):
-            assert item["Key"] == (f"{BucketPath.LAST_VALID.value}{upload_path}")
+            if item["Key"].endswith(".parquet"):
+                assert item["Key"] == (f"{BucketPath.LAST_VALID.value}{upload_path}")
+            elif item["Key"].endswith(".csv"):
+                assert f"{upload_path.replace('.parquet','.csv')}" in item["Key"]
+            else:
+                raise Exception("Invalid csv found at " f"{item['Key']}")
         else:
             assert (
                 item["Key"].startswith(BucketPath.ARCHIVE.value)
@@ -342,3 +348,24 @@ def test_expand_and_concat(mock_bucket, upload_file, load_empty, raises):
             s3_path,
         )
         expand_and_concat_sets(df, f"s3://{TEST_BUCKET}/{s3_path}", EXISTING_STUDY)
+
+
+def test_parquet_to_csv(mock_bucket):
+    bucket_root = "test"
+    subbucket_path = "/uploaded.parquet"
+    s3_client = boto3.client("s3", region_name="us-east-1")
+    s3_client.upload_file(
+        "./tests/test_data/cube_strings_with_commas.parquet",
+        TEST_BUCKET,
+        f"{bucket_root}/{subbucket_path}",
+    )
+    generate_csv_from_parquet(TEST_BUCKET, bucket_root, subbucket_path)
+    df = awswrangler.s3.read_csv(
+        f"s3://{TEST_BUCKET}/{bucket_root}/{subbucket_path.replace('.parquet','.csv')}"
+    )
+    assert list(df["race"].dropna().unique()) == [
+        "White",
+        "Black or African American",
+        "Asian",
+        "American Indian or Alaska Native",
+    ]
