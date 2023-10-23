@@ -225,7 +225,7 @@ def test_powerset_merge_single_upload(
             if item["Key"].endswith(".parquet"):
                 assert item["Key"] == (f"{BucketPath.LAST_VALID.value}{upload_path}")
             elif item["Key"].endswith(".csv"):
-                assert f"{upload_path.replace('.parquet','')}" in item["Key"]
+                assert f"{upload_path.replace('.parquet','.csv')}" in item["Key"]
             else:
                 raise Exception("Invalid csv found at " f"{item['Key']}")
         else:
