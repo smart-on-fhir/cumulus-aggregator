@@ -15,6 +15,7 @@ from src.handlers.shared.functions import read_metadata, write_metadata
 from src.handlers.site_upload.powerset_merge import (
     MergeError,
     expand_and_concat_sets,
+    generate_csv_from_parquet,
     powerset_merge_handler,
 )
 from tests.utils import (
@@ -347,3 +348,24 @@ def test_expand_and_concat(mock_bucket, upload_file, load_empty, raises):
             s3_path,
         )
         expand_and_concat_sets(df, f"s3://{TEST_BUCKET}/{s3_path}", EXISTING_STUDY)
+
+
+def test_parquet_to_csv(mock_bucket):
+    bucket_root = "test"
+    subbucket_path = "/uploaded.parquet"
+    s3_client = boto3.client("s3", region_name="us-east-1")
+    s3_client.upload_file(
+        "./tests/test_data/cube_strings_with_commas.parquet",
+        TEST_BUCKET,
+        f"{bucket_root}/{subbucket_path}",
+    )
+    generate_csv_from_parquet(TEST_BUCKET, bucket_root, subbucket_path)
+    df = awswrangler.s3.read_csv(
+        f"s3://{TEST_BUCKET}/{bucket_root}/{subbucket_path.replace('.parquet','.csv')}"
+    )
+    assert list(df["race"].dropna().unique()) == [
+        "White",
+        "Black or African American",
+        "Asian",
+        "American Indian or Alaska Native",
+    ]
