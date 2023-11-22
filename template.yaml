@@ -4,16 +4,14 @@ Description: >-
 Transform:
 - AWS::Serverless-2016-10-31
 
-# TODO: The global section is only meant for the dashboard API. We should split
+# TODO: The global section is only meant for the dashboard API. We may want to split
 # out the dashboard API into its own cloudformation template to limit this scope.
 
-# Generally we are being lax w.r.t. CORS at the moment with the
-# following items in mind:
-# - The dashboard API is not wired up to a public URL
-# - you can only access the private URL while on the BCH VPN
-# - We want to be able to test from localhost in dev environment
-# - When we are ready to move to staging/prod with this, we will add an API key
-# - We may wire origins to a parameter populated per environment
+# Generally we are being lax w.r.t. CORS at the moment because the dashboard
+# API is not actively being used, and is protected by an API Key.
+
+# TODO: Restrict to calls from shared subdomains, and possibly allowlist of IP ranges.
+# It may also be possible to use the BCH external gateway to accomplish this
 Globals:
   Api:
     Cors:
@@ -35,18 +33,18 @@ Parameters:
     Type: String
     AllowedValues:
       - dev
-      - staging
+      - test
       - prod
-  AggregatorDomainName:
-    Type: String
-  DashboardApiDomainName:
-    Type: String    
-  AggregatorCertArn:
-    Type: String
-  DashboardApiCertArn:
-    Type: String    
-  AggregatorHostedZoneID:
-    Type: String
+  #AggregatorDomainName:
+  #  Type: String
+  #DashboardApiDomainName:
+  #  Type: String
+  #AggregatorCertArn:
+  #  Type: String
+  #DashboardApiCertArn:
+  #  Type: String
+  #AggregatorHostedZoneID:
+  #  Type: String
   RetentionTime:
     Type: Number
 
@@ -68,15 +66,15 @@ Resources:
       Description: Validates credentials before providing signed urls
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
           REGION: !Ref "AWS::Region"
       Policies:
         - S3ReadPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'       
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
 
   FetchAuthorizerLogGroup:
     Type: AWS::Logs::LogGroup
-    Properties: 
+    Properties:
       LogGroupName: !Sub "/aws/lambda/${FetchAuthorizerFunction}"
       RetentionInDays: !Ref RetentionTime
 
@@ -91,7 +89,7 @@ Resources:
       Description: Generates a presigned URL for uploading files to S3
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
           REGION: !Ref "AWS::Region"
       Events:
         SiteUploadAPI:
@@ -102,11 +100,11 @@ Resources:
             Method: POST
       Policies:
         - S3CrudPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
 
   FetchUploadUrlLogGroup:
     Type: AWS::Logs::LogGroup
-    Properties: 
+    Properties:
       LogGroupName: !Sub "/aws/lambda/${FetchUploadUrlFunction}"
       RetentionInDays: !Ref RetentionTime
 
@@ -121,12 +119,12 @@ Resources:
       Description: Handles initial relocation of upload data
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
           TOPIC_PROCESS_COUNTS_ARN: !Ref SNSTopicProcessCounts
           TOPIC_PROCESS_STUDY_META_ARN: !Ref SNSTopicProcessStudyMeta
       Policies:
         - S3CrudPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
         - SNSPublishMessagePolicy:
             TopicName: !GetAtt SNSTopicProcessCounts.TopicName
         - SNSPublishMessagePolicy:
@@ -134,7 +132,7 @@ Resources:
 
   ProcessUploadLogGroup:
     Type: AWS::Logs::LogGroup
-    Properties: 
+    Properties:
       LogGroupName: !Sub "/aws/lambda/${ProcessUploadFunction}"
       RetentionInDays: !Ref RetentionTime
 
@@ -150,7 +148,7 @@ Resources:
       Description: Merges and aggregates powerset count data
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
           TOPIC_CACHE_API_ARN: !Ref SNSTopicCacheAPI
       Events:
         ProcessUploadSNSEvent:
@@ -159,13 +157,13 @@ Resources:
             Topic: !Ref SNSTopicProcessCounts
       Policies:
         - S3CrudPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
         - SNSPublishMessagePolicy:
             TopicName: !GetAtt SNSTopicCacheAPI.TopicName
 
   PowersetMergeLogGroup:
     Type: AWS::Logs::LogGroup
-    Properties: 
+    Properties:
       LogGroupName: !Sub "/aws/lambda/${PowersetMergeFunction}"
       RetentionInDays: !Ref RetentionTime
 
@@ -181,7 +179,7 @@ Resources:
       Description: Handles metadata outside of upload/processing for studies
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
       Events:
         ProcessUploadSNSEvent:
           Type: SNS
@@ -189,11 +187,11 @@ Resources:
             Topic: !Ref SNSTopicProcessStudyMeta
       Policies:
         - S3CrudPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
 
   StudyPeriodLogGroup:
     Type: AWS::Logs::LogGroup
-    Properties: 
+    Properties:
       LogGroupName: !Sub "/aws/lambda/${StudyPeriodFunction}"
       RetentionInDays: !Ref RetentionTime
 
@@ -209,7 +207,7 @@ Resources:
       Description: Caches selected database queries to S3
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
           GLUE_DB_NAME: !Sub '${GlueNameParameter}-${DeployStage}'
           WORKGROUP_NAME: !Sub '${AthenaWorkgroupNameParameter}-${DeployStage}'
       Events:
@@ -219,14 +217,14 @@ Resources:
             Topic: !Ref SNSTopicCacheAPI
       Policies:
         - S3CrudPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
         - Statement:
           - Sid: GluePermissionsPolicy
             Effect: Allow
             Action:
               - glue:*Table*
               - glue:*Partition*
-            Resource: 
+            Resource:
               - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog'
               - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueNameParameter}-${DeployStage}'
               - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueNameParameter}-${DeployStage}/*'
@@ -239,7 +237,7 @@ Resources:
 
   CacheAPILogGroup:
     Type: AWS::Logs::LogGroup
-    Properties: 
+    Properties:
       LogGroupName: !Sub "/aws/lambda/${CacheAPIFunction}"
       RetentionInDays: !Ref RetentionTime
 
@@ -257,7 +255,7 @@ Resources:
       Description: Retrieve data for chart display in Cumulus Dashboard
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
           GLUE_DB_NAME: !Sub '${GlueNameParameter}-${DeployStage}'
           WORKGROUP_NAME: !Sub '${AthenaWorkgroupNameParameter}-${DeployStage}'
       Events:
@@ -276,7 +274,7 @@ Resources:
             Action:
               - glue:*Table*
               - glue:*Partition*
-            Resource: 
+            Resource:
               - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog'
               - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueNameParameter}-${DeployStage}'
               - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueNameParameter}-${DeployStage}/*'
@@ -289,7 +287,7 @@ Resources:
 
   DashboardGetChartDataLogGroup:
     Type: AWS::Logs::LogGroup
-    Properties: 
+    Properties:
       LogGroupName: !Sub "/aws/lambda/${DashboardGetChartDataFunction}"
       RetentionInDays: !Ref RetentionTime
 
@@ -304,7 +302,7 @@ Resources:
       Description: Retrieve data about site uploads
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
       Events:
         GetMetadataAPI:
           Type: Api
@@ -332,11 +330,11 @@ Resources:
             Method: GET
       Policies:
         - S3ReadPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
 
   DashboardGetMetadataLogGroup:
     Type: AWS::Logs::LogGroup
-    Properties: 
+    Properties:
       LogGroupName: !Sub "/aws/lambda/${DashboardGetMetadataFunction}"
       RetentionInDays: !Ref RetentionTime
 
@@ -352,7 +350,7 @@ Resources:
       Description: Retrieve data for chart display in Cumulus Dashboard
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
           GLUE_DB_NAME: !Sub '${GlueNameParameter}-${DeployStage}'
           WORKGROUP_NAME: !Sub '${AthenaWorkgroupNameParameter}-${DeployStage}'
       Events:
@@ -376,7 +374,7 @@ Resources:
             Action:
               - glue:*Table*
               - glue:*Partition*
-            Resource: 
+            Resource:
               - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog'
               - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueNameParameter}-${DeployStage}'
               - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueNameParameter}-${DeployStage}/*'
@@ -393,9 +391,9 @@ Resources:
 
   DashboardDataPackagesLogGroup:
     Type: AWS::Logs::LogGroup
-    Properties: 
+    Properties:
       LogGroupName: !Sub "/aws/lambda/${DashboardDataPackagesFunction}"
-      RetentionInDays: !Ref RetentionTime  
+      RetentionInDays: !Ref RetentionTime
 
   DashboardGetStudyPeriodsFunction:
     Type: AWS::Serverless::Function
@@ -408,7 +406,7 @@ Resources:
       Description: Retrieve data about the study period
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
       Events:
         GetStudyPeriodAPI:
           Type: Api
@@ -427,16 +425,16 @@ Resources:
           Properties:
             RestApiId: !Ref DashboardApiGateway
             Path: /study-periods/{site}/{study}
-            Method: GET 
+            Method: GET
       Policies:
         - S3ReadPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
 
   DashboardGetStudyPeriodsLogGroup:
     Type: AWS::Logs::LogGroup
-    Properties: 
+    Properties:
       LogGroupName: !Sub "/aws/lambda/${DashboardGetStudyPeriodsFunction}"
-      RetentionInDays: !Ref RetentionTime 
+      RetentionInDays: !Ref RetentionTime
 
 ### Lambda permissions
 
@@ -447,7 +445,7 @@ Resources:
       FunctionName: !Ref ProcessUploadFunction
       Principal: s3.amazonaws.com
       #This can't be a !Ref due to circular refs
-      SourceArn: !Sub 'arn:aws:s3:::${BucketNameParameter}-${DeployStage}'
+      SourceArn: !Sub 'arn:aws:s3:::${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
       SourceAccount: !Ref AWS::AccountId
 
 ### SNS topics
@@ -483,7 +481,7 @@ Resources:
     DependsOn:
       - ProcessUploadFunctionPermission
     Properties:
-      BucketName: !Sub '${BucketNameParameter}-${DeployStage}'
+      BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
       NotificationConfiguration:
         LambdaConfigurations:
           - Event: s3:ObjectCreated:*
@@ -533,9 +531,9 @@ Resources:
         EngineVersion:
           SelectedEngineVersion: "Athena engine version 3"
         ResultConfiguration:
-          OutputLocation: !Sub "s3://${BucketNameParameter}-${DeployStage}/athena/"
+          OutputLocation: !Sub "s3://${BucketNameParameter}-${AWS::AccountId}-${DeployStage}/athena/"
 
-### IAM Roles 
+### IAM Roles
 
   FetchAuthorizerRole:
     Type: AWS::IAM::Role
@@ -575,37 +573,38 @@ Resources:
                 Action:
                   - s3:GetObject
                   - s3:PutObject
-                Resource: !Sub "arn:aws:s3:::${BucketNameParameter}-${DeployStage}/aggregates/*"
+                Resource: !Sub "arn:aws:s3:::${BucketNameParameter}-${AWS::AccountId}-${DeployStage}/aggregates/*"
 
 
 ### API Gateways
 
-# If you need to enable logging at the API Gateway level, uncomment the nodes 
+# If you need to enable logging at the API Gateway level, uncomment the nodes
 # in this section. This should be left disabled for production since it is noisy
 # and not useful for troubleshooting 95% of lambda issues.
 
   SiteApiGateway:
     Type: AWS::Serverless::Api
-#    DependsOn: ApiCWLRoleArn 
+#    DependsOn: ApiCWLRoleArn
     Properties:
       StageName: !Ref DeployStage
       Auth:
-        Authorizers: 
-          FetchAuth: 
+        Authorizers:
+          FetchAuth:
             FunctionPayloadType: REQUEST
             FunctionArn: !GetAtt FetchAuthorizerFunction.Arn
             Identity:
               Headers: [Authorization]
         DefaultAuthorizer: FetchAuth
       # If an external url is not required, delete/comment the Domain node
-      Domain:
-        DomainName: !Ref AggregatorDomainName
-        CertificateArn: !Ref AggregatorCertArn
-        EndpointConfiguration: EDGE
-        Route53:
-          HostedZoneId: !Ref AggregatorHostedZoneID
-        BasePath:
-          - upload
+      # TODO: removing pending cutover w/ BCH external gateway
+      #Domain:
+      #  DomainName: !Ref AggregatorDomainName
+      #  CertificateArn: !Ref AggregatorCertArn
+      #  EndpointConfiguration: EDGE
+      #  Route53:
+      #    HostedZoneId: !Ref AggregatorHostedZoneID
+      #  BasePath:
+      #    - upload
       Name: !Sub "CumulusAggregatorSiteAPI-${DeployStage}"
 #      MethodSettings:
 #        - LoggingLevel: INFO
@@ -626,12 +625,13 @@ Resources:
           Description: !Sub "Usage plan for Cumulus dashboard ${DeployStage} API"
           UsagePlanName: !Sub "CumulusAggregatorDashboardUsagePlan-${DeployStage}"
 # If your data API does not require external access, remove/comment this domain node
-      Domain:
-        DomainName: !Ref DashboardApiDomainName
-        CertificateArn: !Ref DashboardApiCertArn
-        EndpointConfiguration: EDGE
-        Route53:
-          HostedZoneId: !Ref AggregatorHostedZoneID
+      #TODO: removing pending BCH external API gateway cutover
+      #Domain:
+      #  DomainName: !Ref DashboardApiDomainName
+      #  CertificateArn: !Ref DashboardApiCertArn
+      #  EndpointConfiguration: EDGE
+      #  Route53:
+      #    HostedZoneId: !Ref AggregatorHostedZoneID
 
 #      MethodSettings:
 #        - LoggingLevel: INFO
@@ -647,7 +647,7 @@ Resources:
 
 #  ApiCWLRoleArn:
 #    Type: AWS::ApiGateway::Account
-#    Properties: 
+#    Properties:
 #      CloudWatchRoleArn: !GetAtt CloudWatchRole.Arn
 
 #  CloudWatchRole:
@@ -673,4 +673,3 @@ Outputs:
   DashboardWebEndpoint:
     Description: "Dashboard API Gateway endpoint URL"
     Value: !Sub "https://${DashboardApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${DeployStage}/"
-    
