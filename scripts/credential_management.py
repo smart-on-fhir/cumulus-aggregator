@@ -79,31 +79,38 @@ if __name__ == "__main__":
         Please note the order requested in each argument's description"""
     )
     parser.add_argument(
-        "-b", "--bucket", default="cumulus-aggregator-site-counts", help="bucket name"
+        "-b",
+        "--bucket",
+        default="cumulus-aggregator-site-counts",
+        help="base bucket name",
     )
+    parser.add_argument("-a", "--account", help="aws account number")
     parser.add_argument("-e", "--env", default="dev", help="Name of deploy environment")
     s3_modification = parser.add_mutually_exclusive_group(required=True)
     s3_modification.add_argument(
-        "--create_auth",
+        "--create-auth",
         action="extend",
         nargs="+",
         help="Create auth. Expects: User Auth Site",
     )
-    s3_modification.add_argument("--delete_auth", help="Delete auth. Expects: SiteId")
+    s3_modification.add_argument("--delete-auth", help="Delete auth. Expects: SiteId")
     s3_modification.add_argument(
-        "--create_meta",
+        "--create-meta",
         action="extend",
         nargs="+",
         help="Create metadata. Expects: Site Folder",
     )
-    s3_modification.add_argument("--delete_meta", help="Delete metadata. Expects: Site")
+    s3_modification.add_argument("--delete-meta", help="Delete metadata. Expects: Site")
     args = parser.parse_args()
     if args.env == "prod":
         response = input("🚨🚨 Modifying production, are you sure? (y/N) 🚨🚨\n")
         if response.lower() != "y":
             sys.exit()
     s3_client = boto3.client("s3")
-    bucket = f"{args.bucket}-{args.env}"
+    if args.account is not None:
+        bucket = f"{args.bucket}-{args.account}-{args.env}"
+    else:
+        bucket = f"{args.bucket}-{args.env}"
     if args.create_auth:
         id_str = create_auth(
             s3_client,

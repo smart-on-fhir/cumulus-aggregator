@@ -1,6 +1,6 @@
 .aws-sam
 .python-version
-samconfig.toml
+samconfig.*toml
 data/
 auth.json
 metadata.json
