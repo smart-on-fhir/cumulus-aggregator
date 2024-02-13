@@ -1,15 +1,15 @@
 [project]
 name = "aggregator"
-requires-python = ">= 3.9"
-version = "0.1.3"
+requires-python = ">= 3.10"
+version = "0.3.0"
 # This project is designed to run on the AWS serverless application framework (SAM).
 # The project dependencies are handled via AWS layers. These are only required for
 # local development.
 dependencies= [
     "arrow >=1.2.3",
-    "awswrangler >=2.19.0, <3",
+    "awswrangler >=3.5, <4",
     "boto3",
-    "pandas >=1.5.0, <2"
+    "pandas >=2, <3"
 ]
 authors = [
   { name="Matt Garber", email="matthew.garber@childrens.harvard.edu" },
@@ -45,23 +45,26 @@ test = [
     "pytest-mock"
 ]
 dev = [
-    "bandit",
-    "black==22.12.0",
-    "isort==5.12.0",
+    "ruff == 0.2.1",
     "pre-commit",
-    "pylint",
-    "pycodestyle"
 ]
+[tool.ruff]
+target-version = "py310"
 
-[tool.coverage.run]
-command_line="-m pytest"
-source=["./src/"]
-
-[tool.coverage.report]
-show_missing=true
-
-[tool.isort]
-profile = "black"
-src_paths = ["src", "tests"]
-skip_glob = [".aws_sam"]
-
+[tool.ruff.lint]
+select = [
+    "A",  # prevent using keywords that clobber python builtins
+    "B",  # bugbear: security warnings
+    "E",  # pycodestyle
+    "F",  # pyflakes
+    "I",  # isort
+    "ISC",  # implicit string concatenation
+    "PLE",  # pylint errors
+    "RUF",  # the ruff developer's own rules
+    "UP",  # alert you when better syntax is available in your python version
+]
+ignore = [
+# Recommended ingore from `ruff format` due to in-project conflicts with check.
+# It's expected that this will be fixed in the coming months.
+    "ISC001"
+]

@@ -1,5 +1,4 @@
 import csv
-import os
 from datetime import datetime, timezone
 
 import boto3
@@ -7,21 +6,17 @@ import pytest
 from freezegun import freeze_time
 
 from src.handlers.shared.enums import BucketPath
-from src.handlers.shared.functions import read_metadata, write_metadata
+from src.handlers.shared.functions import read_metadata
 from src.handlers.site_upload.study_period import study_period_handler
 from tests.utils import (
     EXISTING_DATA_P,
     EXISTING_SITE,
     EXISTING_STUDY,
     EXISTING_VERSION,
-    NEW_DATA_P,
     NEW_SITE,
     NEW_STUDY,
     NEW_VERSION,
-    OTHER_SITE,
-    OTHER_STUDY,
     TEST_BUCKET,
-    get_mock_study_metadata,
 )
 
 
@@ -114,7 +109,7 @@ def test_process_upload(
             metadata[site][study][version]["last_data_update"]
             == datetime.now(timezone.utc).isoformat()
         )
-        with open("./tests/test_data/meta_date.csv", "r") as file:
+        with open("./tests/test_data/meta_date.csv") as file:
             reader = csv.reader(file)
             # discarding CSV header row
             next(reader)

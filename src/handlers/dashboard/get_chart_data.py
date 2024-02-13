@@ -13,7 +13,7 @@ from ..shared.enums import BucketPath
 from ..shared.functions import get_latest_data_package_version, http_response
 
 
-def _get_table_cols(table_name: str, version: str = None) -> list:
+def _get_table_cols(table_name: str, version: str | None = None) -> list:
     """Returns the columns associated with a table.
 
     Since running an athena query takes a decent amount of time due to queueing
@@ -29,7 +29,8 @@ def _get_table_cols(table_name: str, version: str = None) -> list:
     s3_key = f"{prefix}/{version}/{table_name}__aggregate.csv"
     s3_client = boto3.client("s3")
     s3_iter = s3_client.get_object(
-        Bucket=s3_bucket_name, Key=s3_key  # type: ignore[arg-type]
+        Bucket=s3_bucket_name,
+        Key=s3_key,  # type: ignore[arg-type]
     )["Body"].iter_lines()
     return next(s3_iter).decode().split(",")
 
@@ -41,7 +42,7 @@ def _build_query(query_params: dict, filters: list, path_params: dict) -> str:
     filter_str = get_filter_string(filters)
     if filter_str != "":
         filter_str = f"AND {filter_str}"
-    count_col = [c for c in columns if c.startswith("cnt")][0]
+    count_col = [next(c for c in columns if c.startswith("cnt"))][0]
     columns.remove(count_col)
     select_str = f"{query_params['column']}, sum({count_col}) as {count_col}"
     group_str = f"{query_params['column']}"

@@ -3,7 +3,6 @@ https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/d49e
 """
 
 # pylint: disable=invalid-name,pointless-string-statement
-from __future__ import print_function
 
 import os
 import re
@@ -28,7 +27,7 @@ def lambda_handler(event, context):
         if auth_token not in user_db.keys() or auth_header[0] != "Basic":
             raise AuthError
     except (AuthError, KeyError):
-        raise AuthError(event)  # pylint: disable=raise-missing-from
+        raise AuthError(event)  # noqa: B904
 
     principalId = user_db[auth_token]["site"]
 
@@ -66,7 +65,7 @@ class HttpVerb:
     ALL = "*"
 
 
-class AuthPolicy(object):  # pylint: disable=missing-class-docstring; # pragma: no cover
+class AuthPolicy:  # pylint: disable=missing-class-docstring; # pragma: no cover
     awsAccountId = ""
     """The AWS account id the policy will be generated for. This is used to
     create the method ARNs."""
@@ -81,8 +80,8 @@ class AuthPolicy(object):  # pylint: disable=missing-class-docstring; # pragma: 
     conditions statement.
     the build method processes these lists and generates the approriate
     statements for the final policy"""
-    allowMethods = []
-    denyMethods = []
+    allowMethods = []  # noqa: RUF012
+    denyMethods = []  # noqa: RUF012
 
     restApiId = "<<restApiId>>"
     """ Replace the placeholder value with a default API Gateway API id to be used in
@@ -211,7 +210,7 @@ class AuthPolicy(object):  # pylint: disable=missing-class-docstring; # pragma: 
         methods and includes a condition for the policy statement. More on AWS policy
         conditions here:
         http://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements.html#Condition
-        """  # noqa: E501
+        """
         self._addMethod("Allow", verb, resource, conditions)
 
     def denyMethodWithConditions(self, verb, resource, conditions):
@@ -219,7 +218,7 @@ class AuthPolicy(object):  # pylint: disable=missing-class-docstring; # pragma: 
         methods and includes a condition for the policy statement. More on AWS policy
         conditions here:
         http://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements.html#Condition
-        """  # noqa: E501
+        """
         self._addMethod("Deny", verb, resource, conditions)
 
     def build(self):

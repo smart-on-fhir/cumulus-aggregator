@@ -1,8 +1,5 @@
 import json
-import os
-from unittest import mock
 
-import boto3
 import pytest
 
 from src.handlers.shared.enums import BucketPath
@@ -12,8 +9,6 @@ from tests.utils import (
     EXISTING_SITE,
     EXISTING_STUDY,
     EXISTING_VERSION,
-    TEST_BUCKET,
-    get_mock_metadata,
 )
 
 

@@ -4,7 +4,7 @@ from src.handlers.dashboard.filter_config import get_filter_string
 
 
 @pytest.mark.parametrize(
-    "input,output",
+    "input_str,output_str",
     [
         # Checking individual conversions
         (["col:strEq:str"], "col LIKE 'str'"),
@@ -141,5 +141,5 @@ from src.handlers.dashboard.filter_config import get_filter_string
         ),
     ],
 )
-def test_filter_string(input, output):
-    assert get_filter_string(input) == output
+def test_filter_string(input_str, output_str):
+    assert get_filter_string(input_str) == output_str

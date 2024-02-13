@@ -10,7 +10,7 @@ jobs:
       - name: Set up Python 
         uses: actions/setup-python@v4
         with:
-          python-version: 3.9
+          python-version: '3.10'
 
       - name: Install dependencies
         run: |
@@ -23,23 +23,17 @@ jobs:
   lint:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - name: Set up Python 
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
       - name: Install linters
         run: |
           python -m pip install --upgrade pip
           pip install ".[dev]"
-      - name: Run pycodestyle
-        run: |
-          pycodestyle scripts src tests --max-line-length=88
-      - name: Run pylint
-        if: success() || failure() # still run pylint if above checks fail
-        run: |
-          pylint scripts src tests
-      - name: Run bandit
-        if: success() || failure() # still run bandit if above checks fail
-        run: |
-          bandit -r scripts src
-      - name: Run black
+      - name: Run ruff
         if: success() || failure() # still run black if above checks fails
         run: |
-          black --check --verbose .
+          ruff check
+          ruff format --check
