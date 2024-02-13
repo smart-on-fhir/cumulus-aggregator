@@ -1,24 +1,14 @@
 import json
-import os
-from datetime import datetime, timezone
-from unittest import mock
 
-import boto3
 import pytest
 
 from src.handlers.dashboard.get_metadata import metadata_handler
-from src.handlers.shared.enums import BucketPath
-from src.handlers.shared.functions import read_metadata, write_metadata
 from tests.utils import (
     EXISTING_DATA_P,
     EXISTING_SITE,
     EXISTING_STUDY,
-    EXISTING_VERSION,
     NEW_SITE,
     NEW_STUDY,
-    OTHER_SITE,
-    OTHER_STUDY,
-    TEST_BUCKET,
     get_mock_metadata,
 )
 

@@ -27,8 +27,8 @@ from unittest import mock
 import boto3
 import pytest
 from moto import mock_athena, mock_s3, mock_sns
-from scripts.credential_management import create_auth, create_meta
 
+from scripts.credential_management import create_auth, create_meta
 from src.handlers.shared.enums import BucketPath, JsonFilename
 from src.handlers.shared.functions import write_metadata
 from tests.utils import (

@@ -60,7 +60,7 @@ Resources:
     Properties:
       FunctionName: !Sub 'CumulusAggFetchAuthorizer-${DeployStage}'
       Handler: src/handlers/site_upload/api_gateway_authorizer.lambda_handler
-      Runtime: python3.9
+      Runtime: python3.10
       MemorySize: 128
       Timeout: 100
       Description: Validates credentials before providing signed urls
@@ -83,7 +83,7 @@ Resources:
     Properties:
       FunctionName: !Sub 'CumulusAggFetchUploadUrl-${DeployStage}'
       Handler: src/handlers/site_upload/fetch_upload_url.upload_url_handler
-      Runtime: python3.9
+      Runtime: python3.10
       MemorySize: 128
       Timeout: 100
       Description: Generates a presigned URL for uploading files to S3
@@ -113,7 +113,7 @@ Resources:
     Properties:
       FunctionName: !Sub 'CumulusAggProcessUpload-${DeployStage}'
       Handler: src/handlers/site_upload/process_upload.process_upload_handler
-      Runtime: python3.9
+      Runtime: python3.10
       MemorySize: 128
       Timeout: 800
       Description: Handles initial relocation of upload data
@@ -142,7 +142,7 @@ Resources:
       FunctionName: !Sub 'CumulusAggPowersetMerge-${DeployStage}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:1]
       Handler: src/handlers/site_upload/powerset_merge.powerset_merge_handler
-      Runtime: python3.9
+      Runtime: python3.10
       MemorySize: 8192
       Timeout: 800
       Description: Merges and aggregates powerset count data
@@ -173,7 +173,7 @@ Resources:
       FunctionName: !Sub 'CumulusAggStudyPeriod-${DeployStage}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:1]
       Handler: src/handlers/site_upload/study_period.study_period_handler
-      Runtime: python3.9
+      Runtime: python3.10
       MemorySize: 512
       Timeout: 800
       Description: Handles metadata outside of upload/processing for studies
@@ -201,7 +201,7 @@ Resources:
       FunctionName: !Sub 'CumulusAggCacheAPI-${DeployStage}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:1]
       Handler: src/handlers/site_upload/cache_api.cache_api_handler
-      Runtime: python3.9
+      Runtime: python3.10
       MemorySize: 512
       Timeout: 800
       Description: Caches selected database queries to S3
@@ -249,7 +249,7 @@ Resources:
       FunctionName: !Sub 'CumulusAggDashboardGetChartData-${DeployStage}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:1]
       Handler: src/handlers/dashboard/get_chart_data.chart_data_handler
-      Runtime: python3.9
+      Runtime: python3.10
       MemorySize: 2048
       Timeout: 100
       Description: Retrieve data for chart display in Cumulus Dashboard
@@ -296,7 +296,7 @@ Resources:
     Properties:
       FunctionName: !Sub 'CumulusAggDashboardGetMetadata-${DeployStage}'
       Handler: src/handlers/dashboard/get_metadata.metadata_handler
-      Runtime: python3.9
+      Runtime: python3.10
       MemorySize: 128
       Timeout: 100
       Description: Retrieve data about site uploads
@@ -344,7 +344,7 @@ Resources:
       FunctionName: !Sub 'CumulusAggDashboardDataPackages-${DeployStage}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:1]
       Handler: src/handlers/dashboard/get_data_packages.data_packages_handler
-      Runtime: python3.9
+      Runtime: python3.10
       MemorySize: 512
       Timeout: 100
       Description: Retrieve data for chart display in Cumulus Dashboard
@@ -400,7 +400,7 @@ Resources:
     Properties:
       FunctionName: !Sub 'CumulusAggDashboardStudyPeriods-${DeployStage}'
       Handler: src/handlers/dashboard/get_study_periods.study_periods_handler
-      Runtime: python3.9
+      Runtime: python3.10
       MemorySize: 128
       Timeout: 100
       Description: Retrieve data about the study period

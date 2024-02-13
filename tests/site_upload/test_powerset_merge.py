@@ -11,7 +11,7 @@ from freezegun import freeze_time
 from pandas import DataFrame, read_parquet
 
 from src.handlers.shared.enums import BucketPath
-from src.handlers.shared.functions import read_metadata, write_metadata
+from src.handlers.shared.functions import read_metadata
 from src.handlers.site_upload.powerset_merge import (
     MergeError,
     expand_and_concat_sets,
@@ -25,12 +25,9 @@ from tests.utils import (
     EXISTING_VERSION,
     ITEM_COUNT,
     MOCK_ENV,
-    NEW_DATA_P,
     NEW_SITE,
     NEW_STUDY,
     NEW_VERSION,
-    OTHER_SITE,
-    OTHER_STUDY,
     TEST_BUCKET,
     get_mock_metadata,
 )
@@ -213,7 +210,7 @@ def test_powerset_merge_single_upload(
                         "study"
                     ]["encounter"]["099"]["last_aggregation"]
                 )
-            if upload_file is not None:
+            if upload_file is not None and study != NEW_STUDY:
                 # checking to see that merge powerset didn't touch last upload
                 assert (
                     metadata[site][study][data_package.split("__")[1]][version][
@@ -263,7 +260,6 @@ def test_powerset_merge_join_study_data(
     mock_bucket,
     mock_notification,
 ):
-
     s3_client = boto3.client("s3", region_name="us-east-1")
     s3_client.upload_file(
         upload_file,
@@ -340,7 +336,7 @@ def test_powerset_merge_join_study_data(
 def test_expand_and_concat(mock_bucket, upload_file, load_empty, raises):
     with raises:
         df = read_parquet("./tests/test_data/count_synthea_patient_agg.parquet")
-        s3_path = f"/test/uploaded.parquet"
+        s3_path = "/test/uploaded.parquet"
         s3_client = boto3.client("s3", region_name="us-east-1")
         s3_client.upload_file(
             upload_file,

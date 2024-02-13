@@ -107,7 +107,7 @@ if __name__ == "__main__":
     if args["test"]:
         args_dict["user"] = os.environ.get("CUMULUS_TEST_UPLOAD_USER", "general")
         args_dict["file"] = (
-            f"{str(Path(__file__).resolve().parents[1])}"
+            f"{Path(__file__).resolve().parents[1]!s}"
             f"/tests/test_data/count_synthea_patient.parquet"
         )
         args_dict["auth"] = os.environ.get("CUMULUS_TEST_UPLOAD_AUTH", "secretval")

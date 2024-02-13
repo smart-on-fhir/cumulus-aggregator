@@ -1,4 +1,3 @@
-import os
 from datetime import datetime, timezone
 
 import boto3
@@ -6,7 +5,7 @@ import pytest
 from freezegun import freeze_time
 
 from src.handlers.shared.enums import BucketPath
-from src.handlers.shared.functions import read_metadata, write_metadata
+from src.handlers.shared.functions import read_metadata
 from src.handlers.site_upload.process_upload import process_upload_handler
 from tests.utils import (
     EXISTING_DATA_P,
@@ -16,10 +15,7 @@ from tests.utils import (
     ITEM_COUNT,
     NEW_DATA_P,
     NEW_SITE,
-    NEW_STUDY,
     NEW_VERSION,
-    OTHER_SITE,
-    OTHER_STUDY,
     TEST_BUCKET,
 )
 

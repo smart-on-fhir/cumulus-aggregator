@@ -2,7 +2,6 @@ import json
 import os
 from unittest import mock
 
-import boto3
 import pandas
 import pytest
 
@@ -10,11 +9,8 @@ from src.handlers.dashboard import get_chart_data
 from tests.utils import (
     EXISTING_DATA_P,
     EXISTING_STUDY,
-    EXISTING_VERSION,
     MOCK_ENV,
-    TEST_BUCKET,
     TEST_GLUE_DB,
-    TEST_WORKGROUP,
 )
 
 
@@ -22,9 +18,9 @@ def mock_get_table_cols(name):
     return ["cnt", "gender", "race"]
 
 
-def mock_data_frame(filter):
+def mock_data_frame(filter_param):
     df = pandas.read_csv("tests/test_data/cube_simple_example.csv", na_filter=False)
-    if filter != []:
+    if filter_param != []:
         df = df[df["gender"] == "female"]
     return df
 
@@ -109,8 +105,6 @@ def test_format_payload(query_params, filters, expected_payload):
 
 
 def test_get_data_cols(mock_bucket):
-    s3_client = boto3.client("s3", region_name="us-east-1")
-    s3_res = s3_client.list_objects_v2(Bucket=TEST_BUCKET)
     table_name = f"{EXISTING_STUDY}__{EXISTING_DATA_P}"
     res = get_chart_data._get_table_cols(table_name)
     cols = pandas.read_csv("./tests/test_data/count_synthea_patient_agg.csv").columns

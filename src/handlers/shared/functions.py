@@ -3,7 +3,6 @@ import io
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Optional
 
 import boto3
 
@@ -77,7 +76,7 @@ def update_metadata(
     data_package: str,
     version: str,
     target: str,
-    dt: Optional[datetime] = None,
+    dt: datetime | None = None,
     meta_type: str = JsonFilename.TRANSACTIONS.value,
 ):
     """Safely updates items in metadata dictionary

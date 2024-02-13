@@ -189,7 +189,7 @@ def expand_and_concat_sets(
         .reset_index()
         # this last line makes "cnt" the first column in the set, matching the
         # library style
-        .filter(["cnt"] + data_cols)
+        .filter(["cnt", *data_cols])
     )
     return agg_df
 
@@ -209,8 +209,9 @@ def generate_csv_from_parquet(bucket_name: str, bucket_root: str, subbucket_path
     awswrangler.s3.to_csv(
         last_valid_df,
         (
-            f"s3://{bucket_name}/{bucket_root}/"
-            f"{subbucket_path}".replace(".parquet", ".csv")
+            f"s3://{bucket_name}/{bucket_root}/{subbucket_path}".replace(
+                ".parquet", ".csv"
+            )
         ),
         index=False,
         quoting=csv.QUOTE_NONE,
@@ -250,7 +251,6 @@ def merge_powersets(manager: S3Manager) -> None:
                 e,
             )
     for latest_path in latest_file_list:
-
         if manager.version not in latest_path:
             continue
         site_specific_name = get_s3_site_filename_suffix(latest_path)
@@ -299,7 +299,7 @@ def merge_powersets(manager: S3Manager) -> None:
             manager.update_local_metadata(
                 TransactionKeys.LAST_AGGREGATION.value, site=latest_site
             )
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             manager.merge_error_handler(
                 latest_path,
                 subbucket_path,
@@ -315,6 +315,14 @@ def merge_powersets(manager: S3Manager) -> None:
                     manager.site,
                 )
                 manager.update_local_metadata(TransactionKeys.LAST_AGGREGATION.value)
+
+    if df.empty:
+        manager.merge_error_handler(
+            latest_path,
+            subbucket_path,
+            OSError("File not found"),
+        )
+
     manager.write_local_metadata()
 
     # In this section, we are trying to accomplish two things:

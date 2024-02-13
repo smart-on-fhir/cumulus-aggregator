@@ -1,7 +1,6 @@
 import os
 from unittest import mock
 
-import awswrangler
 import pandas
 import pytest
 
@@ -24,7 +23,6 @@ def mock_data_packages(*args, **kwargs):
     ],
 )
 def test_cache_api(mocker, mock_bucket, subject, message, mock_result, status):
-
     mock_query_result = mocker.patch("awswrangler.athena.read_sql_query")
     mock_query_result.side_effect = mock_result
     event = {"Records": [{"Sns": {"Subject": subject, "Message": message}}]}

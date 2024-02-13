@@ -73,10 +73,7 @@ def _parse_filter_req(filter_req):
     if "," in filter_req:
         return " AND ".join(_parse_filter_req(x) for x in filter_req.split(","))
     filter_req_split = filter_req.split(":")
-    if (
-        filter_req_split[1]
-        in _FILTER_MAP_ONE_PARAM.keys()  # pylint: disable=consider-iterating-dictionary
-    ):
+    if filter_req_split[1] in _FILTER_MAP_ONE_PARAM:
         return _FILTER_MAP_ONE_PARAM[filter_req_split[1]] % filter_req_split[0]
     return _FILTER_MAP_TWO_PARAM[filter_req_split[1]] % (
         filter_req_split[0],
