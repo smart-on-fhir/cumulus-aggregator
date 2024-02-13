@@ -1,27 +1,17 @@
 """ Lambda for performing joins of site count data """
 import csv
+import datetime
 import logging
 import os
 import traceback
-from datetime import datetime, timezone
 
 import awswrangler
 import boto3
+import numpy
 import pandas
-from numpy import nan
 from pandas.core.indexes.range import RangeIndex
 
-from ..shared.awswrangler_functions import get_s3_data_package_list
-from ..shared.decorators import generic_error_handler
-from ..shared.enums import BucketPath, TransactionKeys
-from ..shared.functions import (
-    get_s3_site_filename_suffix,
-    http_response,
-    move_s3_file,
-    read_metadata,
-    update_metadata,
-    write_metadata,
-)
+from src.handlers.shared import awswrangler_functions, decorators, enums, functions
 
 
 class MergeError(ValueError):
@@ -46,18 +36,23 @@ class S3Manager:
         self.data_package = s3_key_array[2].split("__")[1]
         self.site = s3_key_array[3]
         self.version = s3_key_array[4]
-        self.metadata = read_metadata(self.s3_client, self.s3_bucket_name)
+        self.metadata = functions.read_metadata(self.s3_client, self.s3_bucket_name)
+        self.types_metadata = functions.read_metadata(
+            self.s3_client,
+            self.s3_bucket_name,
+            meta_type=enums.JsonFilename.COLUMN_TYPES.value,
+        )
 
     # S3 Filesystem operations
     def get_data_package_list(self, path) -> list:
         """convenience wrapper for get_s3_data_package_list"""
-        return get_s3_data_package_list(
+        return awswrangler_functions.get_s3_data_package_list(
             path, self.s3_bucket_name, self.study, self.data_package
         )
 
     def move_file(self, from_path: str, to_path: str) -> None:
         """convenience wrapper for move_s3_file"""
-        move_s3_file(self.s3_client, self.s3_bucket_name, from_path, to_path)
+        functions.move_s3_file(self.s3_client, self.s3_bucket_name, from_path, to_path)
 
     def copy_file(self, from_path: str, to_path: str) -> None:
         """convenience wrapper for copy_s3_file"""
@@ -75,7 +70,7 @@ class S3Manager:
     def write_parquet(self, df: pandas.DataFrame, is_new_data_package: bool) -> None:
         """writes dataframe as parquet to s3 and sends an SNS notification if new"""
         parquet_aggregate_path = (
-            f"s3://{self.s3_bucket_name}/{BucketPath.AGGREGATE.value}/"
+            f"s3://{self.s3_bucket_name}/{enums.BucketPath.AGGREGATE.value}/"
             f"{self.study}/{self.study}__{self.data_package}/{self.version}/"
             f"{self.study}__{self.data_package}__aggregate.parquet"
         )
@@ -89,12 +84,12 @@ class S3Manager:
     def write_csv(self, df: pandas.DataFrame) -> None:
         """writes dataframe as csv to s3"""
         csv_aggregate_path = (
-            f"s3://{self.s3_bucket_name}/{BucketPath.CSVAGGREGATE.value}/"
+            f"s3://{self.s3_bucket_name}/{enums.BucketPath.CSVAGGREGATE.value}/"
             f"{self.study}/{self.study}__{self.data_package}/{self.version}/"
             f"{self.study}__{self.data_package}__aggregate.csv"
         )
         df = df.apply(lambda x: x.strip() if isinstance(x, str) else x).replace(
-            '""', nan
+            '""', numpy.nan
         )
         df = df.replace(to_replace=r",", value="", regex=True)
         awswrangler.s3.to_csv(
@@ -102,17 +97,45 @@ class S3Manager:
         )
 
     # metadata
-    def update_local_metadata(self, key, site=None):
+    def update_local_metadata(
+        self,
+        key,
+        *,
+        site=None,
+        value=None,
+        metadata: dict | None = None,
+        meta_type: str | None = enums.JsonFilename.TRANSACTIONS.value,
+    ):
         """convenience wrapper for update_metadata"""
-        if site is None:
+        if site is None and meta_type != enums.JsonFilename.COLUMN_TYPES.value:
             site = self.site
-        self.metadata = update_metadata(
-            self.metadata, site, self.study, self.data_package, self.version, key
+        if metadata is None:
+            metadata = self.metadata
+        metadata = functions.update_metadata(
+            metadata=metadata,
+            site=site,
+            study=self.study,
+            data_package=self.data_package,
+            version=self.version,
+            target=key,
+            value=value,
+            meta_type=meta_type,
         )
 
-    def write_local_metadata(self):
+    def write_local_metadata(
+        self, metadata: dict | None = None, meta_type: str | None = None
+    ):
         """convenience wrapper for write_metadata"""
-        write_metadata(self.s3_client, self.s3_bucket_name, self.metadata)
+        if metadata is None:
+            metadata = self.metadata
+        if meta_type is None:
+            meta_type = enums.JsonFilename.TRANSACTIONS.value
+        functions.write_metadata(
+            s3_client=self.s3_client,
+            s3_bucket_name=self.s3_bucket_name,
+            metadata=metadata,
+            meta_type=meta_type,
+        )
 
     def merge_error_handler(
         self,
@@ -128,9 +151,9 @@ class S3Manager:
         logger.error(traceback.print_exc())
         self.move_file(
             s3_path.replace(f"s3://{self.s3_bucket_name}/", ""),
-            f"{BucketPath.ERROR.value}/{subbucket_path}",
+            f"{enums.BucketPath.ERROR.value}/{subbucket_path}",
         )
-        self.update_local_metadata(TransactionKeys.LAST_ERROR.value)
+        self.update_local_metadata(enums.TransactionKeys.LAST_ERROR.value)
 
 
 def get_static_string_series(static_str: str, index: RangeIndex) -> pandas.Series:
@@ -203,7 +226,7 @@ def generate_csv_from_parquet(bucket_name: str, bucket_root: str, subbucket_path
     )
     last_valid_df = last_valid_df.apply(
         lambda x: x.strip() if isinstance(x, str) else x
-    ).replace('""', nan)
+    ).replace('""', numpy.nan)
     # Here we are removing internal commas from fields so we get a valid unquoted CSV
     last_valid_df = last_valid_df.replace(to_replace=",", value="", regex=True)
     awswrangler.s3.to_csv(
@@ -226,12 +249,14 @@ def merge_powersets(manager: S3Manager) -> None:
     # initializing this early in case an empty file causes us to never set it
     is_new_data_package = False
     df = pandas.DataFrame()
-    latest_file_list = manager.get_data_package_list(BucketPath.LATEST.value)
-    last_valid_file_list = manager.get_data_package_list(BucketPath.LAST_VALID.value)
+    latest_file_list = manager.get_data_package_list(enums.BucketPath.LATEST.value)
+    last_valid_file_list = manager.get_data_package_list(
+        enums.BucketPath.LAST_VALID.value
+    )
     for last_valid_path in last_valid_file_list:
         if manager.version not in last_valid_path:
             continue
-        site_specific_name = get_s3_site_filename_suffix(last_valid_path)
+        site_specific_name = functions.get_s3_site_filename_suffix(last_valid_path)
         subbucket_path = f"{manager.study}/{manager.data_package}/{site_specific_name}"
         last_valid_site = site_specific_name.split("/", maxsplit=1)[0]
         # If the latest uploads don't include this site, we'll use the last-valid
@@ -240,7 +265,7 @@ def merge_powersets(manager: S3Manager) -> None:
             if not any(x.endswith(site_specific_name) for x in latest_file_list):
                 df = expand_and_concat_sets(df, last_valid_path, last_valid_site)
                 manager.update_local_metadata(
-                    TransactionKeys.LAST_AGGREGATION.value, site=last_valid_site
+                    enums.TransactionKeys.LAST_AGGREGATION.value, site=last_valid_site
                 )
         except MergeError as e:
             # This is expected to trigger if there's an issue in expand_and_concat_sets;
@@ -253,12 +278,12 @@ def merge_powersets(manager: S3Manager) -> None:
     for latest_path in latest_file_list:
         if manager.version not in latest_path:
             continue
-        site_specific_name = get_s3_site_filename_suffix(latest_path)
+        site_specific_name = functions.get_s3_site_filename_suffix(latest_path)
         subbucket_path = (
             f"{manager.study}/{manager.study}__{manager.data_package}"
             f"/{site_specific_name}"
         )
-        date_str = datetime.now(timezone.utc).isoformat()
+        date_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
         timestamped_name = f".{date_str}.".join(site_specific_name.split("."))
         timestamped_path = (
             f"{manager.study}/{manager.study}__{manager.data_package}"
@@ -269,8 +294,8 @@ def merge_powersets(manager: S3Manager) -> None:
             # if we're going to replace a file in last_valid, archive the old data
             if any(x.endswith(site_specific_name) for x in last_valid_file_list):
                 manager.copy_file(
-                    f"{BucketPath.LAST_VALID.value}/{subbucket_path}",
-                    f"{BucketPath.ARCHIVE.value}/{timestamped_path}",
+                    f"{enums.BucketPath.LAST_VALID.value}/{subbucket_path}",
+                    f"{enums.BucketPath.ARCHIVE.value}/{timestamped_path}",
                 )
             # otherwise, this is the first instance - after it's in the database,
             # we'll generate a new list of valid tables for the dashboard
@@ -278,8 +303,8 @@ def merge_powersets(manager: S3Manager) -> None:
                 is_new_data_package = True
             df = expand_and_concat_sets(df, latest_path, manager.site)
             manager.move_file(
-                f"{BucketPath.LATEST.value}/{subbucket_path}",
-                f"{BucketPath.LAST_VALID.value}/{subbucket_path}",
+                f"{enums.BucketPath.LATEST.value}/{subbucket_path}",
+                f"{enums.BucketPath.LAST_VALID.value}/{subbucket_path}",
             )
 
             ####################
@@ -288,16 +313,18 @@ def merge_powersets(manager: S3Manager) -> None:
             # TODO: remove as soon as we support either parquet upload or
             # the API is supported by the dashboard
             generate_csv_from_parquet(
-                manager.s3_bucket_name, BucketPath.LAST_VALID.value, subbucket_path
+                manager.s3_bucket_name,
+                enums.BucketPath.LAST_VALID.value,
+                subbucket_path,
             )
             ####################
 
             latest_site = site_specific_name.split("/", maxsplit=1)[0]
             manager.update_local_metadata(
-                TransactionKeys.LAST_DATA_UPDATE.value, site=latest_site
+                enums.TransactionKeys.LAST_DATA_UPDATE.value, site=latest_site
             )
             manager.update_local_metadata(
-                TransactionKeys.LAST_AGGREGATION.value, site=latest_site
+                enums.TransactionKeys.LAST_AGGREGATION.value, site=latest_site
             )
         except Exception as e:
             manager.merge_error_handler(
@@ -310,20 +337,37 @@ def merge_powersets(manager: S3Manager) -> None:
             if any(x.endswith(site_specific_name) for x in last_valid_file_list):
                 df = expand_and_concat_sets(
                     df,
-                    f"s3://{manager.s3_bucket_name}/{BucketPath.LAST_VALID.value}"
+                    f"s3://{manager.s3_bucket_name}/{enums.BucketPath.LAST_VALID.value}"
                     f"/{subbucket_path}",
                     manager.site,
                 )
-                manager.update_local_metadata(TransactionKeys.LAST_AGGREGATION.value)
+                manager.update_local_metadata(
+                    enums.TransactionKeys.LAST_AGGREGATION.value
+                )
 
     if df.empty:
-        manager.merge_error_handler(
-            latest_path,
-            subbucket_path,
-            OSError("File not found"),
-        )
+        raise OSError("File not found")
 
     manager.write_local_metadata()
+
+    # Updating the typing dict for the CSV API
+    column_dict = functions.get_csv_column_datatypes(df.dtypes)
+    manager.update_local_metadata(
+        enums.ColumnTypesKeys.COLUMNS.value,
+        value=column_dict,
+        metadata=manager.types_metadata,
+        meta_type=enums.JsonFilename.COLUMN_TYPES.value,
+    )
+    manager.update_local_metadata(
+        enums.ColumnTypesKeys.LAST_DATA_UPDATE.value,
+        value=column_dict,
+        metadata=manager.types_metadata,
+        meta_type=enums.JsonFilename.COLUMN_TYPES.value,
+    )
+    manager.write_local_metadata(
+        metadata=manager.types_metadata,
+        meta_type=enums.JsonFilename.COLUMN_TYPES.value,
+    )
 
     # In this section, we are trying to accomplish two things:
     #   - Prepare a csv that can be loaded manually into the dashboard (requiring no
@@ -334,11 +378,11 @@ def merge_powersets(manager: S3Manager) -> None:
     manager.write_csv(df)
 
 
-@generic_error_handler(msg="Error merging powersets")
+@decorators.generic_error_handler(msg="Error merging powersets")
 def powerset_merge_handler(event, context):
     """manages event from SNS, triggers file processing and merge"""
     del context
     manager = S3Manager(event)
     merge_powersets(manager)
-    res = http_response(200, "Merge successful")
+    res = functions.http_response(200, "Merge successful")
     return res

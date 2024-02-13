@@ -6,9 +6,9 @@ import os
 import awswrangler
 import boto3
 
-from ..shared.decorators import generic_error_handler
-from ..shared.enums import BucketPath, JsonFilename
-from ..shared.functions import http_response
+from src.handlers.shared.decorators import generic_error_handler
+from src.handlers.shared.enums import BucketPath, JsonFilename
+from src.handlers.shared.functions import http_response
 
 
 def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None:

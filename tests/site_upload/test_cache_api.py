@@ -5,7 +5,7 @@ import pandas
 import pytest
 
 from src.handlers.site_upload.cache_api import cache_api_handler
-from tests.utils import MOCK_ENV, get_mock_data_packages_cache
+from tests.mock_utils import MOCK_ENV, get_mock_data_packages_cache
 
 
 def mock_data_packages(*args, **kwargs):

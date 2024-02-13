@@ -3,9 +3,9 @@
 
 import os
 
-from ..shared.decorators import generic_error_handler
-from ..shared.enums import BucketPath, JsonFilename
-from ..shared.functions import get_s3_json_as_dict, http_response
+from src.handlers.shared.decorators import generic_error_handler
+from src.handlers.shared.enums import BucketPath, JsonFilename
+from src.handlers.shared.functions import get_s3_json_as_dict, http_response
 
 
 @generic_error_handler(msg="Error retrieving data packages")

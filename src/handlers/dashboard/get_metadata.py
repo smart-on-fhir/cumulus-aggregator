@@ -4,8 +4,8 @@ import os
 
 import boto3
 
-from ..shared.decorators import generic_error_handler
-from ..shared.functions import http_response, read_metadata
+from src.handlers.shared.decorators import generic_error_handler
+from src.handlers.shared.functions import http_response, read_metadata
 
 
 @generic_error_handler(msg="Error retrieving metadata")
@@ -22,5 +22,7 @@ def metadata_handler(event, context):
             metadata = metadata[params["study"]]
         if "data_package" in params:
             metadata = metadata[params["data_package"]]
+        if "version" in params:
+            metadata = metadata[params["version"]]
     res = http_response(200, metadata)
     return res

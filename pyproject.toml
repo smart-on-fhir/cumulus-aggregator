@@ -9,7 +9,8 @@ dependencies= [
     "arrow >=1.2.3",
     "awswrangler >=3.5, <4",
     "boto3",
-    "pandas >=2, <3"
+    "pandas >=2, <3",
+    "rich"
 ]
 authors = [
   { name="Matt Garber", email="matthew.garber@childrens.harvard.edu" },

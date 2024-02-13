@@ -8,7 +8,7 @@ from freezegun import freeze_time
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import read_metadata
 from src.handlers.site_upload.study_period import study_period_handler
-from tests.utils import (
+from tests.mock_utils import (
     EXISTING_DATA_P,
     EXISTING_SITE,
     EXISTING_STUDY,

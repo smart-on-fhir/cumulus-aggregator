@@ -1,0 +1,111 @@
+import os
+
+import boto3
+import botocore
+
+from src.handlers.shared import decorators, enums, functions
+
+
+def _format_key(
+    s3_client,
+    s3_bucket_name: str,
+    study: str,
+    subscription: str,
+    version: str,
+    filename: str,
+    site: str | None = None,
+):
+    """Creates S3 key from url params"""
+    if site is not None:
+        key = f"last_valid/{study}/{study}__{subscription}/{site}/{version}/{filename}"
+    else:
+        key = f"csv_aggregates/{study}/{study}__{subscription}/{version}/{filename}"
+    s3_client.list_objects_v2(Bucket=s3_bucket_name)
+    try:
+        s3_client.head_object(Bucket=s3_bucket_name, Key=key)
+        return key
+    except botocore.exceptions.ClientError as e:
+        raise OSError(f"No object found at key {key}") from e
+
+
+def _get_column_types(
+    s3_client,
+    s3_bucket_name: str,
+    study: str,
+    subscription: str,
+    version: str,
+    **kwargs,
+) -> dict:
+    """Gets column types from the metadata store for a given subscription"""
+    types_metadata = functions.read_metadata(
+        s3_client,
+        s3_bucket_name,
+        meta_type=enums.JsonFilename.COLUMN_TYPES.value,
+    )
+    try:
+        return types_metadata[study][subscription][version][
+            enums.ColumnTypesKeys.COLUMNS.value
+        ]
+    except KeyError:
+        return {}
+
+
+@decorators.generic_error_handler(msg="Error retrieving chart data")
+def get_csv_handler(event, context):
+    """manages event from dashboard api call and creates a temporary URL"""
+    del context
+    s3_bucket_name = os.environ.get("BUCKET_NAME")
+    s3_client = boto3.client("s3")
+    key = _format_key(s3_client, s3_bucket_name, **event["pathParameters"])
+    types = _get_column_types(s3_client, s3_bucket_name, **event["pathParameters"])
+    presign_url = s3_client.generate_presigned_url(
+        "get_object",
+        Params={
+            "Bucket": s3_bucket_name,
+            "Key": key,
+            "ResponseContentType": "text/csv",
+        },
+        ExpiresIn=600,
+    )
+    extra_headers = {
+        "Location": presign_url,
+        "x-column-names": ",".join(key for key in types.keys()),
+        "x-column-types": ",".join(key for key in types.values()),
+        # TODO: add x-column-descriptions once a source for column descriptions
+        # has been established
+    }
+    res = functions.http_response(302, "", extra_headers=extra_headers)
+    return res
+
+
+@decorators.generic_error_handler(msg="Error retrieving csv data")
+def get_csv_list_handler(event, context):
+    """manages event from dashboard api call and creates a temporary URL"""
+    del context
+    s3_bucket_name = os.environ.get("BUCKET_NAME")
+    s3_client = boto3.client("s3")
+    if event["path"].startswith("/last_valid"):
+        key_prefix = "last_valid"
+        url_prefix = "last_valid"
+    elif event["path"].startswith("/aggregates"):
+        key_prefix = "csv_aggregates"
+        url_prefix = "aggregates"
+    else:
+        raise Exception("Unexpected url encountered")
+    s3_objs = s3_client.list_objects_v2(Bucket=s3_bucket_name, Prefix=key_prefix)
+    urls = []
+    if s3_objs["KeyCount"] == 0:
+        return functions.http_response(200, urls)
+    for obj in s3_objs["Contents"]:
+        key_parts = obj["Key"].split("/")
+        study = key_parts[1]
+        subscription = key_parts[2].split("__")[1]
+        version = key_parts[-2]
+        filename = key_parts[-1]
+        site = key_parts[3] if url_prefix == "last_valid" else None
+        url_parts = [url_prefix, study, subscription, version, filename]
+        if url_prefix == "last_valid":
+            url_parts.insert(3, site)
+        urls.append("/".join(url_parts))
+    res = functions.http_response(200, urls)
+    return res

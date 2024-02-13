@@ -243,6 +243,77 @@ Resources:
 
   # Dashboard API
 
+  DashboardGetCsvFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggDashboardGetCsv-${DeployStage}'
+      Handler: src/handlers/dashboard/get_csv.get_csv_handler
+      Runtime: python3.10
+      MemorySize: 128
+      Timeout: 100
+      Description: Redirect to presigned URL for download of aggregate CSVs
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+      Events:
+        GetAggregateAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /aggregates/{study}/{subscription}/{version}/{filename}
+            Method: GET
+        GetLastValidAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /last_valid/{study}/{subscription}/{site}/{version}/{filename}
+            Method: GET
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+
+  DashboardGetCsvLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${DashboardGetCsvFunction}"
+      RetentionInDays: !Ref RetentionTime
+
+
+  DashboardGetCsvListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggDashboardGetCsvList-${DeployStage}'
+      Handler: src/handlers/dashboard/get_csv.get_csv_list_handler
+      Runtime: python3.10
+      MemorySize: 128
+      Timeout: 100
+      Description: List all available csvs from the aggregator
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+      Events:
+        GetAggregateAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /aggregates/
+            Method: GET
+        GetLastValidAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /last_valid/
+            Method: GET
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+
+  DashboardGetCsvListLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${DashboardGetCsvListFunction}"
+      RetentionInDays: !Ref RetentionTime
+
   DashboardGetChartDataFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -327,6 +398,12 @@ Resources:
           Properties:
             RestApiId: !Ref DashboardApiGateway
             Path: /metadata/{site}/{study}/{subscription}
+            Method: GET
+        GetMetadataSiteStudySubscriptionVersionAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /metadata/{site}/{study}/{subscription}/{version}
             Method: GET
       Policies:
         - S3ReadPolicy:

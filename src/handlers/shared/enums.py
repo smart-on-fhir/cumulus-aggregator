@@ -1,8 +1,8 @@
 """Enums shared across lambda functions"""
-from enum import Enum
+import enum
 
 
-class BucketPath(Enum):
+class BucketPath(enum.Enum):
     """stores root level buckets for managing data processing state"""
 
     ADMIN = "admin"
@@ -18,15 +18,24 @@ class BucketPath(Enum):
     UPLOAD = "site_upload"
 
 
-class JsonFilename(Enum):
+class ColumnTypesKeys(enum.Enum):
+    """stores names of expected keys in the study period metadata dictionary"""
+
+    COLUMN_TYPES_FORMAT_VERSION = "column_types_format_version"
+    COLUMNS = "columns"
+    LAST_DATA_UPDATE = "last_data_update"
+
+
+class JsonFilename(enum.Enum):
     """stores names of expected kinds of persisted S3 JSON files"""
 
+    COLUMN_TYPES = "column_types"
     TRANSACTIONS = "transactions"
     DATA_PACKAGES = "data_packages"
     STUDY_PERIODS = "study_periods"
 
 
-class TransactionKeys(Enum):
+class TransactionKeys(enum.Enum):
     """stores names of expected keys in the transaction dictionary"""
 
     TRANSACTION_FORMAT_VERSION = "transaction_format_version"
@@ -37,7 +46,7 @@ class TransactionKeys(Enum):
     DELETED = "deleted"
 
 
-class StudyPeriodMetadataKeys(Enum):
+class StudyPeriodMetadataKeys(enum.Enum):
     """stores names of expected keys in the study period metadata dictionary"""
 
     STUDY_PERIOD_FORMAT_VERSION = "study_period_format_version"

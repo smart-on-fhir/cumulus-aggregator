@@ -1,7 +1,7 @@
 """ functions specifically requiring AWSWranger, which requires a lambda layer"""
 import awswrangler
 
-from .enums import BucketPath
+from src.handlers.shared.enums import BucketPath
 
 
 def get_s3_data_package_list(

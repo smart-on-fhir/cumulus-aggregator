@@ -6,10 +6,10 @@ from datetime import datetime, timezone
 import awswrangler
 import boto3
 
-from ..shared.awswrangler_functions import get_s3_study_meta_list
-from ..shared.decorators import generic_error_handler
-from ..shared.enums import JsonFilename, StudyPeriodMetadataKeys
-from ..shared.functions import (
+from src.handlers.shared.awswrangler_functions import get_s3_study_meta_list
+from src.handlers.shared.decorators import generic_error_handler
+from src.handlers.shared.enums import JsonFilename, StudyPeriodMetadataKeys
+from src.handlers.shared.functions import (
     http_response,
     read_metadata,
     update_metadata,
@@ -28,37 +28,40 @@ def update_study_period(s3_client, s3_bucket, site, study, data_package, version
     )
 
     study_meta = update_metadata(
-        study_meta,
-        site,
-        study,
-        data_package,
-        version,
-        StudyPeriodMetadataKeys.EARLIEST_DATE.value,
-        df["min_date"][0],
+        metadata=study_meta,
+        site=site,
+        study=study,
+        data_package=data_package,
+        version=version,
+        target=StudyPeriodMetadataKeys.EARLIEST_DATE.value,
+        dt=df["min_date"][0],
         meta_type=JsonFilename.STUDY_PERIODS.value,
     )
     study_meta = update_metadata(
-        study_meta,
-        site,
-        study,
-        data_package,
-        version,
-        StudyPeriodMetadataKeys.LATEST_DATE.value,
-        df["max_date"][0],
+        metadata=study_meta,
+        site=site,
+        study=study,
+        data_package=data_package,
+        version=version,
+        target=StudyPeriodMetadataKeys.LATEST_DATE.value,
+        dt=df["max_date"][0],
         meta_type=JsonFilename.STUDY_PERIODS.value,
     )
     study_meta = update_metadata(
-        study_meta,
-        site,
-        study,
-        data_package,
-        version,
-        StudyPeriodMetadataKeys.LAST_DATA_UPDATE.value,
-        datetime.now(timezone.utc),
+        metadata=study_meta,
+        site=site,
+        study=study,
+        data_package=data_package,
+        version=version,
+        target=StudyPeriodMetadataKeys.LAST_DATA_UPDATE.value,
+        dt=datetime.now(timezone.utc),
         meta_type=JsonFilename.STUDY_PERIODS.value,
     )
     write_metadata(
-        s3_client, s3_bucket, study_meta, meta_type=JsonFilename.STUDY_PERIODS.value
+        s3_client=s3_client,
+        s3_bucket_name=s3_bucket,
+        metadata=study_meta,
+        meta_type=JsonFilename.STUDY_PERIODS.value,
     )
 
 

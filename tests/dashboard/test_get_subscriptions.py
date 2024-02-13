@@ -2,7 +2,7 @@ import os
 from unittest import mock
 
 from src.handlers.dashboard.get_data_packages import data_packages_handler
-from tests.utils import DATA_PACKAGE_COUNT, MOCK_ENV
+from tests.mock_utils import DATA_PACKAGE_COUNT, MOCK_ENV
 
 
 @mock.patch.dict(os.environ, MOCK_ENV)
