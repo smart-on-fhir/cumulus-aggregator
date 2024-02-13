@@ -65,7 +65,7 @@ class HttpVerb:
     ALL = "*"
 
 
-class AuthPolicy:  # pylint: disable=missing-class-docstring; # pragma: no cover
+class AuthPolicy:
     awsAccountId = ""
     """The AWS account id the policy will be generated for. This is used to
     create the method ARNs."""

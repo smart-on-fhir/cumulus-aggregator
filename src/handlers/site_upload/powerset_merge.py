@@ -299,7 +299,7 @@ def merge_powersets(manager: S3Manager) -> None:
             manager.update_local_metadata(
                 TransactionKeys.LAST_AGGREGATION.value, site=latest_site
             )
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             manager.merge_error_handler(
                 latest_path,
                 subbucket_path,

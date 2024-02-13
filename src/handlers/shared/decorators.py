@@ -14,7 +14,7 @@ def generic_error_handler(msg="Internal server error"):
         def wrapper(*args, **kwargs):
             try:
                 res = func(*args, **kwargs)
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:
                 trace = []
                 tb = e.__traceback__
                 while tb is not None:
