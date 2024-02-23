@@ -92,20 +92,31 @@ def get_csv_list_handler(event, context):
         url_prefix = "aggregates"
     else:
         raise Exception("Unexpected url encountered")
-    s3_objs = s3_client.list_objects_v2(Bucket=s3_bucket_name, Prefix=key_prefix)
+
     urls = []
+    s3_objs = s3_client.list_objects_v2(Bucket=s3_bucket_name, Prefix=key_prefix)
     if s3_objs["KeyCount"] == 0:
         return functions.http_response(200, urls)
-    for obj in s3_objs["Contents"]:
-        key_parts = obj["Key"].split("/")
-        study = key_parts[1]
-        subscription = key_parts[2].split("__")[1]
-        version = key_parts[-2]
-        filename = key_parts[-1]
-        site = key_parts[3] if url_prefix == "last_valid" else None
-        url_parts = [url_prefix, study, subscription, version, filename]
-        if url_prefix == "last_valid":
-            url_parts.insert(3, site)
-        urls.append("/".join(url_parts))
+    while True:
+        for obj in s3_objs["Contents"]:
+            if obj["Key"].endswith("parquet"):
+                continue
+            key_parts = obj["Key"].split("/")
+            study = key_parts[1]
+            subscription = key_parts[2].split("__")[1]
+            version = key_parts[-2]
+            filename = key_parts[-1]
+            site = key_parts[3] if url_prefix == "last_valid" else None
+            url_parts = [url_prefix, study, subscription, version, filename]
+            if url_prefix == "last_valid":
+                url_parts.insert(3, site)
+            urls.append("/".join(url_parts))
+        if not s3_objs["IsTruncated"]:
+            break
+        s3_objs = s3_client.list_objects_v2(
+            Bucket=s3_bucket_name,
+            Prefix=key_prefix,
+            ContinuationToken=s3_objs["NextContinuationToken"],
+        )
     res = functions.http_response(200, urls)
     return res
