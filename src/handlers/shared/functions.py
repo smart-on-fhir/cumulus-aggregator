@@ -98,7 +98,10 @@ def update_metadata(
 
 
     It's assumed that, other than the version/column/type fields, every item in one
-    of these metadata dicts is a ISO date string corresponding to an S3 event timestamp
+    of these metadata dicts is a ISO date string corresponding to an S3 event timestamp.
+
+    TODO: if we have other cases of non-datetime metadata, consider breaking this
+    function into two, one for updating datetimes and one for updating values
     """
     check_meta_type(meta_type)
     match meta_type:
@@ -228,7 +231,7 @@ def get_csv_column_datatypes(dtypes):
             column_dict[column] = "week"
         elif column.endswith("day") or str(dtypes[column]) == "datetime64":
             column_dict[column] = "day"
-        elif "cnt" in column or str(dtypes[column]) in (
+        elif column.startswith("cnt") or str(dtypes[column]) in (
             "Int8",
             "Int16",
             "Int32",

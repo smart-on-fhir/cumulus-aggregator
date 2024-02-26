@@ -219,12 +219,10 @@ def test_powerset_merge_single_upload(
                 s3_client, TEST_BUCKET, meta_type=enums.JsonFilename.COLUMN_TYPES.value
             )
             if res["statusCode"] == 200:
-                assert (
-                    metadata[study][data_package.split("__")[1]][version][
-                        "last_data_update"
-                    ]
-                    == datetime.now(timezone.utc).isoformat()
-                )
+                last_update = metadata[study][data_package.split("__")[1]][version][
+                    "last_data_update"
+                ]
+                assert last_update == datetime.now(timezone.utc).isoformat()
 
             else:
                 assert (

@@ -107,6 +107,9 @@ class S3Manager:
         meta_type: str | None = enums.JsonFilename.TRANSACTIONS.value,
     ):
         """convenience wrapper for update_metadata"""
+        # We are excluding COLUMN_TYPES explicitly from this first check because,
+        # by design, it should never have a site field in it - the column types
+        # are tied to the study version, not a specific site's data
         if site is None and meta_type != enums.JsonFilename.COLUMN_TYPES.value:
             site = self.site
         if metadata is None:
@@ -126,10 +129,8 @@ class S3Manager:
         self, metadata: dict | None = None, meta_type: str | None = None
     ):
         """convenience wrapper for write_metadata"""
-        if metadata is None:
-            metadata = self.metadata
-        if meta_type is None:
-            meta_type = enums.JsonFilename.TRANSACTIONS.value
+        metadata = metadata or self.metadata
+        meta_type = meta_type or enums.JsonFilename.TRANSACTIONS.value
         functions.write_metadata(
             s3_client=self.s3_client,
             s3_bucket_name=self.s3_bucket_name,

@@ -6,7 +6,7 @@ import botocore
 from src.handlers.shared import decorators, enums, functions
 
 
-def _format_key(
+def _format_and_validate_key(
     s3_client,
     s3_bucket_name: str,
     study: str,
@@ -20,7 +20,6 @@ def _format_key(
         key = f"last_valid/{study}/{study}__{subscription}/{site}/{version}/{filename}"
     else:
         key = f"csv_aggregates/{study}/{study}__{subscription}/{version}/{filename}"
-    s3_client.list_objects_v2(Bucket=s3_bucket_name)
     try:
         s3_client.head_object(Bucket=s3_bucket_name, Key=key)
         return key
@@ -56,7 +55,7 @@ def get_csv_handler(event, context):
     del context
     s3_bucket_name = os.environ.get("BUCKET_NAME")
     s3_client = boto3.client("s3")
-    key = _format_key(s3_client, s3_bucket_name, **event["pathParameters"])
+    key = _format_and_validate_key(s3_client, s3_bucket_name, **event["pathParameters"])
     types = _get_column_types(s3_client, s3_bucket_name, **event["pathParameters"])
     presign_url = s3_client.generate_presigned_url(
         "get_object",
@@ -99,7 +98,7 @@ def get_csv_list_handler(event, context):
         return functions.http_response(200, urls)
     while True:
         for obj in s3_objs["Contents"]:
-            if obj["Key"].endswith("parquet"):
+            if not obj["Key"].endswith(".csv"):
                 continue
             key_parts = obj["Key"].split("/")
             study = key_parts[1]
