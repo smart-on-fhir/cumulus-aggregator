@@ -7,8 +7,8 @@ https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/d49e
 import os
 import re
 
-from ..shared.enums import BucketPath
-from ..shared.functions import get_s3_json_as_dict
+from src.handlers.shared.enums import BucketPath
+from src.handlers.shared.functions import get_s3_json_as_dict
 
 
 class AuthError(Exception):

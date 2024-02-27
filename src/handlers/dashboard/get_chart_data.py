@@ -7,10 +7,10 @@ import awswrangler
 import boto3
 import pandas
 
-from ..dashboard.filter_config import get_filter_string
-from ..shared.decorators import generic_error_handler
-from ..shared.enums import BucketPath
-from ..shared.functions import get_latest_data_package_version, http_response
+from src.handlers.dashboard.filter_config import get_filter_string
+from src.handlers.shared.decorators import generic_error_handler
+from src.handlers.shared.enums import BucketPath
+from src.handlers.shared.functions import get_latest_data_package_version, http_response
 
 
 def _get_table_cols(table_name: str, version: str | None = None) -> list:

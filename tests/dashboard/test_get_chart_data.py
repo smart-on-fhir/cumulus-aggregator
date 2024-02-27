@@ -6,7 +6,7 @@ import pandas
 import pytest
 
 from src.handlers.dashboard import get_chart_data
-from tests.utils import (
+from tests.mock_utils import (
     EXISTING_DATA_P,
     EXISTING_STUDY,
     MOCK_ENV,

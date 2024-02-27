@@ -3,13 +3,13 @@ from contextlib import nullcontext as does_not_raise
 import pytest
 
 from src.handlers.site_upload import api_gateway_authorizer
-from tests import utils
+from tests import mock_utils
 
 
 @pytest.mark.parametrize(
     "auth,expects",
     [
-        (f"Basic {next(iter(utils.get_mock_auth().keys()))}", does_not_raise()),
+        (f"Basic {next(iter(mock_utils.get_mock_auth().keys()))}", does_not_raise()),
         ("Basic other_auth", pytest.raises(api_gateway_authorizer.AuthError)),
         (None, pytest.raises(AttributeError)),
     ],

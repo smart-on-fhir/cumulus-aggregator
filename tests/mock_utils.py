@@ -6,7 +6,7 @@ TEST_GLUE_DB = "cumulus-aggregator-test-db"
 TEST_PROCESS_COUNTS_ARN = "arn:aws:sns:us-east-1:123456789012:test-counts"
 TEST_PROCESS_STUDY_META_ARN = "arn:aws:sns:us-east-1:123456789012:test-meta"
 TEST_CACHE_API_ARN = "arn:aws:sns:us-east-1:123456789012:test-cache"
-ITEM_COUNT = 9
+ITEM_COUNT = 10
 DATA_PACKAGE_COUNT = 2
 
 EXISTING_SITE = "princeton_plainsboro_teaching_hospital"
@@ -107,6 +107,26 @@ def get_mock_study_metadata():
                 }
             }
         },
+    }
+
+
+def get_mock_column_types_metadata():
+    return {
+        EXISTING_STUDY: {
+            EXISTING_DATA_P: {
+                EXISTING_VERSION: {
+                    "column_types_format_version": "1",
+                    "columns": {
+                        "cnt": "integer",
+                        "gender": "string",
+                        "age": "integer",
+                        "race_display": "string",
+                        "site": "string",
+                    },
+                    "last_data_update": "2023-02-24T15:08:07.771080+00:00",
+                }
+            }
+        }
     }
 
 

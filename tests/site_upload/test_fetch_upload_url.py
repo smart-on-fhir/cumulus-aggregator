@@ -4,7 +4,7 @@ import pytest
 
 from src.handlers.shared.enums import BucketPath
 from src.handlers.site_upload.fetch_upload_url import upload_url_handler
-from tests.utils import (
+from tests.mock_utils import (
     EXISTING_DATA_P,
     EXISTING_SITE,
     EXISTING_STUDY,

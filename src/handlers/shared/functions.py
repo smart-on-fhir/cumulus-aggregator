@@ -6,26 +6,34 @@ from datetime import datetime, timezone
 
 import boto3
 
-from .enums import BucketPath, JsonFilename, StudyPeriodMetadataKeys, TransactionKeys
+from src.handlers.shared import enums
 
 TRANSACTION_METADATA_TEMPLATE = {
-    TransactionKeys.TRANSACTION_FORMAT_VERSION.value: "2",
-    TransactionKeys.LAST_UPLOAD.value: None,
-    TransactionKeys.LAST_DATA_UPDATE.value: None,
-    TransactionKeys.LAST_AGGREGATION.value: None,
-    TransactionKeys.LAST_ERROR.value: None,
-    TransactionKeys.DELETED.value: None,
+    enums.TransactionKeys.TRANSACTION_FORMAT_VERSION.value: "2",
+    enums.TransactionKeys.LAST_UPLOAD.value: None,
+    enums.TransactionKeys.LAST_DATA_UPDATE.value: None,
+    enums.TransactionKeys.LAST_AGGREGATION.value: None,
+    enums.TransactionKeys.LAST_ERROR.value: None,
+    enums.TransactionKeys.DELETED.value: None,
 }
 
 STUDY_PERIOD_METADATA_TEMPLATE = {
-    StudyPeriodMetadataKeys.STUDY_PERIOD_FORMAT_VERSION.value: "2",
-    StudyPeriodMetadataKeys.EARLIEST_DATE.value: None,
-    StudyPeriodMetadataKeys.LATEST_DATE.value: None,
-    StudyPeriodMetadataKeys.LAST_DATA_UPDATE.value: None,
+    enums.StudyPeriodMetadataKeys.STUDY_PERIOD_FORMAT_VERSION.value: "2",
+    enums.StudyPeriodMetadataKeys.EARLIEST_DATE.value: None,
+    enums.StudyPeriodMetadataKeys.LATEST_DATE.value: None,
+    enums.StudyPeriodMetadataKeys.LAST_DATA_UPDATE.value: None,
+}
+
+COLUMN_TYPES_METADATA_TEMPLATE = {
+    enums.ColumnTypesKeys.COLUMN_TYPES_FORMAT_VERSION.value: "1",
+    enums.ColumnTypesKeys.COLUMNS.value: None,
+    enums.ColumnTypesKeys.LAST_DATA_UPDATE.value: None,
 }
 
 
-def http_response(status: int, body: str, allow_cors: bool = False) -> dict:
+def http_response(
+    status: int, body: str, allow_cors: bool = False, extra_headers: dict | None = None
+) -> dict:
     """Generates the payload AWS lambda expects as a return value"""
     headers = {"Content-Type": "application/json"}
     if allow_cors:
@@ -36,6 +44,8 @@ def http_response(status: int, body: str, allow_cors: bool = False) -> dict:
                 "Access-Control-Allow-Methods": "GET",
             }
         )
+    if extra_headers:
+        headers.update(extra_headers)
     return {
         "isBase64Encoded": False,
         "statusCode": status,
@@ -49,17 +59,20 @@ def http_response(status: int, body: str, allow_cors: bool = False) -> dict:
 
 def check_meta_type(meta_type: str) -> None:
     """helper for ensuring specified metadata types"""
-    types = [item.value for item in JsonFilename]
+    types = [item.value for item in enums.JsonFilename]
     if meta_type not in types:
         raise ValueError("invalid metadata type specified")
 
 
 def read_metadata(
-    s3_client, s3_bucket_name: str, meta_type: str = JsonFilename.TRANSACTIONS.value
+    s3_client,
+    s3_bucket_name: str,
+    *,
+    meta_type: str = enums.JsonFilename.TRANSACTIONS.value,
 ) -> dict:
     """Reads transaction information from an s3 bucket as a dictionary"""
     check_meta_type(meta_type)
-    s3_path = f"{BucketPath.META.value}/{meta_type}.json"
+    s3_path = f"{enums.BucketPath.META.value}/{meta_type}.json"
     res = s3_client.list_objects_v2(Bucket=s3_bucket_name, Prefix=s3_path)
     if "Contents" in res:
         res = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_path)
@@ -70,53 +83,76 @@ def read_metadata(
 
 
 def update_metadata(
+    *,
     metadata: dict,
-    site: str,
     study: str,
     data_package: str,
     version: str,
     target: str,
+    site: str | None = None,
     dt: datetime | None = None,
-    meta_type: str = JsonFilename.TRANSACTIONS.value,
+    value: str | list | None = None,
+    meta_type: str | None = enums.JsonFilename.TRANSACTIONS.value,
 ):
     """Safely updates items in metadata dictionary
 
 
-    It's assumed that, other than the version field itself, every item in one
-    of these metadata dicts is a datetime corresponding to an S3 event timestamp
+    It's assumed that, other than the version/column/type fields, every item in one
+    of these metadata dicts is a ISO date string corresponding to an S3 event timestamp.
+
+    TODO: if we have other cases of non-datetime metadata, consider breaking this
+    function into two, one for updating datetimes and one for updating values
     """
     check_meta_type(meta_type)
-    if meta_type == JsonFilename.TRANSACTIONS.value:
-        site_metadata = metadata.setdefault(site, {})
-        study_metadata = site_metadata.setdefault(study, {})
-        data_package_metadata = study_metadata.setdefault(data_package, {})
-        data_version_metadata = data_package_metadata.setdefault(
-            version, TRANSACTION_METADATA_TEMPLATE
-        )
-        dt = dt or datetime.now(timezone.utc)
-        data_version_metadata[target] = dt.isoformat()
-    elif meta_type == JsonFilename.STUDY_PERIODS.value:
-        site_metadata = metadata.setdefault(site, {})
-        study_period_metadata = site_metadata.setdefault(study, {})
-        data_version_metadata = study_period_metadata.setdefault(
-            version, STUDY_PERIOD_METADATA_TEMPLATE
-        )
-        dt = dt or datetime.now(timezone.utc)
-        data_version_metadata[target] = dt.isoformat()
+    match meta_type:
+        case enums.JsonFilename.TRANSACTIONS.value:
+            site_metadata = metadata.setdefault(site, {})
+            study_metadata = site_metadata.setdefault(study, {})
+            data_package_metadata = study_metadata.setdefault(data_package, {})
+            data_version_metadata = data_package_metadata.setdefault(
+                version, TRANSACTION_METADATA_TEMPLATE
+            )
+            dt = dt or datetime.now(timezone.utc)
+            data_version_metadata[target] = dt.isoformat()
+        case enums.JsonFilename.STUDY_PERIODS.value:
+            site_metadata = metadata.setdefault(site, {})
+            study_period_metadata = site_metadata.setdefault(study, {})
+            data_version_metadata = study_period_metadata.setdefault(
+                version, STUDY_PERIOD_METADATA_TEMPLATE
+            )
+            dt = dt or datetime.now(timezone.utc)
+            data_version_metadata[target] = dt.isoformat()
+        case enums.JsonFilename.COLUMN_TYPES.value:
+            study_metadata = metadata.setdefault(study, {})
+            data_package_metadata = study_metadata.setdefault(data_package, {})
+            data_version_metadata = data_package_metadata.setdefault(
+                version, COLUMN_TYPES_METADATA_TEMPLATE
+            )
+            if target == enums.ColumnTypesKeys.COLUMNS.value:
+                data_version_metadata[target] = value
+            else:
+                dt = dt or datetime.now(timezone.utc)
+                data_version_metadata[target] = dt.isoformat()
+        # Should only be hit if you add a new JSON dict and forget to add it
+        # to this function
+        case _:
+            raise OSError(f"{meta_type} does not have a handler for updates.")
     return metadata
 
 
 def write_metadata(
+    *,
     s3_client,
     s3_bucket_name: str,
     metadata: dict,
-    meta_type: str = JsonFilename.TRANSACTIONS.value,
+    meta_type: str = enums.JsonFilename.TRANSACTIONS.value,
 ) -> None:
     """Writes transaction info from ∏a dictionary to an s3 bucket metadata location"""
     check_meta_type(meta_type)
+
     s3_client.put_object(
         Bucket=s3_bucket_name,
-        Key=f"{BucketPath.META.value}/{meta_type}.json",
+        Key=f"{enums.BucketPath.META.value}/{meta_type}.json",
         Body=json.dumps(metadata),
     )
 
@@ -181,3 +217,35 @@ def get_latest_data_package_version(bucket, prefix):
     if highest_ver is None:
         logging.error("No data package versions found for %s", prefix)
     return highest_ver
+
+
+def get_csv_column_datatypes(dtypes):
+    """helper for generating column type for dashboard API"""
+    column_dict = {}
+    for column in dtypes.index:
+        if column.endswith("year"):
+            column_dict[column] = "year"
+        elif column.endswith("month"):
+            column_dict[column] = "month"
+        elif column.endswith("week"):
+            column_dict[column] = "week"
+        elif column.endswith("day") or str(dtypes[column]) == "datetime64":
+            column_dict[column] = "day"
+        elif column.startswith("cnt") or str(dtypes[column]) in (
+            "Int8",
+            "Int16",
+            "Int32",
+            "Int64",
+            "UInt8",
+            "UInt16",
+            "UInt32",
+            "UInt64",
+        ):
+            column_dict[column] = "integer"
+        elif str(dtypes[column]) in ("Float32", "Float64"):
+            column_dict[column] = "float"
+        elif str(dtypes[column]) == "boolean":
+            column_dict[column] = "float"
+        else:
+            column_dict[column] = "string"
+    return column_dict

@@ -3,7 +3,7 @@
 import functools
 import logging
 
-from .functions import http_response
+from src.handlers.shared.functions import http_response
 
 
 def generic_error_handler(msg="Internal server error"):

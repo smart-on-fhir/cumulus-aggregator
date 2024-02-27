@@ -7,7 +7,7 @@ from freezegun import freeze_time
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import read_metadata
 from src.handlers.site_upload.process_upload import process_upload_handler
-from tests.utils import (
+from tests.mock_utils import (
     EXISTING_DATA_P,
     EXISTING_SITE,
     EXISTING_STUDY,
@@ -175,6 +175,7 @@ def test_process_upload(
                 or item["Key"].startswith(BucketPath.ADMIN.value)
                 or item["Key"].startswith(BucketPath.CACHE.value)
                 or item["Key"].endswith("study_periods.json")
+                or item["Key"].endswith("column_types.json")
             )
         if found_archive:
             assert "template" in upload_path

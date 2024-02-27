@@ -28,19 +28,9 @@ import boto3
 import pytest
 from moto import mock_athena, mock_s3, mock_sns
 
-from scripts.credential_management import create_auth, create_meta
-from src.handlers.shared.enums import BucketPath, JsonFilename
-from src.handlers.shared.functions import write_metadata
-from tests.utils import (
-    EXISTING_DATA_P,
-    EXISTING_STUDY,
-    EXISTING_VERSION,
-    ITEM_COUNT,
-    MOCK_ENV,
-    OTHER_STUDY,
-    get_mock_metadata,
-    get_mock_study_metadata,
-)
+from scripts import credential_management
+from src.handlers.shared import enums, functions
+from tests import mock_utils
 
 
 def _init_mock_data(s3_client, bucket, study, data_package, version):
@@ -57,25 +47,25 @@ def _init_mock_data(s3_client, bucket, study, data_package, version):
     s3_client.upload_file(
         "./tests/test_data/count_synthea_patient_agg.parquet",
         bucket,
-        f"{BucketPath.AGGREGATE.value}/{study}/"
+        f"{enums.BucketPath.AGGREGATE.value}/{study}/"
         f"{study}__{data_package}/{version}/{study}__{data_package}__aggregate.parquet",
     )
     s3_client.upload_file(
         "./tests/test_data/count_synthea_patient_agg.csv",
         bucket,
-        f"{BucketPath.CSVAGGREGATE.value}/{study}/"
+        f"{enums.BucketPath.CSVAGGREGATE.value}/{study}/"
         f"{study}__{data_package}/{version}/{study}__{data_package}__aggregate.csv",
     )
     s3_client.upload_file(
         "./tests/test_data/data_packages_cache.json",
         bucket,
-        f"{BucketPath.CACHE.value}/{JsonFilename.DATA_PACKAGES.value}.json",
+        f"{enums.BucketPath.CACHE.value}/{enums.JsonFilename.DATA_PACKAGES.value}.json",
     )
 
 
 @pytest.fixture(autouse=True)
 def mock_env():
-    with mock.patch.dict(os.environ, MOCK_ENV):
+    with mock.patch.dict(os.environ, mock_utils.MOCK_ENV):
         yield
 
 
@@ -89,23 +79,49 @@ def mock_bucket():
     bucket = os.environ["BUCKET_NAME"]
     s3_client.create_bucket(Bucket=bucket)
     aggregate_params = [
-        [EXISTING_STUDY, EXISTING_DATA_P, EXISTING_VERSION],
-        [OTHER_STUDY, EXISTING_DATA_P, EXISTING_VERSION],
+        [
+            mock_utils.EXISTING_STUDY,
+            mock_utils.EXISTING_DATA_P,
+            mock_utils.EXISTING_VERSION,
+        ],
+        [
+            mock_utils.OTHER_STUDY,
+            mock_utils.EXISTING_DATA_P,
+            mock_utils.EXISTING_VERSION,
+        ],
     ]
     for param_list in aggregate_params:
         _init_mock_data(s3_client, bucket, *param_list)
 
-    create_auth(s3_client, bucket, "ppth_1", "test_1", "ppth")
-    create_meta(s3_client, bucket, "ppth", "princeton_plainsboro_teaching_hospital")
-    create_auth(s3_client, bucket, "elsewhere_2", "test_2", "elsewhere")
-    create_meta(s3_client, bucket, "elsewhere", "st_elsewhere")
-    create_auth(s3_client, bucket, "hope_3", "test_3", "hope")
-    create_meta(s3_client, bucket, "hope", "chicago_hope")
+    credential_management.create_auth(s3_client, bucket, "ppth_1", "test_1", "ppth")
+    credential_management.create_meta(
+        s3_client, bucket, "ppth", "princeton_plainsboro_teaching_hospital"
+    )
+    credential_management.create_auth(
+        s3_client, bucket, "elsewhere_2", "test_2", "elsewhere"
+    )
+    credential_management.create_meta(s3_client, bucket, "elsewhere", "st_elsewhere")
+    credential_management.create_auth(s3_client, bucket, "hope_3", "test_3", "hope")
+    credential_management.create_meta(s3_client, bucket, "hope", "chicago_hope")
 
-    metadata = get_mock_metadata()
-    write_metadata(s3_client, bucket, metadata)
-    study_metadata = get_mock_study_metadata()
-    write_metadata(s3_client, bucket, study_metadata, meta_type="study_periods")
+    metadata = mock_utils.get_mock_metadata()
+    functions.write_metadata(
+        s3_client=s3_client, s3_bucket_name=bucket, metadata=metadata
+    )
+    study_metadata = mock_utils.get_mock_study_metadata()
+    functions.write_metadata(
+        s3_client=s3_client,
+        s3_bucket_name=bucket,
+        metadata=study_metadata,
+        meta_type=enums.JsonFilename.STUDY_PERIODS.value,
+    )
+    column_types_metadata = mock_utils.get_mock_column_types_metadata()
+    functions.write_metadata(
+        s3_client=s3_client,
+        s3_bucket_name=bucket,
+        metadata=column_types_metadata,
+        meta_type=enums.JsonFilename.COLUMN_TYPES.value,
+    )
     yield
     s3.stop()
 
@@ -114,7 +130,7 @@ def mock_bucket():
 def mock_notification():
     """Mocks for SNS topics.
 
-    Make sure the topic name matches the end of the ARN defined in utils.py"""
+    Make sure the topic name matches the end of the ARN defined in mock_utils.py"""
     sns = mock_sns()
     sns.start()
     sns_client = boto3.client("sns", region_name="us-east-1")
@@ -152,4 +168,4 @@ def mock_db():
 def test_mock_bucket():
     s3_client = boto3.client("s3", region_name="us-east-1")
     item = s3_client.list_objects_v2(Bucket=os.environ["TEST_BUCKET"])
-    assert (len(item["Contents"])) == ITEM_COUNT
+    assert (len(item["Contents"])) == mock_utils.ITEM_COUNT
