@@ -70,8 +70,9 @@ def get_csv_handler(event, context):
         "Location": presign_url,
         "x-column-names": ",".join(key for key in types.keys()),
         "x-column-types": ",".join(key for key in types.values()),
-        # TODO: add x-column-descriptions once a source for column descriptions
+        # TODO: add data to x-column-descriptions once a source for column descriptions
         # has been established
+        "x-column-descriptions": "",
     }
     res = functions.http_response(302, "", extra_headers=extra_headers)
     return res
