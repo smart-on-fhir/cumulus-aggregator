@@ -34,17 +34,18 @@ Parameters:
     AllowedValues:
       - dev
       - test
+      - regression
       - prod
-  #AggregatorDomainName:
-  #  Type: String
-  #DashboardApiDomainName:
-  #  Type: String
-  #AggregatorCertArn:
-  #  Type: String
-  #DashboardApiCertArn:
-  #  Type: String
-  #AggregatorHostedZoneID:
-  #  Type: String
+  AggregatorDomainName:
+    Type: String
+  DashboardApiDomainName:
+    Type: String
+  AggregatorCertArn:
+    Type: String
+  DashboardApiCertArn:
+    Type: String
+  AggregatorHostedZoneID:
+    Type: String
   RetentionTime:
     Type: Number
 
@@ -71,6 +72,13 @@ Resources:
       Policies:
         - S3ReadPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+        - Statement:
+          - Sid: KMSDecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
 
   FetchAuthorizerLogGroup:
     Type: AWS::Logs::LogGroup
@@ -101,6 +109,13 @@ Resources:
       Policies:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+        - Statement:
+          - Sid: KMSDecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
 
   FetchUploadUrlLogGroup:
     Type: AWS::Logs::LogGroup
@@ -129,6 +144,13 @@ Resources:
             TopicName: !GetAtt SNSTopicProcessCounts.TopicName
         - SNSPublishMessagePolicy:
             TopicName: !GetAtt SNSTopicProcessStudyMeta.TopicName
+        - Statement:
+          - Sid: KMSDecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
 
   ProcessUploadLogGroup:
     Type: AWS::Logs::LogGroup
@@ -160,6 +182,13 @@ Resources:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
         - SNSPublishMessagePolicy:
             TopicName: !GetAtt SNSTopicCacheAPI.TopicName
+        - Statement:
+          - Sid: KMSDecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
 
   PowersetMergeLogGroup:
     Type: AWS::Logs::LogGroup
@@ -188,6 +217,13 @@ Resources:
       Policies:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+        - Statement:
+          - Sid: KMSDecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
 
   StudyPeriodLogGroup:
     Type: AWS::Logs::LogGroup
@@ -234,6 +270,13 @@ Resources:
             Action:
               - athena:*
             Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}'
+        - Statement:
+          - Sid: KMSDecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
 
   CacheAPILogGroup:
     Type: AWS::Logs::LogGroup
@@ -242,77 +285,6 @@ Resources:
       RetentionInDays: !Ref RetentionTime
 
   # Dashboard API
-
-  DashboardGetCsvFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub 'CumulusAggDashboardGetCsv-${DeployStage}'
-      Handler: src/handlers/dashboard/get_csv.get_csv_handler
-      Runtime: python3.10
-      MemorySize: 128
-      Timeout: 100
-      Description: Redirect to presigned URL for download of aggregate CSVs
-      Environment:
-        Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
-      Events:
-        GetAggregateAPI:
-          Type: Api
-          Properties:
-            RestApiId: !Ref DashboardApiGateway
-            Path: /aggregates/{study}/{subscription}/{version}/{filename}
-            Method: GET
-        GetLastValidAPI:
-          Type: Api
-          Properties:
-            RestApiId: !Ref DashboardApiGateway
-            Path: /last_valid/{study}/{subscription}/{site}/{version}/{filename}
-            Method: GET
-      Policies:
-        - S3ReadPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
-
-  DashboardGetCsvLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${DashboardGetCsvFunction}"
-      RetentionInDays: !Ref RetentionTime
-
-
-  DashboardGetCsvListFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub 'CumulusAggDashboardGetCsvList-${DeployStage}'
-      Handler: src/handlers/dashboard/get_csv.get_csv_list_handler
-      Runtime: python3.10
-      MemorySize: 128
-      Timeout: 100
-      Description: List all available csvs from the aggregator
-      Environment:
-        Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
-      Events:
-        GetAggregateAPI:
-          Type: Api
-          Properties:
-            RestApiId: !Ref DashboardApiGateway
-            Path: /aggregates/
-            Method: GET
-        GetLastValidAPI:
-          Type: Api
-          Properties:
-            RestApiId: !Ref DashboardApiGateway
-            Path: /last_valid/
-            Method: GET
-      Policies:
-        - S3ReadPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
-
-  DashboardGetCsvListLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${DashboardGetCsvListFunction}"
-      RetentionInDays: !Ref RetentionTime
 
   DashboardGetChartDataFunction:
     Type: AWS::Serverless::Function
@@ -355,12 +327,104 @@ Resources:
             Action:
               - athena:*
             Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}'
+        - Statement:
+          - Sid: DecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
 
   DashboardGetChartDataLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${DashboardGetChartDataFunction}"
       RetentionInDays: !Ref RetentionTime
+
+  DashboardGetCsvFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggDashboardGetCsv-${DeployStage}'
+      Handler: src/handlers/dashboard/get_csv.get_csv_handler
+      Runtime: python3.10
+      MemorySize: 128
+      Timeout: 100
+      Description: Redirect to presigned URL for download of aggregate CSVs
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+      Events:
+        GetAggregateAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /aggregates/{study}/{subscription}/{version}/{filename}
+            Method: GET
+        GetLastValidAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /last_valid/{study}/{subscription}/{site}/{version}/{filename}
+            Method: GET
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+        - Statement:
+          - Sid: DecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
+
+  DashboardGetCsvLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${DashboardGetCsvFunction}"
+      RetentionInDays: !Ref RetentionTime
+
+  DashboardGetCsvListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggDashboardGetCsvList-${DeployStage}'
+      Handler: src/handlers/dashboard/get_csv.get_csv_list_handler
+      Runtime: python3.10
+      MemorySize: 128
+      Timeout: 100
+      Description: List all available csvs from the aggregator
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+      Events:
+        GetAggregateAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /aggregates/
+            Method: GET
+        GetLastValidAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /last_valid/
+            Method: GET
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+        - Statement:
+          - Sid: DecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
+
+  DashboardGetCsvListLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${DashboardGetCsvListFunction}"
+      RetentionInDays: !Ref RetentionTime
+
 
   DashboardGetMetadataFunction:
     Type: AWS::Serverless::Function
@@ -408,6 +472,13 @@ Resources:
       Policies:
         - S3ReadPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+        - Statement:
+          - Sid: KMSDecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
 
   DashboardGetMetadataLogGroup:
     Type: AWS::Logs::LogGroup
@@ -465,6 +536,13 @@ Resources:
               - athena:GetQueryExecution
               - athena:StopQueryExecution
             Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}'
+        - Statement:
+          - Sid: KMSDecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
 
   DashboardDataPackagesLogGroup:
     Type: AWS::Logs::LogGroup
@@ -506,6 +584,13 @@ Resources:
       Policies:
         - S3ReadPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+        - Statement:
+          - Sid: DecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
 
   DashboardGetStudyPeriodsLogGroup:
     Type: AWS::Logs::LogGroup
@@ -672,16 +757,15 @@ Resources:
             Identity:
               Headers: [Authorization]
         DefaultAuthorizer: FetchAuth
-      # If an external url is not required, delete/comment the Domain node
-      # TODO: removing pending cutover w/ BCH external gateway
-      #Domain:
-      #  DomainName: !Ref AggregatorDomainName
-      #  CertificateArn: !Ref AggregatorCertArn
-      #  EndpointConfiguration: EDGE
-      #  Route53:
-      #    HostedZoneId: !Ref AggregatorHostedZoneID
-      #  BasePath:
-      #    - upload
+# If your data API does not require external access, remove/comment this domain node
+      Domain:
+       DomainName: !Ref AggregatorDomainName
+       CertificateArn: !Ref AggregatorCertArn
+       EndpointConfiguration: EDGE
+       Route53:
+         HostedZoneId: !Ref AggregatorHostedZoneID
+       BasePath:
+         - upload
       Name: !Sub "CumulusAggregatorSiteAPI-${DeployStage}"
 #      MethodSettings:
 #        - LoggingLevel: INFO
@@ -702,20 +786,19 @@ Resources:
           Description: !Sub "Usage plan for Cumulus dashboard ${DeployStage} API"
           UsagePlanName: !Sub "CumulusAggregatorDashboardUsagePlan-${DeployStage}"
 # If your data API does not require external access, remove/comment this domain node
-      #TODO: removing pending BCH external API gateway cutover
-      #Domain:
-      #  DomainName: !Ref DashboardApiDomainName
-      #  CertificateArn: !Ref DashboardApiCertArn
-      #  EndpointConfiguration: EDGE
-      #  Route53:
-      #    HostedZoneId: !Ref AggregatorHostedZoneID
-
+      Domain:
+       DomainName: !Ref DashboardApiDomainName
+       CertificateArn: !Ref DashboardApiCertArn
+       EndpointConfiguration: EDGE
+       Route53:
+         HostedZoneId: !Ref AggregatorHostedZoneID
 #      MethodSettings:
 #        - LoggingLevel: INFO
 #          MetricsEnabled: True
 #          DataTraceEnabled: True
 #          ResourcePath: '/*' # allows for logging on any resource
 #          HttpMethod: '*' # allows for logging on any method
+
 
 ### Cloudwatch Logging infra for API gateway
 
@@ -747,6 +830,16 @@ Outputs:
     Description: "Site API Gateway endpoint URL"
     Value: !Sub "https://${SiteApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${DeployStage}/"
 
+  SiteAPIArn:
+    Value: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${SiteApiGateway}/stages/${DeployStage}"
+    Export:
+      Name: !Sub "${AWS::StackName}-SiteAPIArn"
+
   DashboardWebEndpoint:
     Description: "Dashboard API Gateway endpoint URL"
     Value: !Sub "https://${DashboardApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${DeployStage}/"
+
+  DashboardAPIArn:
+    Value: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${DashboardApiGateway}/stages/${DeployStage}"
+    Export:
+      Name: !Sub "${AWS::StackName}-DashboardAPIArn"

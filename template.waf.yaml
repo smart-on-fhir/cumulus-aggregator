@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  SAM stack for Cumulus aggregator
+
+
+Parameters:
+  DeployStage:
+    Type: String
+    AllowedValues:
+      - dev
+      - test
+      - regression
+      - prod
+  WAFArn:
+    Type: String
+
+Resources:
+  SiteWebACLAssociation:
+    Type: 'AWS::WAFv2::WebACLAssociation'
+    Properties:
+      WebACLArn: !Ref WAFArn
+      ResourceArn: 
+        Fn::ImportValue: !Sub "cumulus-aggregator-${DeployStage}-SiteAPIArn"
+
+  DashboardWebACLAssociation:
+    Type: 'AWS::WAFv2::WebACLAssociation'
+    Properties:
+      WebACLArn: !Ref WAFArn
+      ResourceArn: 
+        Fn::ImportValue: !Sub "cumulus-aggregator-${DeployStage}-DashboardAPIArn"
