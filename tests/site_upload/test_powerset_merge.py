@@ -377,7 +377,7 @@ def test_parquet_to_csv(mock_bucket):
     )
     assert list(df["race"].dropna().unique()) == [
         "White",
-        "Black or African American",
+        "Black, or African American",
         "Asian",
-        "American Indian or Alaska Native",
+        "American Indian, or Alaska Native",
     ]
