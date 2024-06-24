@@ -228,8 +228,6 @@ def generate_csv_from_parquet(bucket_name: str, bucket_root: str, subbucket_path
     last_valid_df = last_valid_df.apply(
         lambda x: x.strip() if isinstance(x, str) else x
     ).replace('""', numpy.nan)
-    # Here we are removing internal commas from fields so we get a valid unquoted CSV
-    last_valid_df = last_valid_df.replace(to_replace=",", value="", regex=True)
     awswrangler.s3.to_csv(
         last_valid_df,
         (
@@ -238,7 +236,7 @@ def generate_csv_from_parquet(bucket_name: str, bucket_root: str, subbucket_path
             )
         ),
         index=False,
-        quoting=csv.QUOTE_NONE,
+        quoting=csv.QUOTE_MINIMAL,
     )
 
 
