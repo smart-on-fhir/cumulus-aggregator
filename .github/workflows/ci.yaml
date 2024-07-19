@@ -1,5 +1,13 @@
 name: CI
-on: [push]
+on: 
+  pull_request:
+    paths-ignore:
+      - 'docs/**' 
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'docs/**'
 jobs:
   unittest:
     name: unit tests
@@ -18,7 +26,20 @@ jobs:
           pip install ".[test]"
       - name: Test with pytest
         run: |
-          export AWS_DEFAULT_REGION=us-east-1; python -m pytest
+          export AWS_DEFAULT_REGION=us-east-1; python -m pytest --cov-report xml --cov=src tests
+
+      - name: Log missing coverage
+        run: |
+          coverage report -m --skip-covered
+      - name: Generate coverage report
+        if: github.ref != 'refs/heads/main'
+        uses: orgoro/coverage@v3.1
+        with:
+            coverageFile: coverage.xml
+            token: ${{ secrets.GITHUB_TOKEN }}
+            thresholdAll: .9
+            thresholdNew: 1
+            thresholdModified: .95
 
   lint:
     runs-on: ubuntu-22.04

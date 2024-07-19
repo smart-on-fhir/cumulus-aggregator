@@ -43,6 +43,7 @@ test = [
     "freezegun",
     "moto[s3,athena,sns] == 4.1.5",
     "pytest",
+    "pytest-cov",
     "pytest-mock"
 ]
 dev = [
