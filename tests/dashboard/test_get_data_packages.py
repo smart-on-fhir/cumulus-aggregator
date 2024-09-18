@@ -11,3 +11,4 @@ def test_get_data_packages(mock_bucket):
     assert res["statusCode"] == 200
     assert DATA_PACKAGE_COUNT == 2
     assert "Access-Control-Allow-Origin" in res["headers"]
+    assert res["body"] == '["study__encounter", "other_study__encounter"]'
