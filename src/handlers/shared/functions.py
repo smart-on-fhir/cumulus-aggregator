@@ -49,7 +49,7 @@ def http_response(
     return {
         "isBase64Encoded": False,
         "statusCode": status,
-        "body": json.dumps(body),
+        "body": json.dumps(body, default=str),
         "headers": headers,
     }
 
@@ -93,6 +93,7 @@ def update_metadata(
     dt: datetime | None = None,
     value: str | list | None = None,
     meta_type: str | None = enums.JsonFilename.TRANSACTIONS.value,
+    extra_items: dict | None = None,
 ):
     """Safely updates items in metadata dictionary
 
@@ -103,6 +104,8 @@ def update_metadata(
     TODO: if we have other cases of non-datetime metadata, consider breaking this
     function into two, one for updating datetimes and one for updating values
     """
+    if extra_items is None:
+        extra_items = {}
     check_meta_type(meta_type)
     match meta_type:
         case enums.JsonFilename.TRANSACTIONS.value:
@@ -137,6 +140,8 @@ def update_metadata(
         # to this function
         case _:
             raise OSError(f"{meta_type} does not have a handler for updates.")
+    for k, v in extra_items.items():
+        data_version_metadata[k] = v
     return metadata
 
 
@@ -153,7 +158,7 @@ def write_metadata(
     s3_client.put_object(
         Bucket=s3_bucket_name,
         Key=f"{enums.BucketPath.META.value}/{meta_type}.json",
-        Body=json.dumps(metadata),
+        Body=json.dumps(metadata, default=str),
     )
 
 
@@ -219,7 +224,7 @@ def get_latest_data_package_version(bucket, prefix):
     return highest_ver
 
 
-def get_csv_column_datatypes(dtypes):
+def get_column_datatypes(dtypes):
     """helper for generating column type for dashboard API"""
     column_dict = {}
     for column in dtypes.index:
@@ -245,7 +250,7 @@ def get_csv_column_datatypes(dtypes):
         elif str(dtypes[column]) in ("Float32", "Float64"):
             column_dict[column] = "float"
         elif str(dtypes[column]) == "boolean":
-            column_dict[column] = "float"
+            column_dict[column] = "boolean"
         else:
             column_dict[column] = "string"
     return column_dict

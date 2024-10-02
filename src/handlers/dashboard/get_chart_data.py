@@ -37,7 +37,7 @@ def _get_table_cols(table_name: str, version: str | None = None) -> list:
 
 def _build_query(query_params: dict, filters: list, path_params: dict) -> str:
     """Creates a query from the dashboard API spec"""
-    table = path_params["subscription_name"]
+    table = path_params["data_package"]
     columns = _get_table_cols(table)
     filter_str = get_filter_string(filters)
     if filter_str != "":

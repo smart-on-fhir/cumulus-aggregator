@@ -9,7 +9,7 @@ from tests.mock_utils import MOCK_ENV, get_mock_data_packages_cache
 
 
 def mock_data_packages(*args, **kwargs):
-    return pandas.DataFrame(get_mock_data_packages_cache())
+    return pandas.DataFrame(get_mock_data_packages_cache(), columns=["table_name"])
 
 
 @mock.patch.dict(os.environ, MOCK_ENV)

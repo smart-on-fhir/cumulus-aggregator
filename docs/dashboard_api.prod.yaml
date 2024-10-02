@@ -3,72 +3,20 @@ info:
   title: "CumulusAggregatorDashboardApi"
   version: "1.0"
 servers:
-- url: "https://aggregator.smartcumulus.org/{basePath}"
+- url: "https://aggregator.smartcumulus.org/"
   variables:
     basePath:
       default: "/"
 paths:
-  /metadata/{site}/{study}/{subscription}:
-    get:
-      parameters:
-      - name: "study"
-        in: "path"
-        required: true
-        schema:
-          type: "string"
-      - name: "site"
-        in: "path"
-        required: true
-        schema:
-          type: "string"
-      - name: "subscription"
-        in: "path"
-        required: true
-        schema:
-          type: "string"
-      security:
-      - api_key: []
-    options:
-      parameters:
-      - name: "study"
-        in: "path"
-        required: true
-        schema:
-          type: "string"
-      - name: "site"
-        in: "path"
-        required: true
-        schema:
-          type: "string"
-      - name: "subscription"
-        in: "path"
-        required: true
-        schema:
-          type: "string"
-      responses:
-        "200":
-          description: "200 response"
-          headers:
-            Access-Control-Allow-Origin:
-              schema:
-                type: "string"
-            Access-Control-Allow-Methods:
-              schema:
-                type: "string"
-            Access-Control-Allow-Headers:
-              schema:
-                type: "string"
-          content: {}
-      security:
-      - api_key: []
   /data_packages:
     get:
       security:
       - api_key: []
     options:
+      summary: "CORS support"
       responses:
         "200":
-          description: "200 response"
+          description: "Default response for CORS method"
           headers:
             Access-Control-Allow-Origin:
               schema:
@@ -87,9 +35,10 @@ paths:
       security:
       - api_key: []
     options:
+      summary: "CORS support"
       responses:
         "200":
-          description: "200 response"
+          description: "Default response for CORS method"
           headers:
             Access-Control-Allow-Origin:
               schema:
@@ -114,6 +63,7 @@ paths:
       security:
       - api_key: []
     options:
+      summary: "CORS support"
       parameters:
       - name: "subscription_name"
         in: "path"
@@ -122,7 +72,7 @@ paths:
           type: "string"
       responses:
         "200":
-          description: "200 response"
+          description: "Default response for CORS method"
           headers:
             Access-Control-Allow-Origin:
               schema:
@@ -136,26 +86,37 @@ paths:
           content: {}
       security:
       - api_key: []
-  /study-periods/{site}:
+  /aggregates:
     get:
-      parameters:
-      - name: "site"
-        in: "path"
-        required: true
-        schema:
-          type: "string"
       security:
       - api_key: []
     options:
-      parameters:
-      - name: "site"
-        in: "path"
-        required: true
-        schema:
-          type: "string"
+      summary: "CORS support"
       responses:
         "200":
-          description: "200 response"
+          description: "Default response for CORS method"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      security:
+      - api_key: []
+  /last_valid:
+    get:
+      security:
+      - api_key: []
+    options:
+      summary: "CORS support"
+      responses:
+        "200":
+          description: "Default response for CORS method"
           headers:
             Access-Control-Allow-Origin:
               schema:
@@ -185,6 +146,7 @@ paths:
       security:
       - api_key: []
     options:
+      summary: "CORS support"
       parameters:
       - name: "study"
         in: "path"
@@ -198,7 +160,7 @@ paths:
           type: "string"
       responses:
         "200":
-          description: "200 response"
+          description: "Default response for CORS method"
           headers:
             Access-Control-Allow-Origin:
               schema:
@@ -212,9 +174,24 @@ paths:
           content: {}
       security:
       - api_key: []
-  /metadata/{site}:
+  /metadata/{site}/{study}/{data_package}/{version}:
     get:
       parameters:
+      - name: "data_package"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "version"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "study"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       - name: "site"
         in: "path"
         required: true
@@ -223,7 +200,23 @@ paths:
       security:
       - api_key: []
     options:
+      summary: "CORS support"
       parameters:
+      - name: "data_package"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "version"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "study"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       - name: "site"
         in: "path"
         required: true
@@ -231,7 +224,71 @@ paths:
           type: "string"
       responses:
         "200":
-          description: "200 response"
+          description: "Default response for CORS method"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      security:
+      - api_key: []
+  /aggregates/{study}/{data_package}/{version}/{filename}:
+    get:
+      parameters:
+      - name: "filename"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "data_package"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "version"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "study"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      security:
+      - api_key: []
+    options:
+      summary: "CORS support"
+      parameters:
+      - name: "filename"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "data_package"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "version"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "study"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "Default response for CORS method"
           headers:
             Access-Control-Allow-Origin:
               schema:
@@ -261,6 +318,7 @@ paths:
       security:
       - api_key: []
     options:
+      summary: "CORS support"
       parameters:
       - name: "study"
         in: "path"
@@ -274,7 +332,203 @@ paths:
           type: "string"
       responses:
         "200":
-          description: "200 response"
+          description: "Default response for CORS method"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      security:
+      - api_key: []
+  /last_valid/{study}/{data_package}/{site}/{version}/{filename}:
+    get:
+      parameters:
+      - name: "filename"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "data_package"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "version"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "study"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      security:
+      - api_key: []
+    options:
+      summary: "CORS support"
+      parameters:
+      - name: "filename"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "data_package"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "version"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "study"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "Default response for CORS method"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      security:
+      - api_key: []
+  /study-periods/{site}:
+    get:
+      parameters:
+      - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      security:
+      - api_key: []
+    options:
+      summary: "CORS support"
+      parameters:
+      - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "Default response for CORS method"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      security:
+      - api_key: []
+  /metadata/{site}/{study}/{data_package}:
+    get:
+      parameters:
+      - name: "data_package"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "study"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      security:
+      - api_key: []
+    options:
+      summary: "CORS support"
+      parameters:
+      - name: "data_package"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "study"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "Default response for CORS method"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      security:
+      - api_key: []
+  /metadata/{site}:
+    get:
+      parameters:
+      - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      security:
+      - api_key: []
+    options:
+      summary: "CORS support"
+      parameters:
+      - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "Default response for CORS method"
           headers:
             Access-Control-Allow-Origin:
               schema:
@@ -293,9 +547,10 @@ paths:
       security:
       - api_key: []
     options:
+      summary: "CORS support"
       responses:
         "200":
-          description: "200 response"
+          description: "Default response for CORS method"
           headers:
             Access-Control-Allow-Origin:
               schema:

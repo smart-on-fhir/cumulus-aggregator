@@ -13,6 +13,10 @@ from pandas.core.indexes.range import RangeIndex
 
 from src.handlers.shared import awswrangler_functions, decorators, enums, functions
 
+log_level = os.environ.get("LAMBDA_LOG_LEVEL", "INFO")
+logger = logging.getLogger()
+logger.setLevel(log_level)
+
 
 class MergeError(ValueError):
     def __init__(self, message, filename):
@@ -30,8 +34,8 @@ class S3Manager:
             "sns", region_name=self.s3_client.meta.region_name
         )
 
-        s3_key = event["Records"][0]["Sns"]["Message"]
-        s3_key_array = s3_key.split("/")
+        self.s3_key = event["Records"][0]["Sns"]["Message"]
+        s3_key_array = self.s3_key.split("/")
         self.study = s3_key_array[1]
         self.data_package = s3_key_array[2].split("__")[1]
         self.site = s3_key_array[3]
@@ -105,11 +109,14 @@ class S3Manager:
         value=None,
         metadata: dict | None = None,
         meta_type: str | None = enums.JsonFilename.TRANSACTIONS.value,
+        extra_items: dict | None = None,
     ):
         """convenience wrapper for update_metadata"""
         # We are excluding COLUMN_TYPES explicitly from this first check because,
         # by design, it should never have a site field in it - the column types
         # are tied to the study version, not a specific site's data
+        if extra_items is None:
+            extra_items = {}
         if site is None and meta_type != enums.JsonFilename.COLUMN_TYPES.value:
             site = self.site
         if metadata is None:
@@ -123,6 +130,7 @@ class S3Manager:
             target=key,
             value=value,
             meta_type=meta_type,
+            extra_items=extra_items,
         )
 
     def write_local_metadata(
@@ -145,9 +153,6 @@ class S3Manager:
         error: Exception,
     ) -> None:
         """Helper for logging errors and moving files"""
-        log_level = os.environ.get("LAMBDA_LOG_LEVEL", "ERROR")
-        logger = logging.getLogger()
-        logger.setLevel(log_level)
         logger.error("File %s failed to aggregate: %s", s3_path, str(error))
         logger.error(traceback.print_exc())
         self.move_file(
@@ -246,6 +251,7 @@ def merge_powersets(manager: S3Manager) -> None:
     # chunking to lower memory usage during merges.
 
     # initializing this early in case an empty file causes us to never set it
+    logger.info(f"Proccessing data package at {manager.s3_key}")
     is_new_data_package = False
     df = pandas.DataFrame()
     latest_file_list = manager.get_data_package_list(enums.BucketPath.LATEST.value)
@@ -349,13 +355,14 @@ def merge_powersets(manager: S3Manager) -> None:
 
     manager.write_local_metadata()
 
-    # Updating the typing dict for the CSV API
-    column_dict = functions.get_csv_column_datatypes(df.dtypes)
+    # Updating the typing dict for the column type API
+    column_dict = functions.get_column_datatypes(df.dtypes)
     manager.update_local_metadata(
         enums.ColumnTypesKeys.COLUMNS.value,
         value=column_dict,
         metadata=manager.types_metadata,
         meta_type=enums.JsonFilename.COLUMN_TYPES.value,
+        extra_items={"total": int(df["cnt"][0])},
     )
     manager.update_local_metadata(
         enums.ColumnTypesKeys.LAST_DATA_UPDATE.value,
