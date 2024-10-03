@@ -1,6 +1,7 @@
-""" Lambda for performing joins of site count data.
+"""Lambda for performing joins of site count data.
 This is intended to provide an implementation of the logic described in docs/api.md
 """
+
 import os
 
 import awswrangler
@@ -8,7 +9,6 @@ import boto3
 import pandas
 
 from src.handlers.dashboard.filter_config import get_filter_string
-from src.handlers.shared.decorators import generic_error_handler
 from src.handlers.shared.enums import BucketPath
 from src.handlers.shared.functions import get_latest_data_package_version, http_response
 
@@ -37,7 +37,7 @@ def _get_table_cols(table_name: str, version: str | None = None) -> list:
 
 def _build_query(query_params: dict, filters: list, path_params: dict) -> str:
     """Creates a query from the dashboard API spec"""
-    table = path_params["subscription_name"]
+    table = path_params["data_package"]
     columns = _get_table_cols(table)
     filter_str = get_filter_string(filters)
     if filter_str != "":
@@ -59,7 +59,7 @@ def _build_query(query_params: dict, filters: list, path_params: dict) -> str:
     else:
         coalesce_str = "WHERE"
     query_str = (
-        f"SELECT {select_str} "  # nosec
+        f"SELECT {select_str} "  # nosec  # noqa: S608
         f"FROM \"{os.environ.get('GLUE_DB_NAME')}\".\"{table}\" "
         f"{coalesce_str} "
         f"{query_params['column']} IS NOT Null {filter_str} "
@@ -91,7 +91,7 @@ def _format_payload(df: pandas.DataFrame, query_params: dict, filters: list) -> 
     return payload
 
 
-@generic_error_handler(msg="Error retrieving chart data")
+# @generic_error_handler(msg="Error retrieving chart data")
 def chart_data_handler(event, context):
     """manages event from dashboard api call and retrieves data"""
     del context

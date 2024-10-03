@@ -25,9 +25,7 @@ def mock_data_frame(filter_param):
     return df
 
 
-@mock.patch(
-    "src.handlers.dashboard.get_chart_data._get_table_cols", mock_get_table_cols
-)
+@mock.patch("src.handlers.dashboard.get_chart_data._get_table_cols", mock_get_table_cols)
 @mock.patch.dict(os.environ, MOCK_ENV)
 @pytest.mark.parametrize(
     "query_params,filters,path_params,query_str",
@@ -35,7 +33,7 @@ def mock_data_frame(filter_param):
         (
             {"column": "gender"},
             [],
-            {"subscription_name": "test_study"},
+            {"data_package": "test_study"},
             f'SELECT gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
             "WHERE COALESCE (race) IS NOT Null AND gender IS NOT Null  "
             "GROUP BY gender",
@@ -43,7 +41,7 @@ def mock_data_frame(filter_param):
         (
             {"column": "gender", "stratifier": "race"},
             [],
-            {"subscription_name": "test_study"},
+            {"data_package": "test_study"},
             f'SELECT race, gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
             "WHERE gender IS NOT Null  "
             "GROUP BY race, gender",
@@ -51,7 +49,7 @@ def mock_data_frame(filter_param):
         (
             {"column": "gender"},
             ["gender:strEq:female"],
-            {"subscription_name": "test_study"},
+            {"data_package": "test_study"},
             f'SELECT gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
             "WHERE COALESCE (race) IS NOT Null AND gender IS NOT Null "
             "AND gender LIKE 'female' "
@@ -60,7 +58,7 @@ def mock_data_frame(filter_param):
         (
             {"column": "gender", "stratifier": "race"},
             ["gender:strEq:female"],
-            {"subscription_name": "test_study"},
+            {"data_package": "test_study"},
             f'SELECT race, gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
             "WHERE gender IS NOT Null "
             "AND gender LIKE 'female' "
@@ -109,3 +107,33 @@ def test_get_data_cols(mock_bucket):
     res = get_chart_data._get_table_cols(table_name)
     cols = pandas.read_csv("./tests/test_data/count_synthea_patient_agg.csv").columns
     assert res == list(cols)
+
+
+@mock.patch(
+    "src.handlers.dashboard.get_chart_data._build_query",
+    lambda query_params, filters, path_params: (
+        "SELECT gender, sum(cnt) as cnt"
+        f'FROM "{TEST_GLUE_DB}"."test_study" '
+        "WHERE COALESCE (race) IS NOT Null AND gender IS NOT Null "
+        "AND gender LIKE 'female' "
+        "GROUP BY gender",
+    ),
+)
+@mock.patch(
+    "awswrangler.athena.read_sql_query",
+    lambda query, database, s3_output, workgroup: pandas.DataFrame(
+        data={"gender": ["male", "female"], "cnt": [10, 10]}
+    ),
+)
+def test_handler():
+    event = {
+        "queryStringParameters": {"column": "gender"},
+        "multiValueQueryStringParameters": {"filter": ["gender:strEq:female"]},
+        "pathParameters": {},
+    }
+    res = get_chart_data.chart_data_handler(event, {})
+    assert res["body"] == (
+        '{"column": "gender", "filters": ["gender:strEq:female"], '
+        '"rowCount": 2, "totalCount": 20, "data": [{"rows": [["male", 10], '
+        '["female", 10]]}]}'
+    )

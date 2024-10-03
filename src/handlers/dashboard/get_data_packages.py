@@ -1,6 +1,5 @@
-""" Lambda for retrieving list of available data packages
-"""
-import ast
+"""Lambda for retrieving list of available data packages"""
+
 import os
 
 from src.handlers.shared.decorators import generic_error_handler
@@ -17,5 +16,5 @@ def data_packages_handler(event, context):
         os.environ.get("BUCKET_NAME"),
         f"{BucketPath.CACHE.value}/{JsonFilename.DATA_PACKAGES.value}.json",
     )
-    res = http_response(200, ast.literal_eval(data_packages), allow_cors=True)
+    res = http_response(200, data_packages, allow_cors=True)
     return res

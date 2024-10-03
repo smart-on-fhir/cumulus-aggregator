@@ -1,4 +1,5 @@
-""" functions specifically requiring AWSWranger, which requires a lambda layer"""
+"""functions specifically requiring AWSWranger, which requires a lambda layer"""
+
 import awswrangler
 
 from src.handlers.shared.enums import BucketPath

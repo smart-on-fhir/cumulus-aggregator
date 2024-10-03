@@ -1,7 +1,7 @@
 import io
 import os
 from contextlib import nullcontext as does_not_raise
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest import mock
 
 import awswrangler
@@ -179,9 +179,7 @@ def test_powerset_merge_single_upload(
             assert item["Key"].startswith(enums.BucketPath.AGGREGATE.value)
             # This finds the aggregate that was created/updated - ie it skips mocks
             if study in item["Key"] and status == 200:
-                agg_df = awswrangler.s3.read_parquet(
-                    f"s3://{TEST_BUCKET}/{item['Key']}"
-                )
+                agg_df = awswrangler.s3.read_parquet(f"s3://{TEST_BUCKET}/{item['Key']}")
                 assert (agg_df["site"].eq(site)).any()
         elif item["Key"].endswith("aggregate.csv"):
             assert item["Key"].startswith(enums.BucketPath.CSVAGGREGATE.value)
@@ -190,28 +188,24 @@ def test_powerset_merge_single_upload(
             metadata = functions.read_metadata(s3_client, TEST_BUCKET)
             if res["statusCode"] == 200:
                 assert (
-                    metadata[site][study][data_package.split("__")[1]][version][
-                        "last_aggregation"
-                    ]
-                    == datetime.now(timezone.utc).isoformat()
+                    metadata[site][study][data_package.split("__")[1]][version]["last_aggregation"]
+                    == datetime.now(UTC).isoformat()
                 )
 
             else:
                 assert (
-                    metadata["princeton_plainsboro_teaching_hospital"]["study"][
+                    metadata["princeton_plainsboro_teaching_hospital"]["study"]["encounter"]["099"][
+                        "last_aggregation"
+                    ]
+                    == get_mock_metadata()["princeton_plainsboro_teaching_hospital"]["study"][
                         "encounter"
                     ]["099"]["last_aggregation"]
-                    == get_mock_metadata()["princeton_plainsboro_teaching_hospital"][
-                        "study"
-                    ]["encounter"]["099"]["last_aggregation"]
                 )
             if upload_file is not None and study != NEW_STUDY:
                 # checking to see that merge powerset didn't touch last upload
                 assert (
-                    metadata[site][study][data_package.split("__")[1]][version][
-                        "last_upload"
-                    ]
-                    != datetime.now(timezone.utc).isoformat()
+                    metadata[site][study][data_package.split("__")[1]][version]["last_upload"]
+                    != datetime.now(UTC).isoformat()
                 )
         elif item["Key"].endswith("column_types.json"):
             assert item["Key"].startswith(enums.BucketPath.META.value)
@@ -222,7 +216,7 @@ def test_powerset_merge_single_upload(
                 last_update = metadata[study][data_package.split("__")[1]][version][
                     "last_data_update"
                 ]
-                assert last_update == datetime.now(timezone.utc).isoformat()
+                assert last_update == datetime.now(UTC).isoformat()
 
             else:
                 assert (
@@ -233,9 +227,7 @@ def test_powerset_merge_single_upload(
                 )
         elif item["Key"].startswith(enums.BucketPath.LAST_VALID.value):
             if item["Key"].endswith(".parquet"):
-                assert item["Key"] == (
-                    f"{enums.BucketPath.LAST_VALID.value}{upload_path}"
-                )
+                assert item["Key"] == (f"{enums.BucketPath.LAST_VALID.value}{upload_path}")
             elif item["Key"].endswith(".csv"):
                 assert f"{upload_path.replace('.parquet','.csv')}" in item["Key"]
             else:
@@ -252,7 +244,7 @@ def test_powerset_merge_single_upload(
         keys = []
         for resource in s3_res["Contents"]:
             keys.append(resource["Key"])
-        date_str = datetime.now(timezone.utc).isoformat()
+        date_str = datetime.now(UTC).isoformat()
         archive_path = f".{date_str}.".join(upload_path.split("."))
         assert f"{enums.BucketPath.ARCHIVE.value}{archive_path}" in keys
 
@@ -357,9 +349,7 @@ def test_expand_and_concat(mock_bucket, upload_file, load_empty, raises):
             TEST_BUCKET,
             s3_path,
         )
-        powerset_merge.expand_and_concat_sets(
-            df, f"s3://{TEST_BUCKET}/{s3_path}", EXISTING_STUDY
-        )
+        powerset_merge.expand_and_concat_sets(df, f"s3://{TEST_BUCKET}/{s3_path}", EXISTING_STUDY)
 
 
 def test_parquet_to_csv(mock_bucket):

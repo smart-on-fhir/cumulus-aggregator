@@ -17,10 +17,10 @@ This is the customer implementation of the Dashboard's API for receiving chart d
 which the Aggregator re-implements as a lambda building Athena queries.
 
 ### endpoint
-`/chart_data/{subscription_name}`
+`/chart_data/{data_package}`
 
 ### URL segments
-- `subscription_name` - The name of the data subscription we are querying
+- `data_package` - The name of the data package we are querying
 
 ### Query parameters
 - `column` - `string`, `required`; The name of the column we are requesting from the data table.

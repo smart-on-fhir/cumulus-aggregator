@@ -1,4 +1,5 @@
 """Reimplementation of dashboard's filtering logic for SQL construction"""
+
 _FILTER_MAP_TWO_PARAM = {
     # Text
     "strEq": "%s LIKE '%s'",
@@ -35,17 +36,11 @@ _FILTER_MAP_TWO_PARAM = {
     "sameYear": "date_trunc('year',DATE(%s)) = date_trunc('year',DATE('%s'))",
     "sameDayOrBefore": "DATE(%s) <= date_trunc('day',DATE('%s'))",
     "sameWeekOrBefore": "date_trunc('week',DATE(%s)) <= date_trunc('week',DATE('%s'))",
-    "sameMonthOrBefore": (
-        "date_trunc('month',DATE(%s)) <= date_trunc('month',DATE('%s'))"
-    ),
+    "sameMonthOrBefore": ("date_trunc('month',DATE(%s)) <= date_trunc('month',DATE('%s'))"),
     "sameYearOrBefore": "date_trunc('year',DATE(%s)) <= date_trunc('year',DATE('%s'))",
     "sameDayOrAfter": "DATE(%s) >= date_trunc('day',DATE('%s'))",
-    "sameWeekOrAfter": (
-        "date_trunc('week',DATE(%s)) " ">= date_trunc('week',DATE('%s'))"
-    ),
-    "sameMonthOrAfter": (
-        "date_trunc('month',DATE(%s)) >= date_trunc('month',DATE('%s'))"
-    ),
+    "sameWeekOrAfter": ("date_trunc('week',DATE(%s)) " ">= date_trunc('week',DATE('%s'))"),
+    "sameMonthOrAfter": ("date_trunc('month',DATE(%s)) >= date_trunc('month',DATE('%s'))"),
     "sameYearOrAfter": "date_trunc('year',DATE(%s)) >= date_trunc('year',DATE('%s'))",
     "beforeDay": "DATE(%s) < date_trunc('day',DATE('%s'))",
     "beforeWeek": "date_trunc('week',DATE(%s)) < date_trunc('week',DATE('%s'))",

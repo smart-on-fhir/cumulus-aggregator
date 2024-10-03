@@ -1,10 +1,12 @@
-""" Functions used across different lambdas"""
+"""Functions used across different lambdas"""
+
 import io
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import boto3
+import pandas
 
 from src.handlers.shared import enums
 
@@ -49,7 +51,7 @@ def http_response(
     return {
         "isBase64Encoded": False,
         "statusCode": status,
-        "body": json.dumps(body),
+        "body": json.dumps(body, default=str),
         "headers": headers,
     }
 
@@ -93,6 +95,7 @@ def update_metadata(
     dt: datetime | None = None,
     value: str | list | None = None,
     meta_type: str | None = enums.JsonFilename.TRANSACTIONS.value,
+    extra_items: dict | None = None,
 ):
     """Safely updates items in metadata dictionary
 
@@ -103,6 +106,8 @@ def update_metadata(
     TODO: if we have other cases of non-datetime metadata, consider breaking this
     function into two, one for updating datetimes and one for updating values
     """
+    if extra_items is None:
+        extra_items = {}
     check_meta_type(meta_type)
     match meta_type:
         case enums.JsonFilename.TRANSACTIONS.value:
@@ -112,7 +117,7 @@ def update_metadata(
             data_version_metadata = data_package_metadata.setdefault(
                 version, TRANSACTION_METADATA_TEMPLATE
             )
-            dt = dt or datetime.now(timezone.utc)
+            dt = dt or datetime.now(UTC)
             data_version_metadata[target] = dt.isoformat()
         case enums.JsonFilename.STUDY_PERIODS.value:
             site_metadata = metadata.setdefault(site, {})
@@ -120,7 +125,7 @@ def update_metadata(
             data_version_metadata = study_period_metadata.setdefault(
                 version, STUDY_PERIOD_METADATA_TEMPLATE
             )
-            dt = dt or datetime.now(timezone.utc)
+            dt = dt or datetime.now(UTC)
             data_version_metadata[target] = dt.isoformat()
         case enums.JsonFilename.COLUMN_TYPES.value:
             study_metadata = metadata.setdefault(study, {})
@@ -131,12 +136,13 @@ def update_metadata(
             if target == enums.ColumnTypesKeys.COLUMNS.value:
                 data_version_metadata[target] = value
             else:
-                dt = dt or datetime.now(timezone.utc)
+                dt = dt or datetime.now(UTC)
                 data_version_metadata[target] = dt.isoformat()
         # Should only be hit if you add a new JSON dict and forget to add it
         # to this function
         case _:
             raise OSError(f"{meta_type} does not have a handler for updates.")
+    data_version_metadata.update(extra_items)
     return metadata
 
 
@@ -153,7 +159,7 @@ def write_metadata(
     s3_client.put_object(
         Bucket=s3_bucket_name,
         Key=f"{enums.BucketPath.META.value}/{meta_type}.json",
-        Body=json.dumps(metadata),
+        Body=json.dumps(metadata, default=str),
     )
 
 
@@ -167,9 +173,7 @@ class S3UploadError(Exception):
 def move_s3_file(s3_client, s3_bucket_name: str, old_key: str, new_key: str) -> None:
     """Move file to different S3 location"""
     source = {"Bucket": s3_bucket_name, "Key": old_key}
-    copy_response = s3_client.copy_object(
-        CopySource=source, Bucket=s3_bucket_name, Key=new_key
-    )
+    copy_response = s3_client.copy_object(CopySource=source, Bucket=s3_bucket_name, Key=new_key)
     if copy_response["ResponseMetadata"]["HTTPStatusCode"] != 200:
         logging.error("error copying file %s to %s", old_key, new_key)
         raise S3UploadError
@@ -219,7 +223,7 @@ def get_latest_data_package_version(bucket, prefix):
     return highest_ver
 
 
-def get_csv_column_datatypes(dtypes):
+def get_column_datatypes(dtypes: pandas.DataFrame):
     """helper for generating column type for dashboard API"""
     column_dict = {}
     for column in dtypes.index:
@@ -245,7 +249,7 @@ def get_csv_column_datatypes(dtypes):
         elif str(dtypes[column]) in ("Float32", "Float64"):
             column_dict[column] = "float"
         elif str(dtypes[column]) == "boolean":
-            column_dict[column] = "float"
+            column_dict[column] = "boolean"
         else:
             column_dict[column] = "string"
     return column_dict

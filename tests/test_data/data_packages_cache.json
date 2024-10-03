@@ -1,1 +1,30 @@
-"[\"study__encounter\",\"other_study__encounter\"]"
+{
+    "study_valid": {
+        "table": {
+            "001": {
+                "column_types_format_version": "1",
+                "columns": {
+                    "cnt": "integer",
+                    "class_display": "string",
+                    "servicetype_display": "string",
+                    "period_start_month": "month",
+                    "site": "string"
+                },
+                "last_data_update": "2024-09-25T20:12:45.193296+00:00",
+                "total": 31669
+            },
+            "002": {
+                "column_types_format_version": "1",
+                "columns": {
+                    "cnt": "integer",
+                    "enc_class_display": "string",
+                    "enc_service_display": "string",
+                    "start_month": "month",
+                    "site": "string"
+                },
+                "last_data_update": "2024-10-01T18:12:13.463978+00:00",
+                "total": 7695176
+            }
+        }
+    }
+}

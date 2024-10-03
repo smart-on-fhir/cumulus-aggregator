@@ -1,5 +1,5 @@
-""" Lambda for retrieving all, or some, of the study period information
-"""
+"""Lambda for retrieving all, or some, of the study period information"""
+
 import os
 
 import boto3
@@ -15,9 +15,7 @@ def study_periods_handler(event, context):
     del context
     s3_bucket = os.environ.get("BUCKET_NAME")
     s3_client = boto3.client("s3")
-    metadata = read_metadata(
-        s3_client, s3_bucket, meta_type=JsonFilename.STUDY_PERIODS.value
-    )
+    metadata = read_metadata(s3_client, s3_bucket, meta_type=JsonFilename.STUDY_PERIODS.value)
     if params := event["pathParameters"]:
         if "site" in params:
             metadata = metadata[params["site"]]

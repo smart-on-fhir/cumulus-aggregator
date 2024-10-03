@@ -13,9 +13,9 @@ from tests import mock_utils
 # data matching these params is created via conftest
 site = mock_utils.EXISTING_SITE
 study = mock_utils.EXISTING_STUDY
-subscription = mock_utils.EXISTING_DATA_P
+data_package = mock_utils.EXISTING_DATA_P
 version = mock_utils.EXISTING_VERSION
-filename = filename = f"{study}__{subscription}__aggregate.csv"
+filename = filename = f"{study}__{data_package}__aggregate.csv"
 
 
 def _mock_last_valid():
@@ -25,7 +25,7 @@ def _mock_last_valid():
         "./tests/test_data/count_synthea_patient_agg.csv",
         bucket,
         f"{enums.BucketPath.LAST_VALID.value}/{study}/"
-        f"{study}__{subscription}/{site}/{version}/{filename}",
+        f"{study}__{data_package}/{site}/{version}/{filename}",
     )
 
 
@@ -36,7 +36,7 @@ def _mock_last_valid():
             {
                 "site": None,
                 "study": study,
-                "subscription": subscription,
+                "data_package": data_package,
                 "version": version,
                 "filename": filename,
             },
@@ -47,7 +47,7 @@ def _mock_last_valid():
             {
                 "site": site,
                 "study": study,
-                "subscription": subscription,
+                "data_package": data_package,
                 "version": version,
                 "filename": filename,
             },
@@ -57,7 +57,7 @@ def _mock_last_valid():
         (
             {
                 "study": study,
-                "subscription": subscription,
+                "data_package": data_package,
                 "version": version,
                 "filename": filename,
             },
@@ -68,7 +68,7 @@ def _mock_last_valid():
             {
                 "site": site,
                 "study": study,
-                "subscription": subscription,
+                "data_package": data_package,
                 "version": version,
                 "filename": "foo",
             },
@@ -79,7 +79,7 @@ def _mock_last_valid():
             {
                 "site": None,
                 "study": None,
-                "subscription": None,
+                "data_package": None,
                 "version": None,
                 "filename": None,
             },
@@ -99,16 +99,14 @@ def test_get_csv(mock_bucket, params, status, expected):
         if "site" not in params or params["site"] is None:
             url = (
                 "https://cumulus-aggregator-site-counts-test.s3.amazonaws.com/csv_aggregates/"
-                f"{study}/{study}__{subscription}/{version}/{filename}"
+                f"{study}/{study}__{data_package}/{version}/{filename}"
             )
         else:
             url = (
                 "https://cumulus-aggregator-site-counts-test.s3.amazonaws.com/last_valid/"
-                f"{study}/{study}__{subscription}/{site}/{version}/{filename}"
+                f"{study}/{study}__{data_package}/{site}/{version}/{filename}"
             )
-        assert (
-            res["headers"]["x-column-types"] == "integer,string,integer,string,string"
-        )
+        assert res["headers"]["x-column-types"] == "integer,string,integer,string,string"
         assert res["headers"]["x-column-names"] == "cnt,gender,age,race_display,site"
         assert res["headers"]["x-column-descriptions"] == ""
         assert res["headers"]["Location"].startswith(url)

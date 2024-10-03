@@ -21,6 +21,7 @@ set of states:
   data in the mode of a study which heretofore has not existed in the
   aggregator
 """
+
 import os
 from unittest import mock
 
@@ -97,17 +98,13 @@ def mock_bucket():
     credential_management.create_meta(
         s3_client, bucket, "ppth", "princeton_plainsboro_teaching_hospital"
     )
-    credential_management.create_auth(
-        s3_client, bucket, "elsewhere_2", "test_2", "elsewhere"
-    )
+    credential_management.create_auth(s3_client, bucket, "elsewhere_2", "test_2", "elsewhere")
     credential_management.create_meta(s3_client, bucket, "elsewhere", "st_elsewhere")
     credential_management.create_auth(s3_client, bucket, "hope_3", "test_3", "hope")
     credential_management.create_meta(s3_client, bucket, "hope", "chicago_hope")
 
     metadata = mock_utils.get_mock_metadata()
-    functions.write_metadata(
-        s3_client=s3_client, s3_bucket_name=bucket, metadata=metadata
-    )
+    functions.write_metadata(s3_client=s3_client, s3_bucket_name=bucket, metadata=metadata)
     study_metadata = mock_utils.get_mock_study_metadata()
     functions.write_metadata(
         s3_client=s3_client,
@@ -157,9 +154,7 @@ def mock_db():
     athena_client = boto3.client("athena", region_name="us-east-1")
     athena_client.start_query_execution(
         QueryString=f"create database {os.environ['TEST_GLUE_DB']}",
-        ResultConfiguration={
-            "OutputLocation": f"s3://{os.environ['TEST_BUCKET']}/athena/"
-        },
+        ResultConfiguration={"OutputLocation": f"s3://{os.environ['TEST_BUCKET']}/athena/"},
     )
     yield
     athena.stop()

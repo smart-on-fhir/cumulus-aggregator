@@ -1,4 +1,4 @@
-""" Adds a new metadata type, column_types """
+"""Adds a new metadata type, column_types"""
 
 import argparse
 import io
@@ -62,9 +62,7 @@ def create_column_type_metadata(bucket: str):
         subscription = dirs[2].split("__")[1]
         version = dirs[3]
         bytes_buffer = io.BytesIO()
-        client.download_fileobj(
-            Bucket=bucket, Key=resource["Key"], Fileobj=bytes_buffer
-        )
+        client.download_fileobj(Bucket=bucket, Key=resource["Key"], Fileobj=bytes_buffer)
         df = pandas.read_parquet(bytes_buffer)
         type_dict = get_csv_column_datatypes(df.dtypes)
         filename = f"{resource['Key'].split('/')[-1].split('.')[0]}.csv"

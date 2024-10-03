@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Utility script for modifying authorization artifacts in S3"""
+
 import argparse
 import io
 import json
@@ -13,17 +14,13 @@ def _get_s3_data(name: str, bucket_name: str, client, path: str = "admin") -> di
     """Convenience class for retrieving a dict from S3"""
     try:
         bytes_buffer = io.BytesIO()
-        client.download_fileobj(
-            Bucket=bucket_name, Key=f"{path}/{name}", Fileobj=bytes_buffer
-        )
+        client.download_fileobj(Bucket=bucket_name, Key=f"{path}/{name}", Fileobj=bytes_buffer)
         return json.loads(bytes_buffer.getvalue().decode())
     except Exception:  # pylint: disable=broad-except
         return {}
 
 
-def _put_s3_data(
-    name: str, bucket_name: str, client, data: dict, path: str = "admin"
-) -> None:
+def _put_s3_data(name: str, bucket_name: str, client, data: dict, path: str = "admin") -> None:
     """Convenience class for writing a dict to S3"""
     b_data = io.BytesIO(json.dumps(data).encode())
     client.upload_fileobj(Bucket=bucket_name, Key=f"{path}/{name}", Fileobj=b_data)

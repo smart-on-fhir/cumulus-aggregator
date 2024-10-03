@@ -1,5 +1,5 @@
 import csv
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import boto3
 import pytest
@@ -93,9 +93,7 @@ def test_process_upload(
             TEST_BUCKET,
             f"{BucketPath.STUDY_META.value}{upload_path}",
         )
-    event = {
-        "Records": [{"Sns": {"Message": f"{BucketPath.STUDY_META.value}{event_key}"}}]
-    }
+    event = {"Records": [{"Sns": {"Message": f"{BucketPath.STUDY_META.value}{event_key}"}}]}
     res = study_period_handler(event, {})
     assert res["statusCode"] == status
     metadata = read_metadata(s3_client, TEST_BUCKET, meta_type="study_periods")
@@ -105,16 +103,11 @@ def test_process_upload(
         site = path_params[3]
         version = path_params[4]
         assert study in metadata[site]
-        assert (
-            metadata[site][study][version]["last_data_update"]
-            == datetime.now(timezone.utc).isoformat()
-        )
+        assert metadata[site][study][version]["last_data_update"] == datetime.now(UTC).isoformat()
         with open("./tests/test_data/meta_date.csv") as file:
             reader = csv.reader(file)
             # discarding CSV header row
             next(reader)
             row = next(reader)
-            assert (
-                metadata[site][study][version]["earliest_date"] == f"{row[0]}T00:00:00"
-            )
+            assert metadata[site][study][version]["earliest_date"] == f"{row[0]}T00:00:00"
             assert metadata[site][study][version]["latest_date"] == f"{row[1]}T00:00:00"

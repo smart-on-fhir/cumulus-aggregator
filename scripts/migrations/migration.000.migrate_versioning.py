@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-""" Utility for adding versioning to an existing aggregator data store
+"""Utility for adding versioning to an existing aggregator data store
 
 This is a one time thing for us, so the CLI/Boto creds are not robust.
 """
+
 import argparse
 import io
 import json
@@ -94,9 +95,7 @@ def migrate_bucket_versioning(bucket: str):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="""Util for migrating aggregator data"""
-    )
+    parser = argparse.ArgumentParser(description="""Util for migrating aggregator data""")
     parser.add_argument("-b", "--bucket", help="bucket name")
     args = parser.parse_args()
     migrate_bucket_versioning(args.bucket)

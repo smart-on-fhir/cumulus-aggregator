@@ -10,16 +10,16 @@ def _format_and_validate_key(
     s3_client,
     s3_bucket_name: str,
     study: str,
-    subscription: str,
+    data_package: str,
     version: str,
     filename: str,
     site: str | None = None,
 ):
     """Creates S3 key from url params"""
     if site is not None:
-        key = f"last_valid/{study}/{study}__{subscription}/{site}/{version}/{filename}"
+        key = f"last_valid/{study}/{study}__{data_package}/{site}/{version}/{filename}"
     else:
-        key = f"csv_aggregates/{study}/{study}__{subscription}/{version}/{filename}"
+        key = f"csv_aggregates/{study}/{study}__{data_package}/{version}/{filename}"
     try:
         s3_client.head_object(Bucket=s3_bucket_name, Key=key)
         return key
@@ -31,20 +31,18 @@ def _get_column_types(
     s3_client,
     s3_bucket_name: str,
     study: str,
-    subscription: str,
+    data_package: str,
     version: str,
     **kwargs,
 ) -> dict:
-    """Gets column types from the metadata store for a given subscription"""
+    """Gets column types from the metadata store for a given data_package"""
     types_metadata = functions.read_metadata(
         s3_client,
         s3_bucket_name,
         meta_type=enums.JsonFilename.COLUMN_TYPES.value,
     )
     try:
-        return types_metadata[study][subscription][version][
-            enums.ColumnTypesKeys.COLUMNS.value
-        ]
+        return types_metadata[study][data_package][version][enums.ColumnTypesKeys.COLUMNS.value]
     except KeyError:
         return {}
 
@@ -103,11 +101,11 @@ def get_csv_list_handler(event, context):
                 continue
             key_parts = obj["Key"].split("/")
             study = key_parts[1]
-            subscription = key_parts[2].split("__")[1]
+            data_package = key_parts[2].split("__")[1]
             version = key_parts[-2]
             filename = key_parts[-1]
             site = key_parts[3] if url_prefix == "last_valid" else None
-            url_parts = [url_prefix, study, subscription, version, filename]
+            url_parts = [url_prefix, study, data_package, version, filename]
             if url_prefix == "last_valid":
                 url_parts.insert(3, site)
             urls.append("/".join(url_parts))
