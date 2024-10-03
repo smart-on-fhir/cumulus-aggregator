@@ -1,5 +1,5 @@
-""" Lambda for retrieving list of available data packages
-"""
+"""Lambda for retrieving list of available data packages"""
+
 import os
 
 from src.handlers.shared.decorators import generic_error_handler

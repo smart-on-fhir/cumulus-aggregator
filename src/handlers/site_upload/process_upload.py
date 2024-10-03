@@ -1,4 +1,5 @@
-""" Lambda for moving data to processing locations """
+"""Lambda for moving data to processing locations"""
+
 import logging
 import os
 
@@ -17,9 +18,7 @@ class UnexpectedFileTypeError(Exception):
 
 def process_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> None:
     """Moves file from upload path to appropriate subfolder and emits SNS event"""
-    last_uploaded_date = s3_client.head_object(Bucket=s3_bucket_name, Key=s3_key)[
-        "LastModified"
-    ]
+    last_uploaded_date = s3_client.head_object(Bucket=s3_bucket_name, Key=s3_key)["LastModified"]
 
     logger.info(f"Proccessing upload at {s3_key}")
     metadata = functions.read_metadata(s3_client, s3_bucket_name)

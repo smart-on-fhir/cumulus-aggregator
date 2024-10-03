@@ -27,7 +27,7 @@ def lambda_handler(event, context):
         if auth_token not in user_db.keys() or auth_header[0] != "Basic":
             raise AuthError
     except (AuthError, KeyError):
-        raise AuthError(event)  # noqa: B904
+        raise AuthError(event)
 
     principalId = user_db[auth_token]["site"]
 
@@ -115,16 +115,11 @@ class AuthPolicy:
         object in the internal list contains a resource ARN and a condition statement.
         The condition statement can be null."""
         if verb != "*" and not hasattr(HttpVerb, verb):
-            raise NameError(
-                "Invalid HTTP verb " + verb + ". Allowed verbs in HttpVerb class"
-            )
+            raise NameError("Invalid HTTP verb " + verb + ". Allowed verbs in HttpVerb class")
         resourcePattern = re.compile(self.pathRegex)
         if not resourcePattern.match(resource):
             raise NameError(
-                "Invalid resource path: "
-                + resource
-                + ". Path should match "
-                + self.pathRegex
+                "Invalid resource path: " + resource + ". Path should match " + self.pathRegex
             )
 
         if resource[:1] == "/":
@@ -146,13 +141,9 @@ class AuthPolicy:
         )
 
         if effect.lower() == "allow":
-            self.allowMethods.append(
-                {"resourceArn": resourceArn, "conditions": conditions}
-            )
+            self.allowMethods.append({"resourceArn": resourceArn, "conditions": conditions})
         elif effect.lower() == "deny":
-            self.denyMethods.append(
-                {"resourceArn": resourceArn, "conditions": conditions}
-            )
+            self.denyMethods.append({"resourceArn": resourceArn, "conditions": conditions})
 
     def _getEmptyStatement(self, effect):
         """Returns an empty statement object prepopulated with the correct action and

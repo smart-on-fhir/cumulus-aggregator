@@ -34,9 +34,7 @@ def test_fetch_upload_url(body, status, mock_bucket):
         }
     }
 
-    response = upload_url_handler(
-        {"body": json.dumps(body), "requestContext": context}, None
-    )
+    response = upload_url_handler({"body": json.dumps(body), "requestContext": context}, None)
     assert response["statusCode"] == status
     if response["statusCode"] == 200:
         res_body = json.loads(response["body"])

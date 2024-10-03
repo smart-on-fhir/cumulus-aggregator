@@ -1,4 +1,5 @@
 """Enums shared across lambda functions"""
+
 import enum
 
 

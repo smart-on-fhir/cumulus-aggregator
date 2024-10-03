@@ -1,7 +1,7 @@
-""" Lambda for updating date ranges associated with studies """
+"""Lambda for updating date ranges associated with studies"""
 
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import awswrangler
 import boto3
@@ -23,9 +23,7 @@ def update_study_period(s3_client, s3_bucket, site, study, data_package, version
     if len(path) != 1:
         raise KeyError("Unique date path not found")
     df = awswrangler.s3.read_parquet(path[0])
-    study_meta = read_metadata(
-        s3_client, s3_bucket, meta_type=JsonFilename.STUDY_PERIODS.value
-    )
+    study_meta = read_metadata(s3_client, s3_bucket, meta_type=JsonFilename.STUDY_PERIODS.value)
 
     study_meta = update_metadata(
         metadata=study_meta,
@@ -54,7 +52,7 @@ def update_study_period(s3_client, s3_bucket, site, study, data_package, version
         data_package=data_package,
         version=version,
         target=StudyPeriodMetadataKeys.LAST_DATA_UPDATE.value,
-        dt=datetime.now(timezone.utc),
+        dt=datetime.now(UTC),
         meta_type=JsonFilename.STUDY_PERIODS.value,
     )
     write_metadata(

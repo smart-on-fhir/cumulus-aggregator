@@ -106,9 +106,7 @@ def test_get_csv(mock_bucket, params, status, expected):
                 "https://cumulus-aggregator-site-counts-test.s3.amazonaws.com/last_valid/"
                 f"{study}/{study}__{data_package}/{site}/{version}/{filename}"
             )
-        assert (
-            res["headers"]["x-column-types"] == "integer,string,integer,string,string"
-        )
+        assert res["headers"]["x-column-types"] == "integer,string,integer,string,string"
         assert res["headers"]["x-column-names"] == "cnt,gender,age,race_display,site"
         assert res["headers"]["x-column-descriptions"] == ""
         assert res["headers"]["Location"].startswith(url)

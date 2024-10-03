@@ -1,5 +1,5 @@
-""" Lambda for retrieving all, or some, of the upload metadata information
-"""
+"""Lambda for retrieving all, or some, of the upload metadata information"""
+
 import os
 
 import boto3

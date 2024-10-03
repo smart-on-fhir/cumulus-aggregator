@@ -1,4 +1,4 @@
-""" Removes unexpected root nodes/templates/misspelled keys from transaction log. """
+"""Removes unexpected root nodes/templates/misspelled keys from transaction log."""
 
 import argparse
 import io
@@ -56,25 +56,21 @@ def transaction_cleanup(bucket: str):
                 for version in new_t[site][study][dp]:
                     if "last_uploaded_date" in new_t[site][study][dp][version]:
                         if new_t[site][study][dp][version]["last_upload"] is None:
-                            new_t[site][study][dp][version]["last_upload"] = new_t[
-                                site
-                            ][study][dp][version]["last_uploaded_date"]
+                            new_t[site][study][dp][version]["last_upload"] = new_t[site][study][dp][
+                                version
+                            ]["last_uploaded_date"]
                         else:
-                            lud = arrow.get(
-                                new_t[site][study][dp][version]["last_uploaded_date"]
-                            )
-                            lu = arrow.get(
-                                new_t[site][study][dp][version]["last_upload"]
-                            )
+                            lud = arrow.get(new_t[site][study][dp][version]["last_uploaded_date"])
+                            lu = arrow.get(new_t[site][study][dp][version]["last_upload"])
                             if lud > lu:
-                                new_t[site][study][dp][version]["last_upload"] = new_t[
-                                    site
-                                ][study][dp][version]["last_uploaded_date"]
+                                new_t[site][study][dp][version]["last_upload"] = new_t[site][study][
+                                    dp
+                                ][version]["last_uploaded_date"]
                         new_t[site][study][dp][version].pop("last_uploaded_date")
                     if "transacton_format_version" in new_t[site][study][dp][version]:
-                        new_t[site][study][dp][version][
-                            "transaction_format_version"
-                        ] = new_t[site][study][dp][version]["transacton_format_version"]
+                        new_t[site][study][dp][version]["transaction_format_version"] = new_t[site][
+                            study
+                        ][dp][version]["transacton_format_version"]
                         new_t[site][study][dp][version].pop("transacton_format_version")
     # print(json.dumps(new_t, indent=2))
     _put_s3_data("metadata/transactions.json", bucket, client, new_t)
@@ -82,9 +78,7 @@ def transaction_cleanup(bucket: str):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="""Removes erroneous data from transaction log"""
-    )
+    parser = argparse.ArgumentParser(description="""Removes erroneous data from transaction log""")
     parser.add_argument("-b", "--bucket", help="bucket name")
     args = parser.parse_args()
     transaction_cleanup(args.bucket)

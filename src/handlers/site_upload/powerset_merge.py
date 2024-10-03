@@ -1,4 +1,5 @@
-""" Lambda for performing joins of site count data """
+"""Lambda for performing joins of site count data"""
+
 import csv
 import datetime
 import logging
@@ -30,9 +31,7 @@ class S3Manager:
     def __init__(self, event):
         self.s3_bucket_name = os.environ.get("BUCKET_NAME")
         self.s3_client = boto3.client("s3")
-        self.sns_client = boto3.client(
-            "sns", region_name=self.s3_client.meta.region_name
-        )
+        self.sns_client = boto3.client("sns", region_name=self.s3_client.meta.region_name)
 
         self.s3_key = event["Records"][0]["Sns"]["Message"]
         s3_key_array = self.s3_key.split("/")
@@ -92,13 +91,9 @@ class S3Manager:
             f"{self.study}/{self.study}__{self.data_package}/{self.version}/"
             f"{self.study}__{self.data_package}__aggregate.csv"
         )
-        df = df.apply(lambda x: x.strip() if isinstance(x, str) else x).replace(
-            '""', numpy.nan
-        )
+        df = df.apply(lambda x: x.strip() if isinstance(x, str) else x).replace('""', numpy.nan)
         df = df.replace(to_replace=r",", value="", regex=True)
-        awswrangler.s3.to_csv(
-            df, csv_aggregate_path, index=False, quoting=csv.QUOTE_NONE
-        )
+        awswrangler.s3.to_csv(df, csv_aggregate_path, index=False, quoting=csv.QUOTE_NONE)
 
     # metadata
     def update_local_metadata(
@@ -133,9 +128,7 @@ class S3Manager:
             extra_items=extra_items,
         )
 
-    def write_local_metadata(
-        self, metadata: dict | None = None, meta_type: str | None = None
-    ):
+    def write_local_metadata(self, metadata: dict | None = None, meta_type: str | None = None):
         """convenience wrapper for write_metadata"""
         metadata = metadata or self.metadata
         meta_type = meta_type or enums.JsonFilename.TRANSACTIONS.value
@@ -230,16 +223,12 @@ def generate_csv_from_parquet(bucket_name: str, bucket_root: str, subbucket_path
     last_valid_df = awswrangler.s3.read_parquet(
         f"s3://{bucket_name}/{bucket_root}" f"/{subbucket_path}"
     )
-    last_valid_df = last_valid_df.apply(
-        lambda x: x.strip() if isinstance(x, str) else x
-    ).replace('""', numpy.nan)
+    last_valid_df = last_valid_df.apply(lambda x: x.strip() if isinstance(x, str) else x).replace(
+        '""', numpy.nan
+    )
     awswrangler.s3.to_csv(
         last_valid_df,
-        (
-            f"s3://{bucket_name}/{bucket_root}/{subbucket_path}".replace(
-                ".parquet", ".csv"
-            )
-        ),
+        (f"s3://{bucket_name}/{bucket_root}/{subbucket_path}".replace(".parquet", ".csv")),
         index=False,
         quoting=csv.QUOTE_MINIMAL,
     )
@@ -255,9 +244,7 @@ def merge_powersets(manager: S3Manager) -> None:
     is_new_data_package = False
     df = pandas.DataFrame()
     latest_file_list = manager.get_data_package_list(enums.BucketPath.LATEST.value)
-    last_valid_file_list = manager.get_data_package_list(
-        enums.BucketPath.LAST_VALID.value
-    )
+    last_valid_file_list = manager.get_data_package_list(enums.BucketPath.LAST_VALID.value)
     for last_valid_path in last_valid_file_list:
         if manager.version not in last_valid_path:
             continue
@@ -285,14 +272,12 @@ def merge_powersets(manager: S3Manager) -> None:
             continue
         site_specific_name = functions.get_s3_site_filename_suffix(latest_path)
         subbucket_path = (
-            f"{manager.study}/{manager.study}__{manager.data_package}"
-            f"/{site_specific_name}"
+            f"{manager.study}/{manager.study}__{manager.data_package}" f"/{site_specific_name}"
         )
-        date_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        date_str = datetime.datetime.now(datetime.UTC).isoformat()
         timestamped_name = f".{date_str}.".join(site_specific_name.split("."))
         timestamped_path = (
-            f"{manager.study}/{manager.study}__{manager.data_package}"
-            f"/{timestamped_name}"
+            f"{manager.study}/{manager.study}__{manager.data_package}" f"/{timestamped_name}"
         )
         try:
             is_new_data_package = False
@@ -346,9 +331,7 @@ def merge_powersets(manager: S3Manager) -> None:
                     f"/{subbucket_path}",
                     manager.site,
                 )
-                manager.update_local_metadata(
-                    enums.TransactionKeys.LAST_AGGREGATION.value
-                )
+                manager.update_local_metadata(enums.TransactionKeys.LAST_AGGREGATION.value)
 
     if df.empty:
         raise OSError("File not found")

@@ -1,10 +1,12 @@
-""" Functions used across different lambdas"""
+"""Functions used across different lambdas"""
+
 import io
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import boto3
+import pandas
 
 from src.handlers.shared import enums
 
@@ -115,7 +117,7 @@ def update_metadata(
             data_version_metadata = data_package_metadata.setdefault(
                 version, TRANSACTION_METADATA_TEMPLATE
             )
-            dt = dt or datetime.now(timezone.utc)
+            dt = dt or datetime.now(UTC)
             data_version_metadata[target] = dt.isoformat()
         case enums.JsonFilename.STUDY_PERIODS.value:
             site_metadata = metadata.setdefault(site, {})
@@ -123,7 +125,7 @@ def update_metadata(
             data_version_metadata = study_period_metadata.setdefault(
                 version, STUDY_PERIOD_METADATA_TEMPLATE
             )
-            dt = dt or datetime.now(timezone.utc)
+            dt = dt or datetime.now(UTC)
             data_version_metadata[target] = dt.isoformat()
         case enums.JsonFilename.COLUMN_TYPES.value:
             study_metadata = metadata.setdefault(study, {})
@@ -134,14 +136,13 @@ def update_metadata(
             if target == enums.ColumnTypesKeys.COLUMNS.value:
                 data_version_metadata[target] = value
             else:
-                dt = dt or datetime.now(timezone.utc)
+                dt = dt or datetime.now(UTC)
                 data_version_metadata[target] = dt.isoformat()
         # Should only be hit if you add a new JSON dict and forget to add it
         # to this function
         case _:
             raise OSError(f"{meta_type} does not have a handler for updates.")
-    for k, v in extra_items.items():
-        data_version_metadata[k] = v
+    data_version_metadata.update(extra_items)
     return metadata
 
 
@@ -172,9 +173,7 @@ class S3UploadError(Exception):
 def move_s3_file(s3_client, s3_bucket_name: str, old_key: str, new_key: str) -> None:
     """Move file to different S3 location"""
     source = {"Bucket": s3_bucket_name, "Key": old_key}
-    copy_response = s3_client.copy_object(
-        CopySource=source, Bucket=s3_bucket_name, Key=new_key
-    )
+    copy_response = s3_client.copy_object(CopySource=source, Bucket=s3_bucket_name, Key=new_key)
     if copy_response["ResponseMetadata"]["HTTPStatusCode"] != 200:
         logging.error("error copying file %s to %s", old_key, new_key)
         raise S3UploadError
@@ -224,7 +223,7 @@ def get_latest_data_package_version(bucket, prefix):
     return highest_ver
 
 
-def get_column_datatypes(dtypes):
+def get_column_datatypes(dtypes: pandas.DataFrame):
     """helper for generating column type for dashboard API"""
     column_dict = {}
     for column in dtypes.index:

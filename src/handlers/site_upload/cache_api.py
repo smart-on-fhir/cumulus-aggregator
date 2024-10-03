@@ -1,4 +1,4 @@
-""" Lambda for running and caching query results """
+"""Lambda for running and caching query results"""
 
 import json
 import os
@@ -14,7 +14,7 @@ def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None
     if target == enums.JsonFilename.DATA_PACKAGES.value:
         df = awswrangler.athena.read_sql_query(
             (
-                f"SELECT table_name FROM information_schema.tables "
+                f"SELECT table_name FROM information_schema.tables "  # noqa: S608
                 f"WHERE table_schema = '{db}'"  # nosec
             ),
             database=db,
@@ -38,9 +38,7 @@ def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None
         try:
             versions = column_types[dp_detail["study"]][dp_detail["name"]]
             for version in versions:
-                dp_details.append(
-                    {**dp_detail, **versions[version], "version": version}
-                )
+                dp_details.append({**dp_detail, **versions[version], "version": version})
         except KeyError:
             continue
     s3_client.put_object(

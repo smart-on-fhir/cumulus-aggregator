@@ -18,9 +18,7 @@ from tests import mock_utils
         (
             {"site": mock_utils.EXISTING_SITE, "study": mock_utils.EXISTING_STUDY},
             200,
-            mock_utils.get_mock_metadata()[mock_utils.EXISTING_SITE][
-                mock_utils.EXISTING_STUDY
-            ],
+            mock_utils.get_mock_metadata()[mock_utils.EXISTING_SITE][mock_utils.EXISTING_STUDY],
         ),
         (
             {
@@ -29,9 +27,9 @@ from tests import mock_utils
                 "data_package": mock_utils.EXISTING_DATA_P,
             },
             200,
-            mock_utils.get_mock_metadata()[mock_utils.EXISTING_SITE][
-                mock_utils.EXISTING_STUDY
-            ][mock_utils.EXISTING_DATA_P],
+            mock_utils.get_mock_metadata()[mock_utils.EXISTING_SITE][mock_utils.EXISTING_STUDY][
+                mock_utils.EXISTING_DATA_P
+            ],
         ),
         (
             {
@@ -41,9 +39,9 @@ from tests import mock_utils
                 "version": mock_utils.EXISTING_VERSION,
             },
             200,
-            mock_utils.get_mock_metadata()[mock_utils.EXISTING_SITE][
-                mock_utils.EXISTING_STUDY
-            ][mock_utils.EXISTING_DATA_P][mock_utils.EXISTING_VERSION],
+            mock_utils.get_mock_metadata()[mock_utils.EXISTING_SITE][mock_utils.EXISTING_STUDY][
+                mock_utils.EXISTING_DATA_P
+            ][mock_utils.EXISTING_VERSION],
         ),
         ({"site": mock_utils.NEW_SITE, "study": mock_utils.EXISTING_STUDY}, 500, None),
         ({"site": mock_utils.EXISTING_SITE, "study": mock_utils.NEW_STUDY}, 500, None),

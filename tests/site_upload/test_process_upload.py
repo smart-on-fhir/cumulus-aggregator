@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import boto3
 import pytest
@@ -35,10 +35,8 @@ from tests.mock_utils import (
         ),
         (  # Adding a new data package to a site without uploads
             "./tests/test_data/cube_simple_example.parquet",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{NEW_SITE}"
-            f"/{EXISTING_VERSION}/document.parquet",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{NEW_SITE}"
-            f"/{EXISTING_VERSION}/document.parquet",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{NEW_SITE}" f"/{EXISTING_VERSION}/document.parquet",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{NEW_SITE}" f"/{EXISTING_VERSION}/document.parquet",
             200,
             ITEM_COUNT + 1,
         ),
@@ -62,19 +60,15 @@ from tests.mock_utils import (
         ),
         (  # Upload of the template study
             "./tests/test_data/cube_simple_example.parquet",
-            f"/template/{NEW_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/document.parquet",
-            f"/template/{NEW_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/document.parquet",
+            f"/template/{NEW_DATA_P}/{EXISTING_SITE}" f"/{EXISTING_VERSION}/document.parquet",
+            f"/template/{NEW_DATA_P}/{EXISTING_SITE}" f"/{EXISTING_VERSION}/document.parquet",
             200,
             ITEM_COUNT + 1,
         ),
         (  # Non-parquet file
             "./tests/test_data/cube_simple_example.csv",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/document.csv",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/document.csv",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}" f"/{EXISTING_VERSION}/document.csv",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}" f"/{EXISTING_VERSION}/document.csv",
             500,
             ITEM_COUNT + 1,
         ),
@@ -161,7 +155,7 @@ def test_process_upload(
                     version = path_params[4]
                     assert (
                         metadata[site][study][data_package][version]["last_upload"]
-                        == datetime.now(timezone.utc).isoformat()
+                        == datetime.now(UTC).isoformat()
                     )
         elif item["Key"].startswith(BucketPath.STUDY_META.value):
             assert any(x in item["Key"] for x in ["_meta_", "/discovery__"])

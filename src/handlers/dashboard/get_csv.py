@@ -42,9 +42,7 @@ def _get_column_types(
         meta_type=enums.JsonFilename.COLUMN_TYPES.value,
     )
     try:
-        return types_metadata[study][data_package][version][
-            enums.ColumnTypesKeys.COLUMNS.value
-        ]
+        return types_metadata[study][data_package][version][enums.ColumnTypesKeys.COLUMNS.value]
     except KeyError:
         return {}
 
