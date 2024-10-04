@@ -45,6 +45,11 @@ class S3Manager:
             self.s3_bucket_name,
             meta_type=enums.JsonFilename.COLUMN_TYPES.value,
         )
+        self.csv_aggerate_path = (
+            f"s3://{self.s3_bucket_name}/{enums.BucketPath.CSVAGGREGATE.value}/"
+            f"{self.study}/{self.study}__{self.data_package}/{self.version}/"
+            f"{self.study}__{self.data_package}__aggregate.csv"
+        )
 
     # S3 Filesystem operations
     def get_data_package_list(self, path) -> list:
@@ -86,14 +91,9 @@ class S3Manager:
 
     def write_csv(self, df: pandas.DataFrame) -> None:
         """writes dataframe as csv to s3"""
-        csv_aggregate_path = (
-            f"s3://{self.s3_bucket_name}/{enums.BucketPath.CSVAGGREGATE.value}/"
-            f"{self.study}/{self.study}__{self.data_package}/{self.version}/"
-            f"{self.study}__{self.data_package}__aggregate.csv"
-        )
         df = df.apply(lambda x: x.strip() if isinstance(x, str) else x).replace('""', numpy.nan)
         df = df.replace(to_replace=r",", value="", regex=True)
-        awswrangler.s3.to_csv(df, csv_aggregate_path, index=False, quoting=csv.QUOTE_NONE)
+        awswrangler.s3.to_csv(df, self.csv_aggerate_path, index=False, quoting=csv.QUOTE_NONE)
 
     # metadata
     def update_local_metadata(
@@ -345,7 +345,7 @@ def merge_powersets(manager: S3Manager) -> None:
         value=column_dict,
         metadata=manager.types_metadata,
         meta_type=enums.JsonFilename.COLUMN_TYPES.value,
-        extra_items={"total": int(df["cnt"][0])},
+        extra_items={"total": int(df["cnt"][0]), "s3_path": manager.csv_aggerate_path},
     )
     manager.update_local_metadata(
         enums.ColumnTypesKeys.LAST_DATA_UPDATE.value,

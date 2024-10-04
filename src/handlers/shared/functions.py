@@ -27,7 +27,7 @@ STUDY_PERIOD_METADATA_TEMPLATE = {
 }
 
 COLUMN_TYPES_METADATA_TEMPLATE = {
-    enums.ColumnTypesKeys.COLUMN_TYPES_FORMAT_VERSION.value: "1",
+    enums.ColumnTypesKeys.COLUMN_TYPES_FORMAT_VERSION.value: "2",
     enums.ColumnTypesKeys.COLUMNS.value: None,
     enums.ColumnTypesKeys.LAST_DATA_UPDATE.value: None,
 }

@@ -77,11 +77,12 @@ Resources:
     Properties:
       FunctionName: !Sub 'CumulusAggFetchAuthorizer-${DeployStage}'
       Handler: src/handlers/site_upload/api_gateway_authorizer.lambda_handler
+      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggFetchAuthorizerFunction-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggFetchAuthorizer-${DeployStage}"
       MemorySize: 128
       Timeout: 100
       Description: Validates credentials before providing signed urls
@@ -110,12 +111,13 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'CumulusAggFetchUploadUrl-${DeployStage}'
+      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
       Handler: src/handlers/site_upload/fetch_upload_url.upload_url_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggFetchUploadUrlFunction-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggFetchUploadUrl-${DeployStage}"
       MemorySize: 128
       Timeout: 100
       Description: Generates a presigned URL for uploading files to S3
@@ -156,7 +158,7 @@ Resources:
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggProcessUploadFunction-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggProcessUpload-${DeployStage}"
       MemorySize: 128
       Timeout: 800
       Description: Handles initial relocation of upload data
@@ -196,7 +198,7 @@ Resources:
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggPowersetMergeFunction-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggPowersetMerge-${DeployStage}"
       MemorySize: 8192
       Timeout: 800
       Description: Merges and aggregates powerset count data
