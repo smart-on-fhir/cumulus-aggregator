@@ -27,3 +27,6 @@ def test_get_data_packages(mock_bucket):
     assert res["statusCode"] == 200
     assert 9 == len(data)
     assert data["id"] == "other_study__document__100"
+    res = data_packages_handler({"pathParameters": {"id": "not_an_id"}}, {})
+    data = json.loads(res["body"])
+    assert res["statusCode"] == 404
