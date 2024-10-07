@@ -81,7 +81,7 @@ Resources:
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggFetchAuthorizerFunction-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggFetchAuthorizer-${DeployStage}"
       MemorySize: 128
       Timeout: 100
       Description: Validates credentials before providing signed urls
@@ -115,7 +115,7 @@ Resources:
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggFetchUploadUrlFunction-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggFetchUploadUrl-${DeployStage}"
       MemorySize: 128
       Timeout: 100
       Description: Generates a presigned URL for uploading files to S3
@@ -156,7 +156,7 @@ Resources:
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggProcessUploadFunction-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggProcessUpload-${DeployStage}"
       MemorySize: 128
       Timeout: 800
       Description: Handles initial relocation of upload data
@@ -196,7 +196,7 @@ Resources:
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggPowersetMergeFunction-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggPowersetMerge-${DeployStage}"
       MemorySize: 8192
       Timeout: 800
       Description: Merges and aggregates powerset count data

@@ -4,7 +4,7 @@ from unittest import mock
 import pandas
 import pytest
 
-from src.handlers.shared import functions
+from src.handlers.shared import functions, pandas_functions
 
 
 @pytest.mark.parametrize(
@@ -48,7 +48,7 @@ def test_column_datatypes():
             "string": ["string"],
         }
     )
-    col_types = functions.get_column_datatypes(df.dtypes)
+    col_types = pandas_functions.get_column_datatypes(df.dtypes)
     assert col_types == {
         "study_year": "year",
         "study_month": "month",

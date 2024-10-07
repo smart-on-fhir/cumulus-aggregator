@@ -31,14 +31,20 @@ def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None
     dp_details = []
     for dp in list(data_packages):
         dp_detail = {
-            "id": dp,
             "study": dp.split("__", 1)[0],
             "name": dp.split("__", 1)[1],
         }
         try:
             versions = column_types[dp_detail["study"]][dp_detail["name"]]
             for version in versions:
-                dp_details.append({**dp_detail, **versions[version], "version": version})
+                dp_details.append(
+                    {
+                        **dp_detail,
+                        **versions[version],
+                        "version": version,
+                        "id": dp + "__" + version,
+                    }
+                )
         except KeyError:
             continue
     s3_client.put_object(
