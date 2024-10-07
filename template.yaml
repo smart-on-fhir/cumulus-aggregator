@@ -77,7 +77,6 @@ Resources:
     Properties:
       FunctionName: !Sub 'CumulusAggFetchAuthorizer-${DeployStage}'
       Handler: src/handlers/site_upload/api_gateway_authorizer.lambda_handler
-      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
@@ -111,7 +110,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'CumulusAggFetchUploadUrl-${DeployStage}'
-      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
       Handler: src/handlers/site_upload/fetch_upload_url.upload_url_handler
       Runtime: "python3.11"
       LoggingConfig:
@@ -154,7 +152,6 @@ Resources:
     Properties:
       FunctionName: !Sub 'CumulusAggProcessUpload-${DeployStage}'
       Handler: src/handlers/site_upload/process_upload.process_upload_handler
-      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]      
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
@@ -393,7 +390,6 @@ Resources:
     Properties:
       FunctionName: !Sub 'CumulusAggDashboardGetCsv-${DeployStage}'
       Handler: src/handlers/dashboard/get_csv.get_csv_handler
-      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
@@ -440,7 +436,6 @@ Resources:
     Properties:
       FunctionName: !Sub 'CumulusAggDashboardGetCsvList-${DeployStage}'
       Handler: src/handlers/dashboard/get_csv.get_csv_list_handler
-      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
@@ -488,7 +483,6 @@ Resources:
     Properties:
       FunctionName: !Sub 'CumulusAggDashboardGetMetadata-${DeployStage}'
       Handler: src/handlers/dashboard/get_metadata.metadata_handler
-      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
@@ -621,7 +615,6 @@ Resources:
     Properties:
       FunctionName: !Sub 'CumulusAggDashboardStudyPeriods-${DeployStage}'
       Handler: src/handlers/dashboard/get_study_periods.study_periods_handler
-      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel

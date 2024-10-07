@@ -12,7 +12,13 @@ import numpy
 import pandas
 from pandas.core.indexes.range import RangeIndex
 
-from src.handlers.shared import awswrangler_functions, decorators, enums, functions
+from src.handlers.shared import (
+    awswrangler_functions,
+    decorators,
+    enums,
+    functions,
+    pandas_functions,
+)
 
 log_level = os.environ.get("LAMBDA_LOG_LEVEL", "INFO")
 logger = logging.getLogger()
@@ -339,7 +345,7 @@ def merge_powersets(manager: S3Manager) -> None:
     manager.write_local_metadata()
 
     # Updating the typing dict for the column type API
-    column_dict = functions.get_column_datatypes(df.dtypes)
+    column_dict = pandas_functions.get_column_datatypes(df.dtypes)
     manager.update_local_metadata(
         enums.ColumnTypesKeys.COLUMNS.value,
         value=column_dict,
