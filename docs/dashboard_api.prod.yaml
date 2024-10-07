@@ -10,6 +10,11 @@ servers:
 paths:
   /data_packages:
     get:
+      parameters:
+      - name: "name"
+        in: "query"
+        schema:
+          type: "string"
       security:
       - api_key: []
     options:
@@ -488,6 +493,39 @@ paths:
         schema:
           type: "string"
       - name: "site"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "Default response for CORS method"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      security:
+      - api_key: []
+  /data_packages/{id}:
+    get:
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      security:
+      - api_key: []
+    options:
+      parameters:
+      - name: "id"
         in: "path"
         required: true
         schema:
