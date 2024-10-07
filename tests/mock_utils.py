@@ -7,7 +7,7 @@ TEST_PROCESS_COUNTS_ARN = "arn:aws:sns:us-east-1:123456789012:test-counts"
 TEST_PROCESS_STUDY_META_ARN = "arn:aws:sns:us-east-1:123456789012:test-meta"
 TEST_CACHE_API_ARN = "arn:aws:sns:us-east-1:123456789012:test-cache"
 ITEM_COUNT = 10
-DATA_PACKAGE_COUNT = 2
+DATA_PACKAGE_COUNT = 3
 
 EXISTING_SITE = "princeton_plainsboro_teaching_hospital"
 NEW_SITE = "chicago_hope"

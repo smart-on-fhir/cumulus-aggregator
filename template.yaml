@@ -568,6 +568,15 @@ Resources:
             RestApiId: !Ref DashboardApiGateway
             Path: /data_packages
             Method: GET
+            RequestParameters: 
+              - method.request.querystring.name:
+                  Required: false
+        DataPackagesIDAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /data_packages/{id}
+            Method: GET
       # TODO: it :should: be possible to move these policies to a central role/policy
       # set that can be referenced in multiple places; see
       # https://stackoverflow.com/questions/64523817/aws-sam-multiple-functions-with-same-inline-policy
