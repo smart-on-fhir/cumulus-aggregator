@@ -64,7 +64,7 @@ def _build_query(query_params: dict, filters: list, path_params: dict) -> str:
     if len(columns) > 0:
         coalesce_str = (
             f"WHERE COALESCE (cast({' AS VARCHAR), cast('.join(columns)} AS VARCHAR)) "
-            "IS NOT Null AND"
+            "IS NOT NULL AND"
         )
     else:
         coalesce_str = "WHERE"
@@ -72,7 +72,7 @@ def _build_query(query_params: dict, filters: list, path_params: dict) -> str:
         f"SELECT {select_str} "  # nosec  # noqa: S608
         f"FROM \"{os.environ.get('GLUE_DB_NAME')}\".\"{dp_id}\" "
         f"{coalesce_str} "
-        f"{query_params['column']} IS NOT Null {filter_str} "
+        f"{query_params['column']} IS NOT NULL {filter_str} "
         f"GROUP BY {group_str} "
     )
     if "stratifier" in query_params.keys():
