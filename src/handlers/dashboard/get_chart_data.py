@@ -2,18 +2,22 @@
 This is intended to provide an implementation of the logic described in docs/api.md
 """
 
+import logging
 import os
 
 import awswrangler
 import boto3
 import pandas
 
-from src.handlers.dashboard.filter_config import get_filter_string
-from src.handlers.shared.enums import BucketPath
-from src.handlers.shared.functions import get_latest_data_package_version, http_response
+from src.handlers.dashboard import filter_config
+from src.handlers.shared import decorators, enums, errors, functions
+
+log_level = os.environ.get("LAMBDA_LOG_LEVEL", "INFO")
+logger = logging.getLogger()
+logger.setLevel(log_level)
 
 
-def _get_table_cols(table_name: str, version: str | None = None) -> list:
+def _get_table_cols(dp_id: str, version: str | None = None) -> list:
     """Returns the columns associated with a table.
 
     Since running an athena query takes a decent amount of time due to queueing
@@ -22,24 +26,26 @@ def _get_table_cols(table_name: str, version: str | None = None) -> list:
     """
 
     s3_bucket_name = os.environ.get("BUCKET_NAME")
-    prefix = f"{BucketPath.CSVAGGREGATE.value}/{table_name.split('__')[0]}/{table_name}"
+    prefix = f"{enums.BucketPath.CSVAGGREGATE.value}/{dp_id.split('__')[0]}/{dp_id[:-4]}"
     if version is None:
-        version = get_latest_data_package_version(s3_bucket_name, prefix)
-        print(f"{prefix}/{version}/{table_name}__aggregate.csv")
-    s3_key = f"{prefix}/{version}/{table_name}__aggregate.csv"
+        version = functions.get_latest_data_package_version(s3_bucket_name, prefix)
+    s3_key = f"{prefix}/{version}/{dp_id[:-4]}__aggregate.csv"
     s3_client = boto3.client("s3")
-    s3_iter = s3_client.get_object(
-        Bucket=s3_bucket_name,
-        Key=s3_key,
-    )["Body"].iter_lines()
-    return next(s3_iter).decode().split(",")
+    try:
+        s3_iter = s3_client.get_object(
+            Bucket=s3_bucket_name,
+            Key=s3_key,
+        )["Body"].iter_lines()
+        return next(s3_iter).decode().split(",")
+    except Exception:
+        raise errors.AggregatorS3Error
 
 
 def _build_query(query_params: dict, filters: list, path_params: dict) -> str:
     """Creates a query from the dashboard API spec"""
-    table = path_params["data_package"]
-    columns = _get_table_cols(table)
-    filter_str = get_filter_string(filters)
+    dp_id = path_params["data_package_id"]
+    columns = _get_table_cols(dp_id)
+    filter_str = filter_config.get_filter_string(filters)
     if filter_str != "":
         filter_str = f"AND {filter_str}"
     count_col = next(c for c in columns if c.startswith("cnt"))
@@ -60,11 +66,12 @@ def _build_query(query_params: dict, filters: list, path_params: dict) -> str:
         coalesce_str = "WHERE"
     query_str = (
         f"SELECT {select_str} "  # nosec  # noqa: S608
-        f"FROM \"{os.environ.get('GLUE_DB_NAME')}\".\"{table}\" "
+        f"FROM \"{os.environ.get('GLUE_DB_NAME')}\".\"{dp_id}\" "
         f"{coalesce_str} "
         f"{query_params['column']} IS NOT Null {filter_str} "
         f"GROUP BY {group_str}"
     )
+    logging.debug(query_str)
     return query_str
 
 
@@ -91,7 +98,7 @@ def _format_payload(df: pandas.DataFrame, query_params: dict, filters: list) -> 
     return payload
 
 
-# @generic_error_handler(msg="Error retrieving chart data")
+@decorators.generic_error_handler(msg="Error retrieving chart data")
 def chart_data_handler(event, context):
     """manages event from dashboard api call and retrieves data"""
     del context
@@ -99,13 +106,19 @@ def chart_data_handler(event, context):
     filters = event["multiValueQueryStringParameters"].get("filter", [])
     path_params = event["pathParameters"]
     boto3.setup_default_session(region_name="us-east-1")
-    query = _build_query(query_params, filters, path_params)
-    df = awswrangler.athena.read_sql_query(
-        query,
-        database=os.environ.get("GLUE_DB_NAME"),
-        s3_output=f"s3://{os.environ.get('BUCKET_NAME')}/awswrangler",
-        workgroup=os.environ.get("WORKGROUP_NAME"),
-    )
-    res = _format_payload(df, query_params, filters)
-    res = http_response(200, res)
+    try:
+        query = _build_query(query_params, filters, path_params)
+        df = awswrangler.athena.read_sql_query(
+            query,
+            database=os.environ.get("GLUE_DB_NAME"),
+            s3_output=f"s3://{os.environ.get('BUCKET_NAME')}/awswrangler",
+            workgroup=os.environ.get("WORKGROUP_NAME"),
+        )
+        res = _format_payload(df, query_params, filters)
+        res = functions.http_response(200, res)
+    except errors.AggregatorS3Error:
+        res = functions.http_response(
+            404, f"Aggregate for {path_params['data_package_id']} not found"
+        )
+
     return res

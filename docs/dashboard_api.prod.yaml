@@ -57,40 +57,6 @@ paths:
           content: {}
       security:
       - api_key: []
-  /chart-data/{subscription_name}:
-    get:
-      parameters:
-      - name: "subscription_name"
-        in: "path"
-        required: true
-        schema:
-          type: "string"
-      security:
-      - api_key: []
-    options:
-      summary: "CORS support"
-      parameters:
-      - name: "subscription_name"
-        in: "path"
-        required: true
-        schema:
-          type: "string"
-      responses:
-        "200":
-          description: "Default response for CORS method"
-          headers:
-            Access-Control-Allow-Origin:
-              schema:
-                type: "string"
-            Access-Control-Allow-Methods:
-              schema:
-                type: "string"
-            Access-Control-Allow-Headers:
-              schema:
-                type: "string"
-          content: {}
-      security:
-      - api_key: []
   /aggregates:
     get:
       security:
@@ -351,6 +317,48 @@ paths:
           content: {}
       security:
       - api_key: []
+  /data_packages/{data_package_id}/chart:
+    get:
+      parameters:
+      - name: "data_package_id"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "column"
+        in: "query"
+        required: true
+        schema:
+          type: "string"
+      - name: "filters"
+        in: "query"
+        schema:
+          type: "string"
+      security:
+      - api_key: []
+    options:
+      parameters:
+      - name: "data_package_id"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "Default response for CORS method"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      security:
+      - api_key: []
   /last_valid/{study}/{data_package}/{site}/{version}/{filename}:
     get:
       parameters:
@@ -513,39 +521,6 @@ paths:
           content: {}
       security:
       - api_key: []
-  /data_packages/{id}:
-    get:
-      parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        schema:
-          type: "string"
-      security:
-      - api_key: []
-    options:
-      parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        schema:
-          type: "string"
-      responses:
-        "200":
-          description: "Default response for CORS method"
-          headers:
-            Access-Control-Allow-Origin:
-              schema:
-                type: "string"
-            Access-Control-Allow-Methods:
-              schema:
-                type: "string"
-            Access-Control-Allow-Headers:
-              schema:
-                type: "string"
-          content: {}
-      security:
-      - api_key: []
   /metadata/{site}:
     get:
       parameters:
@@ -586,6 +561,39 @@ paths:
       - api_key: []
     options:
       summary: "CORS support"
+      responses:
+        "200":
+          description: "Default response for CORS method"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      security:
+      - api_key: []
+  /data_packages/{data_package_id}:
+    get:
+      parameters:
+      - name: "data_package_id"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      security:
+      - api_key: []
+    options:
+      parameters:
+      - name: "data_package_id"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       responses:
         "200":
           description: "Default response for CORS method"

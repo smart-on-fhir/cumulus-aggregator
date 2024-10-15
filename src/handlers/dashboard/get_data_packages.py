@@ -26,7 +26,7 @@ def data_packages_handler(event, context):
     elif event.get("pathParameters"):
         found = None
         for package in data_packages:
-            if event["pathParameters"]["id"] == package["id"]:
+            if event["pathParameters"]["data_package_id"] == package["id"]:
                 found = package
         if found:
             payload = found
