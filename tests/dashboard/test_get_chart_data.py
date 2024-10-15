@@ -36,7 +36,7 @@ def mock_data_frame(filter_param):
             [],
             {"data_package_id": "test_study"},
             f'SELECT gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
-            "WHERE COALESCE (race) IS NOT Null AND gender IS NOT Null  "
+            "WHERE COALESCE (cast(race AS VARCHAR)) IS NOT NULL AND gender IS NOT NULL  "
             "GROUP BY gender ORDER BY gender",
         ),
         (
@@ -44,7 +44,7 @@ def mock_data_frame(filter_param):
             [],
             {"data_package_id": "test_study"},
             f'SELECT race, gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
-            "WHERE gender IS NOT Null  "
+            "WHERE gender IS NOT NULL  "
             "GROUP BY race, gender ORDER BY race, gender",
         ),
         (
@@ -52,7 +52,7 @@ def mock_data_frame(filter_param):
             ["gender:strEq:female"],
             {"data_package_id": "test_study"},
             f'SELECT gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
-            "WHERE COALESCE (race) IS NOT Null AND gender IS NOT Null "
+            "WHERE COALESCE (cast(race AS VARCHAR)) IS NOT NULL AND gender IS NOT NULL "
             "AND gender LIKE 'female' "
             "GROUP BY gender ORDER BY gender",
         ),
@@ -61,7 +61,7 @@ def mock_data_frame(filter_param):
             ["gender:strEq:female"],
             {"data_package_id": "test_study"},
             f'SELECT race, gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
-            "WHERE gender IS NOT Null "
+            "WHERE gender IS NOT NULL "
             "AND gender LIKE 'female' "
             "GROUP BY race, gender ORDER BY race, gender",
         ),
