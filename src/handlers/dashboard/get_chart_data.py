@@ -62,7 +62,10 @@ def _build_query(query_params: dict, filters: list, path_params: dict) -> str:
         group_str = f"{query_params['stratifier']}, {group_str}"
         columns.remove(query_params["stratifier"])
     if len(columns) > 0:
-        coalesce_str = f"WHERE COALESCE ({','.join(columns)}) IS NOT Null AND"
+        coalesce_str = (
+            f"WHERE COALESCE (cast({' AS VARCHAR), cast('.join(columns)} AS VARCHAR)) "
+            "IS NOT Null AND"
+        )
     else:
         coalesce_str = "WHERE"
     query_str = (
