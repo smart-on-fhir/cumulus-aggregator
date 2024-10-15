@@ -70,8 +70,12 @@ def _build_query(query_params: dict, filters: list, path_params: dict) -> str:
         f"FROM \"{os.environ.get('GLUE_DB_NAME')}\".\"{dp_id}\" "
         f"{coalesce_str} "
         f"{query_params['column']} IS NOT Null {filter_str} "
-        f"GROUP BY {group_str}"
+        f"GROUP BY {group_str} "
     )
+    if "stratifier" in query_params.keys():
+        query_str += f"ORDER BY {query_params['stratifier']}, {query_params['column']}"
+    else:
+        query_str += f"ORDER BY {query_params['column']}"
     logging.debug(query_str)
     return query_str
 
