@@ -92,17 +92,17 @@ from tests.mock_utils import (
             200,
             ITEM_COUNT + 4,
         ),
-        # (  # ensuring that a data package that is a substring does not get
-        #     # merged by substr match
-        #     "./tests/test_data/count_synthea_patient.parquet",
-        #     f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/{EXISTING_SITE}/"
-        #     f"{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}_{EXISTING_VERSION}/encount.parquet",
-        #     f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/"
-        #     f"{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}_{EXISTING_VERSION}/encount.parquet",
-        #     False,
-        #     200,
-        #     ITEM_COUNT + 4,
-        # ),
+        (  # ensuring that a data package that is a substring does not get
+            # merged by substr match
+            "./tests/test_data/count_synthea_patient.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/{EXISTING_SITE}/"
+            f"{EXISTING_VERSION}/encount.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/{EXISTING_SITE}/"
+            f"{EXISTING_VERSION}/encount.parquet",
+            False,
+            200,
+            ITEM_COUNT + 4,
+        ),
         (  # Empty file upload
             None,
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
@@ -136,7 +136,6 @@ def test_powerset_merge_single_upload(
     mock_notification,
 ):
     s3_client = boto3.client("s3", region_name="us-east-1")
-    s3_res = s3_client.list_objects_v2(Bucket=TEST_BUCKET)
     if upload_file is not None:
         s3_client.upload_file(
             upload_file,

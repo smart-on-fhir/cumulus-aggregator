@@ -26,10 +26,11 @@ def _get_table_cols(dp_id: str, version: str | None = None) -> list:
     """
 
     s3_bucket_name = os.environ.get("BUCKET_NAME")
-    prefix = f"{enums.BucketPath.CSVAGGREGATE.value}/{dp_id.split('__')[0]}/{dp_id[:-4]}"
+    dp_name = dp_id.rsplit("__", 1)[0]
+    prefix = f"{enums.BucketPath.CSVAGGREGATE.value}/{dp_id.split('__')[0]}/{dp_name}"
     if version is None:
         version = functions.get_latest_data_package_version(s3_bucket_name, prefix)
-    s3_key = f"{prefix}/{version}/{dp_id[:-4]}__aggregate.csv"
+    s3_key = f"{prefix}/{version}/{dp_name}__aggregate.csv"
     s3_client = boto3.client("s3")
     try:
         s3_iter = s3_client.get_object(
@@ -117,6 +118,8 @@ def chart_data_handler(event, context):
         res = _format_payload(df, query_params, filters)
         res = functions.http_response(200, res)
     except errors.AggregatorS3Error:
+        # while the API is publicly accessible, we've been asked to not pass
+        # helpful error messages back. revisit when dashboard is in AWS.
         res = functions.http_response(
             404, f"Aggregate for {path_params['data_package_id']} not found"
         )

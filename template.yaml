@@ -350,7 +350,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /data_packages/{data_package_id}/chart
+            Path: /data-packages/{data_package_id}/chart
             Method: GET
             RequestParameters: 
               - method.request.querystring.column:
@@ -417,7 +417,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /last_valid/{study}/{data_package}/{site}/{version}/{filename}
+            Path: /last-valid/{study}/{data_package}/{site}/{version}/{filename}
             Method: GET
       Policies:
         - S3ReadPolicy:
@@ -463,7 +463,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /last_valid/
+            Path: /last-valid/
             Method: GET
       Policies:
         - S3ReadPolicy:
@@ -571,7 +571,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /data_packages
+            Path: /data-packages
             Method: GET
             RequestParameters: 
               - method.request.querystring.name:
@@ -580,7 +580,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /data_packages/{data_package_id}
+            Path: /data-packages/{data_package_id}
             Method: GET
       # TODO: it :should: be possible to move these policies to a central role/policy
       # set that can be referenced in multiple places; see

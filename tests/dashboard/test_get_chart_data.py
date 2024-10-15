@@ -104,8 +104,8 @@ def test_format_payload(query_params, filters, expected_payload):
 
 
 def test_get_data_cols(mock_bucket):
-    table_name = f"{EXISTING_STUDY}__{EXISTING_DATA_P}_{EXISTING_VERSION}"
-    res = get_chart_data._get_table_cols(table_name)
+    table_id = f"{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}"
+    res = get_chart_data._get_table_cols(table_id)
     cols = pandas.read_csv("./tests/test_data/count_synthea_patient_agg.csv").columns
     assert res == list(cols)
 

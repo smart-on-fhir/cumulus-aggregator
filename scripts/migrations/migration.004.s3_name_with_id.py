@@ -29,15 +29,14 @@ def s3_name_with_id(bucket: str):
     contents = res["Contents"]
     moved_files = 0
     for s3_file in contents:
-        if s3_file["Key"].split("/")[0] == "aggregates":
-            key = s3_file["Key"]
-            key_array = key.split("/")
-            if len(key_array[3]) == 3:
-                key_array[3] = f"{key_array[2]}_{key_array[3]}"
-                new_key = "/".join(key_array)
-                client.copy({"Bucket": bucket, "Key": key}, bucket, new_key)
-                client.delete_object(Bucket=bucket, Key=key)
-                moved_files += 1
+        key = s3_file["Key"]
+        key_array = key.split("/")
+        if key_array[0] == "aggregates" and len(key_array[3]) == 3:
+            key_array[3] = f"{key_array[2]}__{key_array[3]}"
+            new_key = "/".join(key_array)
+            client.copy({"Bucket": bucket, "Key": key}, bucket, new_key)
+            client.delete_object(Bucket=bucket, Key=key)
+            moved_files += 1
     print(f"Updated {moved_files} aggregates")
 
 
