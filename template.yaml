@@ -336,7 +336,7 @@ Resources:
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardGetChartDataFunction-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardGetChartData-${DeployStage}"
       MemorySize: 2048
       Timeout: 100
       Description: Retrieve data for chart display in Cumulus Dashboard
@@ -350,8 +350,13 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /chart-data/{subscription_name}
+            Path: /data-packages/{data_package_id}/chart
             Method: GET
+            RequestParameters: 
+              - method.request.querystring.column:
+                  Required: true
+              - method.request.querystring.filters:
+                  Required: false
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref AggregatorBucket
@@ -412,7 +417,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /last_valid/{study}/{data_package}/{site}/{version}/{filename}
+            Path: /last-valid/{study}/{data_package}/{site}/{version}/{filename}
             Method: GET
       Policies:
         - S3ReadPolicy:
@@ -458,7 +463,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /last_valid/
+            Path: /last-valid/
             Method: GET
       Policies:
         - S3ReadPolicy:
@@ -566,7 +571,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /data_packages
+            Path: /data-packages
             Method: GET
             RequestParameters: 
               - method.request.querystring.name:
@@ -575,7 +580,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /data_packages/{id}
+            Path: /data-packages/{data_package_id}
             Method: GET
       # TODO: it :should: be possible to move these policies to a central role/policy
       # set that can be referenced in multiple places; see
@@ -735,7 +740,7 @@ Resources:
       CatalogId: !Ref AWS::AccountId
       DatabaseInput:
         Name: !Sub '${GlueNameParameter}-${DeployStage}'
-        Description: Database for serving data to Cumulus Dashboard
+        Description: Database for serving data to the Cumulus Dashboard
 
   GlueCrawler:
     Type: AWS::Glue::Crawler
@@ -743,11 +748,11 @@ Resources:
       Name: !Sub '${GlueNameParameter}-crawler-${DeployStage}'
       DatabaseName: !Ref GlueDB
       Role: !GetAtt CrawlerRole.Arn
-      Configuration: "{\"Version\":1.0,\"Grouping\":{\"TableLevelConfiguration\":4}}"
+      Configuration: "{\"Version\":1.0,\"Grouping\":{\"TableLevelConfiguration\":5}}"
       RecrawlPolicy:
         RecrawlBehavior: CRAWL_EVERYTHING
       SchemaChangePolicy:
-        DeleteBehavior: DEPRECATE_IN_DATABASE
+        DeleteBehavior: DELETE_FROM_DATABASE
         UpdateBehavior: UPDATE_IN_DATABASE
       Schedule:
         ScheduleExpression: "cron(0 22 ? * SUN *)"

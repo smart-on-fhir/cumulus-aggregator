@@ -44,7 +44,7 @@ class S3Manager:
         self.study = s3_key_array[1]
         self.data_package = s3_key_array[2].split("__")[1]
         self.site = s3_key_array[3]
-        self.version = s3_key_array[4]
+        self.version = s3_key_array[4].split("__")[-1]
         self.metadata = functions.read_metadata(self.s3_client, self.s3_bucket_name)
         self.types_metadata = functions.read_metadata(
             self.s3_client,
@@ -53,7 +53,8 @@ class S3Manager:
         )
         self.csv_aggerate_path = (
             f"s3://{self.s3_bucket_name}/{enums.BucketPath.CSVAGGREGATE.value}/"
-            f"{self.study}/{self.study}__{self.data_package}/{self.version}/"
+            f"{self.study}/{self.study}__{self.data_package}/"
+            f"{self.version}/"
             f"{self.study}__{self.data_package}__aggregate.csv"
         )
 
@@ -85,7 +86,8 @@ class S3Manager:
         """writes dataframe as parquet to s3 and sends an SNS notification if new"""
         parquet_aggregate_path = (
             f"s3://{self.s3_bucket_name}/{enums.BucketPath.AGGREGATE.value}/"
-            f"{self.study}/{self.study}__{self.data_package}/{self.version}/"
+            f"{self.study}/{self.study}__{self.data_package}/"
+            f"{self.study}__{self.data_package}__{self.version}/"
             f"{self.study}__{self.data_package}__aggregate.parquet"
         )
         awswrangler.s3.to_parquet(df, parquet_aggregate_path, index=False)

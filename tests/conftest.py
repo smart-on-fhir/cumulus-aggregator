@@ -49,7 +49,8 @@ def _init_mock_data(s3_client, bucket, study, data_package, version):
         "./tests/test_data/count_synthea_patient_agg.parquet",
         bucket,
         f"{enums.BucketPath.AGGREGATE.value}/{study}/"
-        f"{study}__{data_package}/{version}/{study}__{data_package}__aggregate.parquet",
+        f"{study}__{data_package}/{study}__{data_package}__{version}/"
+        f"{study}__{data_package}__aggregate.parquet",
     )
     s3_client.upload_file(
         "./tests/test_data/count_synthea_patient_agg.csv",

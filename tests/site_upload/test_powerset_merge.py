@@ -95,10 +95,10 @@ from tests.mock_utils import (
         (  # ensuring that a data package that is a substring does not get
             # merged by substr match
             "./tests/test_data/count_synthea_patient.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/"
-            f"{EXISTING_SITE}/{EXISTING_VERSION}/encount.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/"
-            f"{EXISTING_SITE}/{EXISTING_VERSION}/encount.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/{EXISTING_SITE}/"
+            f"{EXISTING_VERSION}/encount.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/{EXISTING_SITE}/"
+            f"{EXISTING_VERSION}/encount.parquet",
             False,
             200,
             ITEM_COUNT + 4,
@@ -164,7 +164,7 @@ def test_powerset_merge_single_upload(
         ]
     }
     # This array looks like:
-    # ['', 'study', 'package', 'site', 'file']
+    # ['', 'study', 'package', 'site', 'version','file']
     event_list = event_key.split("/")
     study = event_list[1]
     data_package = event_list[2]

@@ -8,33 +8,6 @@ servers:
     basePath:
       default: "/"
 paths:
-  /data_packages:
-    get:
-      parameters:
-      - name: "name"
-        in: "query"
-        schema:
-          type: "string"
-      security:
-      - api_key: []
-    options:
-      summary: "CORS support"
-      responses:
-        "200":
-          description: "Default response for CORS method"
-          headers:
-            Access-Control-Allow-Origin:
-              schema:
-                type: "string"
-            Access-Control-Allow-Methods:
-              schema:
-                type: "string"
-            Access-Control-Allow-Headers:
-              schema:
-                type: "string"
-          content: {}
-      security:
-      - api_key: []
   /metadata:
     get:
       security:
@@ -57,27 +30,56 @@ paths:
           content: {}
       security:
       - api_key: []
-  /chart-data/{subscription_name}:
+  /last-valid:
+    get:
+      security:
+      - api_key: []
+    options:
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      security:
+      - api_key: []
+  /data-packages/{data_package_id}/chart:
     get:
       parameters:
-      - name: "subscription_name"
+      - name: "data_package_id"
         in: "path"
         required: true
+        schema:
+          type: "string"
+      - name: "column"
+        in: "query"
+        required: true
+        schema:
+          type: "string"
+      - name: "filters"
+        in: "query"
         schema:
           type: "string"
       security:
       - api_key: []
     options:
-      summary: "CORS support"
       parameters:
-      - name: "subscription_name"
+      - name: "data_package_id"
         in: "path"
         required: true
         schema:
           type: "string"
       responses:
         "200":
-          description: "Default response for CORS method"
+          description: "200 response"
           headers:
             Access-Control-Allow-Origin:
               schema:
@@ -92,28 +94,6 @@ paths:
       security:
       - api_key: []
   /aggregates:
-    get:
-      security:
-      - api_key: []
-    options:
-      summary: "CORS support"
-      responses:
-        "200":
-          description: "Default response for CORS method"
-          headers:
-            Access-Control-Allow-Origin:
-              schema:
-                type: "string"
-            Access-Control-Allow-Methods:
-              schema:
-                type: "string"
-            Access-Control-Allow-Headers:
-              schema:
-                type: "string"
-          content: {}
-      security:
-      - api_key: []
-  /last_valid:
     get:
       security:
       - api_key: []
@@ -351,7 +331,33 @@ paths:
           content: {}
       security:
       - api_key: []
-  /last_valid/{study}/{data_package}/{site}/{version}/{filename}:
+  /data-packages:
+    get:
+      parameters:
+      - name: "name"
+        in: "query"
+        schema:
+          type: "string"
+      security:
+      - api_key: []
+    options:
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      security:
+      - api_key: []
+  /last-valid/{study}/{data_package}/{site}/{version}/{filename}:
     get:
       parameters:
       - name: "filename"
@@ -382,7 +388,6 @@ paths:
       security:
       - api_key: []
     options:
-      summary: "CORS support"
       parameters:
       - name: "filename"
         in: "path"
@@ -411,7 +416,40 @@ paths:
           type: "string"
       responses:
         "200":
-          description: "Default response for CORS method"
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      security:
+      - api_key: []
+  /data-packages/{data_package_id}:
+    get:
+      parameters:
+      - name: "data_package_id"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      security:
+      - api_key: []
+    options:
+      parameters:
+      - name: "data_package_id"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "200 response"
           headers:
             Access-Control-Allow-Origin:
               schema:
@@ -493,39 +531,6 @@ paths:
         schema:
           type: "string"
       - name: "site"
-        in: "path"
-        required: true
-        schema:
-          type: "string"
-      responses:
-        "200":
-          description: "Default response for CORS method"
-          headers:
-            Access-Control-Allow-Origin:
-              schema:
-                type: "string"
-            Access-Control-Allow-Methods:
-              schema:
-                type: "string"
-            Access-Control-Allow-Headers:
-              schema:
-                type: "string"
-          content: {}
-      security:
-      - api_key: []
-  /data_packages/{id}:
-    get:
-      parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        schema:
-          type: "string"
-      security:
-      - api_key: []
-    options:
-      parameters:
-      - name: "id"
         in: "path"
         required: true
         schema:

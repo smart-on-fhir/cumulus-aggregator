@@ -9,6 +9,7 @@ from src.handlers.dashboard import get_chart_data
 from tests.mock_utils import (
     EXISTING_DATA_P,
     EXISTING_STUDY,
+    EXISTING_VERSION,
     MOCK_ENV,
     TEST_GLUE_DB,
 )
@@ -33,7 +34,7 @@ def mock_data_frame(filter_param):
         (
             {"column": "gender"},
             [],
-            {"data_package": "test_study"},
+            {"data_package_id": "test_study"},
             f'SELECT gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
             "WHERE COALESCE (race) IS NOT Null AND gender IS NOT Null  "
             "GROUP BY gender",
@@ -41,7 +42,7 @@ def mock_data_frame(filter_param):
         (
             {"column": "gender", "stratifier": "race"},
             [],
-            {"data_package": "test_study"},
+            {"data_package_id": "test_study"},
             f'SELECT race, gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
             "WHERE gender IS NOT Null  "
             "GROUP BY race, gender",
@@ -49,7 +50,7 @@ def mock_data_frame(filter_param):
         (
             {"column": "gender"},
             ["gender:strEq:female"],
-            {"data_package": "test_study"},
+            {"data_package_id": "test_study"},
             f'SELECT gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
             "WHERE COALESCE (race) IS NOT Null AND gender IS NOT Null "
             "AND gender LIKE 'female' "
@@ -58,7 +59,7 @@ def mock_data_frame(filter_param):
         (
             {"column": "gender", "stratifier": "race"},
             ["gender:strEq:female"],
-            {"data_package": "test_study"},
+            {"data_package_id": "test_study"},
             f'SELECT race, gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
             "WHERE gender IS NOT Null "
             "AND gender LIKE 'female' "
@@ -103,8 +104,8 @@ def test_format_payload(query_params, filters, expected_payload):
 
 
 def test_get_data_cols(mock_bucket):
-    table_name = f"{EXISTING_STUDY}__{EXISTING_DATA_P}"
-    res = get_chart_data._get_table_cols(table_name)
+    table_id = f"{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}"
+    res = get_chart_data._get_table_cols(table_id)
     cols = pandas.read_csv("./tests/test_data/count_synthea_patient_agg.csv").columns
     assert res == list(cols)
 

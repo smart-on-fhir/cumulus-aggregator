@@ -22,11 +22,13 @@ def test_get_data_packages(mock_bucket):
     assert 2 == len(json.loads(res["body"]))
     for item in data:
         assert item["name"] == "encounter"
-    res = data_packages_handler({"pathParameters": {"id": "other_study__document__100"}}, {})
+    res = data_packages_handler(
+        {"pathParameters": {"data_package_id": "other_study__document__100"}}, {}
+    )
     data = json.loads(res["body"])
     assert res["statusCode"] == 200
     assert 9 == len(data)
     assert data["id"] == "other_study__document__100"
-    res = data_packages_handler({"pathParameters": {"id": "not_an_id"}}, {})
+    res = data_packages_handler({"pathParameters": {"data_package_id": "not_an_id"}}, {})
     data = json.loads(res["body"])
     assert res["statusCode"] == 404
