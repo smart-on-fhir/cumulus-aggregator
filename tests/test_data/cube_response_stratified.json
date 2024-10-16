@@ -4,6 +4,11 @@
     "rowCount": 15,
     "totalCount": 151974,
     "stratifier": "race",
+    "counts": {
+        "": 75987,
+        "male": 42148,
+        "female": 33839
+    },
     "data": [
         {
             "stratifier": "",
@@ -40,108 +45,6 @@
             ]
         },
         {
-            "stratifier": "",
-            "rows": [
-                [
-                    37990,
-                    ""
-                ],
-                [
-                    21073,
-                    "male"
-                ],
-                [
-                    16917,
-                    "female"
-                ]
-            ]
-        },
-        {
-            "stratifier": "White",
-            "rows": [
-                [
-                    32392,
-                    ""
-                ],
-                [
-                    18287,
-                    "male"
-                ],
-                [
-                    14105,
-                    "female"
-                ]
-            ]
-        },
-        {
-            "stratifier": "",
-            "rows": [
-                [
-                    37990,
-                    ""
-                ],
-                [
-                    21073,
-                    "male"
-                ],
-                [
-                    16917,
-                    "female"
-                ]
-            ]
-        },
-        {
-            "stratifier": "White",
-            "rows": [
-                [
-                    32392,
-                    ""
-                ],
-                [
-                    18287,
-                    "male"
-                ],
-                [
-                    14105,
-                    "female"
-                ]
-            ]
-        },
-        {
-            "stratifier": "Black or African American",
-            "rows": [
-                [
-                    3870,
-                    ""
-                ],
-                [
-                    2055,
-                    "female"
-                ],
-                [
-                    1815,
-                    "male"
-                ]
-            ]
-        },
-        {
-            "stratifier": "Black or African American",
-            "rows": [
-                [
-                    3870,
-                    ""
-                ],
-                [
-                    2055,
-                    "female"
-                ],
-                [
-                    1815,
-                    "male"
-                ]
-            ]
-        },
-        {
             "stratifier": "Black or African American",
             "rows": [
                 [
@@ -171,74 +74,6 @@
                 ],
                 [
                     735,
-                    "female"
-                ]
-            ]
-        },
-        {
-            "stratifier": "Asian",
-            "rows": [
-                [
-                    1675,
-                    ""
-                ],
-                [
-                    940,
-                    "male"
-                ],
-                [
-                    735,
-                    "female"
-                ]
-            ]
-        },
-        {
-            "stratifier": "Asian",
-            "rows": [
-                [
-                    1675,
-                    ""
-                ],
-                [
-                    940,
-                    "male"
-                ],
-                [
-                    735,
-                    "female"
-                ]
-            ]
-        },
-        {
-            "stratifier": "American Indian or Alaska Native",
-            "rows": [
-                [
-                    60,
-                    ""
-                ],
-                [
-                    33,
-                    "male"
-                ],
-                [
-                    27,
-                    "female"
-                ]
-            ]
-        },
-        {
-            "stratifier": "American Indian or Alaska Native",
-            "rows": [
-                [
-                    60,
-                    ""
-                ],
-                [
-                    33,
-                    "male"
-                ],
-                [
-                    27,
                     "female"
                 ]
             ]
