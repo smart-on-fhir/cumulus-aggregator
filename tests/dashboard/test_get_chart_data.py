@@ -102,8 +102,6 @@ def test_build_query(query_params, filters, path_params, query_str):
 def test_format_payload(query_params, filters, expected_payload):
     df = mock_data_frame(filters)
     payload = get_chart_data._format_payload(df, query_params, filters, "cnt")
-    print(query_params)
-    print(payload)
     assert payload == expected_payload
 
 
@@ -120,7 +118,7 @@ def test_get_data_cols(mock_bucket):
         (
             "SELECT gender, sum(cnt) as cnt"
             f'FROM "{TEST_GLUE_DB}"."test_study" '
-            "WHERE COALESCE (race) IS NOT Null AND gender IS NOT Null "
+            "WHERE COALESCE (race) IS NOT NULL AND gender IS NOT NULL "
             "AND gender LIKE 'female' "
             "GROUP BY gender",
             "cnt",
