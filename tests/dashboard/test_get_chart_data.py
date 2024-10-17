@@ -36,7 +36,7 @@ def mock_data_frame(filter_param):
             [],
             {"data_package_id": "test_study"},
             f'SELECT gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
-            "WHERE COALESCE (cast(race AS VARCHAR)) IS NOT NULL AND gender IS NOT NULL  "
+            "WHERE COALESCE (cast(race AS VARCHAR)) IS NOT NULL AND gender IS NOT NULL "
             "GROUP BY gender ORDER BY gender",
         ),
         (
@@ -44,7 +44,8 @@ def mock_data_frame(filter_param):
             [],
             {"data_package_id": "test_study"},
             f'SELECT race, gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
-            "WHERE gender IS NOT NULL  "
+            "WHERE gender IS NOT NULL "
+            "AND race IS NOT NULL "
             "GROUP BY race, gender ORDER BY race, gender",
         ),
         (
@@ -63,12 +64,13 @@ def mock_data_frame(filter_param):
             f'SELECT race, gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
             "WHERE gender IS NOT NULL "
             "AND gender LIKE 'female' "
+            "AND race IS NOT NULL "
             "GROUP BY race, gender ORDER BY race, gender",
         ),
     ],
 )
 def test_build_query(query_params, filters, path_params, query_str):
-    query = get_chart_data._build_query(query_params, filters, path_params)
+    query, _ = get_chart_data._build_query(query_params, filters, path_params)
     assert query == query_str
 
 
@@ -99,7 +101,7 @@ def test_build_query(query_params, filters, path_params, query_str):
 )
 def test_format_payload(query_params, filters, expected_payload):
     df = mock_data_frame(filters)
-    payload = get_chart_data._format_payload(df, query_params, filters)
+    payload = get_chart_data._format_payload(df, query_params, filters, "cnt")
     assert payload == expected_payload
 
 
@@ -113,11 +115,14 @@ def test_get_data_cols(mock_bucket):
 @mock.patch(
     "src.handlers.dashboard.get_chart_data._build_query",
     lambda query_params, filters, path_params: (
-        "SELECT gender, sum(cnt) as cnt"
-        f'FROM "{TEST_GLUE_DB}"."test_study" '
-        "WHERE COALESCE (race) IS NOT Null AND gender IS NOT Null "
-        "AND gender LIKE 'female' "
-        "GROUP BY gender",
+        (
+            "SELECT gender, sum(cnt) as cnt"
+            f'FROM "{TEST_GLUE_DB}"."test_study" '
+            "WHERE COALESCE (race) IS NOT NULL AND gender IS NOT NULL "
+            "AND gender LIKE 'female' "
+            "GROUP BY gender",
+            "cnt",
+        )
     ),
 )
 @mock.patch(

@@ -6,6 +6,9 @@
     "rowCount": 5,
     "totalCount": 33839,
     "stratifier": "race",
+    "counts": {
+        "female": 33839
+    },
     "data": [
         {
             "stratifier": "",

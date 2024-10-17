@@ -357,6 +357,8 @@ Resources:
                   Required: true
               - method.request.querystring.filters:
                   Required: false
+              - method.request.querystring.stratifier:
+                  Required: false
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref AggregatorBucket
