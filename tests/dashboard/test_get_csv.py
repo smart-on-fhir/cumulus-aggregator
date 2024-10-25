@@ -125,7 +125,7 @@ def test_get_csv(mock_bucket, params, status, expected):
             does_not_raise(),
         ),
         (
-            "/last_valid",
+            "/last-valid",
             200,
             [
                 "last_valid/study/encounter/princeton_plainsboro_teaching_hospital/099/study__encounter__aggregate.csv"
@@ -138,7 +138,7 @@ def test_get_csv(mock_bucket, params, status, expected):
 @mock.patch.dict(os.environ, mock_utils.MOCK_ENV)
 def test_get_csv_list(mock_bucket, path, status, expected, raises):
     with raises:
-        if path.startswith("/last_valid"):
+        if path.startswith("/last-valid"):
             _mock_last_valid()
         event = {"path": path}
         res = get_csv.get_csv_list_handler(event, {})
