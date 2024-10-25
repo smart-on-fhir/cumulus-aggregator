@@ -27,7 +27,6 @@ def bulk_csv_download(args):
     version = 0
     for file_url in file_urls:
         file_array = file_url.split("/")
-        print(file_array)
         dp_version = int(file_array[4 if args.type == "last-valid" else 3])
         if file_array[1] == args.study:
             if dp_version > version:
@@ -44,7 +43,6 @@ def bulk_csv_download(args):
     with zipfile.ZipFile(archive, "w") as zip_archive:
         for file in track(urls, description=f"Downloading {args.study} aggregates"):
             csv_url = f"https://{args.domain}/{file}"
-            print(csv_url)
             res = requests.get(
                 csv_url, headers={"x-api-key": args.api_key}, allow_redirects=True, timeout=300
             )
