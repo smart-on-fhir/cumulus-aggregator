@@ -128,7 +128,7 @@ def test_get_csv(mock_bucket, params, status, expected):
             "/last-valid",
             200,
             [
-                "last_valid/study/encounter/princeton_plainsboro_teaching_hospital/099/study__encounter__aggregate.csv"
+                "last-valid/study/encounter/princeton_plainsboro_teaching_hospital/099/study__encounter__aggregate.csv"
             ],
             does_not_raise(),
         ),
