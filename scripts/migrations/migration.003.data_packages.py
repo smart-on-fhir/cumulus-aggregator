@@ -108,8 +108,6 @@ def get_s3_json_as_dict(bucket, key: str):
     """reads a json object as dict (typically metadata in this case)"""
     s3_client = boto3.client("s3")
     bytes_buffer = io.BytesIO()
-    print(bucket)
-    print(key)
     s3_client.download_fileobj(
         Bucket=bucket,
         Key=key,
@@ -136,23 +134,24 @@ def cache_api_data(s3_bucket_name: str, db: str) -> None:
     )
     dp_details = []
     for dp in list(data_packages):
-        dp_detail = {
-            "study": dp.split("__", 1)[0],
-            "name": dp.split("__", 1)[1],
-        }
         try:
-            versions = column_types[dp_detail["study"]][dp_detail["name"]]
-            for version in versions:
-                dp_details.append(
-                    {
-                        **dp_detail,
-                        **versions[version],
-                        "version": version,
-                        "id": dp + "__" + version,
-                    }
-                )
-        except KeyError:
+            study, name, version = dp.split("__")
+        except ValueError:
+            print("invalid name: ", dp)
             continue
+        try:
+            matching_col_types = column_types[study][name]
+            dp_details.append(
+                {
+                    "study": study,
+                    "name": name,
+                    "version": version,
+                    **matching_col_types[dp],
+                    "id": dp,
+                }
+            )
+        except KeyError as e:
+            print("invalid key: ", e)
     s3_client.put_object(
         Bucket=s3_bucket_name,
         Key=f"{BucketPath.CACHE.value}/{JsonFilename.DATA_PACKAGES.value}.json",

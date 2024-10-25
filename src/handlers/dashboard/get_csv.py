@@ -82,7 +82,7 @@ def get_csv_list_handler(event, context):
     del context
     s3_bucket_name = os.environ.get("BUCKET_NAME")
     s3_client = boto3.client("s3")
-    if event["path"].startswith("/last_valid"):
+    if event["path"].startswith("/last-valid"):
         key_prefix = "last_valid"
         url_prefix = "last_valid"
     elif event["path"].startswith("/aggregates"):
