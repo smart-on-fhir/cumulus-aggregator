@@ -10,6 +10,7 @@ dependencies= [
     "awswrangler >=3.5, <4",
     "boto3",
     "pandas >=2, <3",
+    "requests", # scripts only
     "rich",
 ]
 authors = [

@@ -84,7 +84,7 @@ def get_csv_list_handler(event, context):
     s3_client = boto3.client("s3")
     if event["path"].startswith("/last-valid"):
         key_prefix = "last_valid"
-        url_prefix = "last_valid"
+        url_prefix = "last-valid"
     elif event["path"].startswith("/aggregates"):
         key_prefix = "csv_aggregates"
         url_prefix = "aggregates"
@@ -104,9 +104,9 @@ def get_csv_list_handler(event, context):
             data_package = key_parts[2].split("__")[1]
             version = key_parts[-2]
             filename = key_parts[-1]
-            site = key_parts[3] if url_prefix == "last_valid" else None
+            site = key_parts[3] if url_prefix == "last-valid" else None
             url_parts = [url_prefix, study, data_package, version, filename]
-            if url_prefix == "last_valid":
+            if url_prefix == "last-valid":
                 url_parts.insert(3, site)
             urls.append("/".join(url_parts))
         if not s3_objs["IsTruncated"]:
