@@ -6,8 +6,8 @@ from unittest import mock
 import boto3
 import pytest
 
-from src.handlers.dashboard import get_csv
-from src.handlers.shared import enums
+from src.dashboard.get_csv import get_csv
+from src.shared import enums
 from tests import mock_utils
 
 # data matching these params is created via conftest

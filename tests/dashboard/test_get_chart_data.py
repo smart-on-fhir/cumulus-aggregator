@@ -5,7 +5,7 @@ from unittest import mock
 import pandas
 import pytest
 
-from src.handlers.dashboard import get_chart_data
+from src.dashboard.get_chart_data import get_chart_data
 from tests.mock_utils import (
     EXISTING_DATA_P,
     EXISTING_STUDY,
@@ -26,7 +26,7 @@ def mock_data_frame(filter_param):
     return df
 
 
-@mock.patch("src.handlers.dashboard.get_chart_data._get_table_cols", mock_get_table_cols)
+@mock.patch("src.dashboard.get_chart_data.get_chart_data._get_table_cols", mock_get_table_cols)
 @mock.patch.dict(os.environ, MOCK_ENV)
 @pytest.mark.parametrize(
     "query_params,filters,path_params,query_str",
@@ -113,7 +113,7 @@ def test_get_data_cols(mock_bucket):
 
 
 @mock.patch(
-    "src.handlers.dashboard.get_chart_data._build_query",
+    "src.dashboard.get_chart_data.get_chart_data._build_query",
     lambda query_params, filters, path_params: (
         (
             "SELECT gender, sum(cnt) as cnt"

@@ -76,7 +76,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'CumulusAggFetchAuthorizer-${DeployStage}'
-      Handler: src/handlers/site_upload/api_gateway_authorizer.lambda_handler
+      CodeUri: ./src/site_upload/api_gateway_authorizer
+      Handler: api_gateway_authorizer.lambda_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
@@ -87,11 +88,9 @@ Resources:
       Description: Validates credentials before providing signed urls
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+          SECRET_NAME: !Sub 'CumulusUserSecrets-${DeployStage}'
           REGION: !Ref "AWS::Region"
       Policies:
-        - S3ReadPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
         - Statement:
           - Sid: KMSDecryptPolicy
             Effect: Allow
@@ -99,6 +98,14 @@ Resources:
               - kms:Decrypt
             Resource:
               - !ImportValue cumulus-kms-KMSKeyArn
+        - Statement:
+          - Sid: SecretsPolicy
+            Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource:
+              - !Ref UserSecrets
+
 
   FetchAuthorizerLogGroup:
     Type: AWS::Logs::LogGroup
@@ -110,7 +117,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'CumulusAggFetchUploadUrl-${DeployStage}'
-      Handler: src/handlers/site_upload/fetch_upload_url.upload_url_handler
+      CodeUri: ./src/site_upload/fetch_upload_url
+      Handler: fetch_upload_url.upload_url_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
@@ -151,7 +159,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'CumulusAggProcessUpload-${DeployStage}'
-      Handler: src/handlers/site_upload/process_upload.process_upload_handler
+      CodeUri: ./src/site_upload/process_upload
+      Handler: process_upload.process_upload_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
@@ -191,7 +200,8 @@ Resources:
     Properties:
       FunctionName: !Sub 'CumulusAggPowersetMerge-${DeployStage}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
-      Handler: src/handlers/site_upload/powerset_merge.powerset_merge_handler
+      CodeUri: ./src/site_upload/powerset_merge
+      Handler: powerset_merge.powerset_merge_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
@@ -233,7 +243,8 @@ Resources:
     Properties:
       FunctionName: !Sub 'CumulusAggStudyPeriod-${DeployStage}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
-      Handler: src/handlers/site_upload/study_period.study_period_handler
+      CodeUri: ./src/site_upload/study_period
+      Handler: study_period.study_period_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
@@ -272,7 +283,8 @@ Resources:
     Properties:
       FunctionName: !Sub 'CumulusAggCacheAPI-${DeployStage}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
-      Handler: src/handlers/site_upload/cache_api.cache_api_handler
+      CodeUri: ./src/site_upload/cache_api
+      Handler: cache_api.cache_api_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
@@ -331,7 +343,8 @@ Resources:
     Properties:
       FunctionName: !Sub 'CumulusAggDashboardGetChartData-${DeployStage}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
-      Handler: src/handlers/dashboard/get_chart_data.chart_data_handler
+      CodeUri: ./src/dashboard/get_chart_data
+      Handler: get_chart_data.chart_data_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
@@ -396,7 +409,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'CumulusAggDashboardGetCsv-${DeployStage}'
-      Handler: src/handlers/dashboard/get_csv.get_csv_handler
+      CodeUri: ./src/dashboard/get_csv
+      Handler: get_csv.get_csv_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
@@ -442,7 +456,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'CumulusAggDashboardGetCsvList-${DeployStage}'
-      Handler: src/handlers/dashboard/get_csv.get_csv_list_handler
+      CodeUri: ./src/dashboard/get_csv
+      Handler: get_csv.get_csv_list_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
@@ -489,7 +504,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'CumulusAggDashboardGetMetadata-${DeployStage}'
-      Handler: src/handlers/dashboard/get_metadata.metadata_handler
+      CodeUri: ./src/dashboard/get_metadata
+      Handler: get_metadata.metadata_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
@@ -554,7 +570,8 @@ Resources:
     Properties:
       FunctionName: !Sub 'CumulusAggDashboardDataPackages-${DeployStage}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
-      Handler: src/handlers/dashboard/get_data_packages.data_packages_handler
+      CodeUri: ./src/dashboard/get_data_packages
+      Handler: get_data_packages.data_packages_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
@@ -630,7 +647,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'CumulusAggDashboardStudyPeriods-${DeployStage}'
-      Handler: src/handlers/dashboard/get_study_periods.study_periods_handler
+      CodeUri: ./src/dashboard/get_study_periods
+      Handler: get_study_periods.study_periods_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
@@ -774,6 +792,17 @@ Resources:
           SelectedEngineVersion: "Athena engine version 3"
         ResultConfiguration:
           OutputLocation: !Sub "s3://${BucketNameParameter}-${AWS::AccountId}-${DeployStage}/athena/"
+
+### User login secrets
+
+  UserSecrets:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub 'CumulusUserSecrets-${DeployStage}'
+      Description: Upload credentials for Cumulus Users
+      # By default, we'll initiate this to an empty JSON object, and populate it via other methods.
+      SecretString: '{}'
+      KmsKeyId: !ImportValue cumulus-kms-KMSKeyArn
 
 ### IAM Roles
 

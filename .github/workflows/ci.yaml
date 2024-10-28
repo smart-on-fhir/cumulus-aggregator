@@ -54,7 +54,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install ".[dev]"
       - name: Run ruff
-        if: success() || failure() # still run black if above checks fails
+        if: success() || failure() # still run ruff if above checks fails
         run: |
           ruff check
           ruff format --check

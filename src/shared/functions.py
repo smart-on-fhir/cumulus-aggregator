@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 
 import boto3
 
-from src.handlers.shared import enums
+from . import enums
 
 TRANSACTION_METADATA_TEMPLATE = {
     enums.TransactionKeys.TRANSACTION_FORMAT_VERSION.value: "2",

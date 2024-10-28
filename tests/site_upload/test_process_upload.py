@@ -4,9 +4,8 @@ import boto3
 import pytest
 from freezegun import freeze_time
 
-from src.handlers.shared.enums import BucketPath
-from src.handlers.shared.functions import read_metadata
-from src.handlers.site_upload.process_upload import process_upload_handler
+from src.shared import enums, functions
+from src.site_upload.process_upload import process_upload
 from tests.mock_utils import (
     EXISTING_DATA_P,
     EXISTING_SITE,
@@ -122,31 +121,31 @@ def test_process_upload(
         s3_client.upload_file(
             upload_file,
             TEST_BUCKET,
-            f"{BucketPath.UPLOAD.value}{upload_path}",
+            f"{enums.BucketPath.UPLOAD.value}{upload_path}",
         )
     event = {
         "Records": [
             {
                 "awsRegion": "us-east-1",
-                "s3": {"object": {"key": f"{BucketPath.UPLOAD.value}{event_key}"}},
+                "s3": {"object": {"key": f"{enums.BucketPath.UPLOAD.value}{event_key}"}},
             }
         ]
     }
 
-    res = process_upload_handler(event, {})
+    res = process_upload.process_upload_handler(event, {})
     assert res["statusCode"] == status
     s3_res = s3_client.list_objects_v2(Bucket=TEST_BUCKET)
     assert len(s3_res["Contents"]) == expected_contents
     found_archive = False
     for item in s3_res["Contents"]:
         if item["Key"].endswith("aggregate.parquet"):
-            assert item["Key"].startswith(BucketPath.AGGREGATE.value)
+            assert item["Key"].startswith(enums.BucketPath.AGGREGATE.value)
         elif item["Key"].endswith("aggregate.csv"):
-            assert item["Key"].startswith(BucketPath.CSVAGGREGATE.value)
+            assert item["Key"].startswith(enums.BucketPath.CSVAGGREGATE.value)
         elif item["Key"].endswith("transactions.json"):
-            assert item["Key"].startswith(BucketPath.META.value)
+            assert item["Key"].startswith(enums.BucketPath.META.value)
             if upload_path is not None and "template" not in upload_path:
-                metadata = read_metadata(s3_client, TEST_BUCKET)
+                metadata = functions.read_metadata(s3_client, TEST_BUCKET)
                 if upload_file is not None and upload_path is not None:
                     path_params = upload_path.split("/")
                     study = path_params[1]
@@ -157,17 +156,17 @@ def test_process_upload(
                         metadata[site][study][data_package][version]["last_upload"]
                         == datetime.now(UTC).isoformat()
                     )
-        elif item["Key"].startswith(BucketPath.STUDY_META.value):
+        elif item["Key"].startswith(enums.BucketPath.STUDY_META.value):
             assert any(x in item["Key"] for x in ["_meta_", "/discovery__"])
-        elif item["Key"].startswith(BucketPath.ARCHIVE.value):
+        elif item["Key"].startswith(enums.BucketPath.ARCHIVE.value):
             found_archive = True
         else:
             assert (
-                item["Key"].startswith(BucketPath.LATEST.value)
-                or item["Key"].startswith(BucketPath.LAST_VALID.value)
-                or item["Key"].startswith(BucketPath.ERROR.value)
-                or item["Key"].startswith(BucketPath.ADMIN.value)
-                or item["Key"].startswith(BucketPath.CACHE.value)
+                item["Key"].startswith(enums.BucketPath.LATEST.value)
+                or item["Key"].startswith(enums.BucketPath.LAST_VALID.value)
+                or item["Key"].startswith(enums.BucketPath.ERROR.value)
+                or item["Key"].startswith(enums.BucketPath.ADMIN.value)
+                or item["Key"].startswith(enums.BucketPath.CACHE.value)
                 or item["Key"].endswith("study_periods.json")
                 or item["Key"].endswith("column_types.json")
             )

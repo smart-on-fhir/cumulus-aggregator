@@ -2,19 +2,17 @@
 
 import os
 
-from src.handlers.shared.decorators import generic_error_handler
-from src.handlers.shared.enums import BucketPath, JsonFilename
-from src.handlers.shared.functions import get_s3_json_as_dict, http_response
+from shared import decorators, enums, functions
 
 
-@generic_error_handler(msg="Error retrieving data packages")
+@decorators.generic_error_handler(msg="Error retrieving data packages")
 def data_packages_handler(event, context):
     """Retrieves list of data packages from S3."""
     del context
     status = 200
-    data_packages = get_s3_json_as_dict(
+    data_packages = functions.get_s3_json_as_dict(
         os.environ.get("BUCKET_NAME"),
-        f"{BucketPath.CACHE.value}/{JsonFilename.DATA_PACKAGES.value}.json",
+        f"{enums.BucketPath.CACHE.value}/{enums.JsonFilename.DATA_PACKAGES.value}.json",
     )
     payload = data_packages
     if event.get("queryStringParameters"):
@@ -33,5 +31,5 @@ def data_packages_handler(event, context):
         else:
             status = 404
             payload = None
-    res = http_response(status, payload, allow_cors=True)
+    res = functions.http_response(status, payload, allow_cors=True)
     return res

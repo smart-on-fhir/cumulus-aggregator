@@ -57,6 +57,15 @@ omit = [
     "*/api_gateway_authorizer.py",
 ]
 
+[tool.pytest.ini_options]
+pythonpath = [
+    # we use this to get 'shared' and 'filter_config' as root level packages, which matches
+    # the packaging in the lambda environment, allowing unit tests to function
+    'src/',
+    'src/dashboard/get_chart_data',
+]
+
+
 [tool.ruff]
 target-version = "py311"
 line-length = 100
