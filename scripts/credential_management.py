@@ -98,7 +98,7 @@ if __name__ == "__main__":
             args.create_auth[1],
             args.create_auth[2],
         )
-        print(id_str)
+        print(f"Add the following key/valye to secrets manager: \n {id_str}")
     elif args.create_meta:
         create_meta(s3_client, bucket, args.create_meta[0], args.create_meta[1])
         print(f"{args.create_meta[0]} mapped to S3 folder {args.create_meta[1]}")
