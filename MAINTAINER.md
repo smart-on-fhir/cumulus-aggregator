@@ -14,17 +14,23 @@ If you're writing unit tests - note that moto support for Athena mocking is curr
 
 ## Managing upload credentials
 
-In order to enable site uploads, we provide a [utility](../scripts/credential_management.py) to simplify managing S3-based dictionaries for authorizing pre-signed URLs. These artifacts should persist between cloudformation deployments, but if for some reason you need to delete the contents of the bucket and recreate, you can back up credentials by copying the contents of the admin/ virtual directory to another location.
+For security reasons, we've migrated the credentials for users to AWS secrets manager. Passwords should be managed via
+the secrets manager console. We provide a [utility](../scripts/credential_management.py) to simplify managing S3-based
+dictionaries for authorizing pre-signed URLs, or generating the user strings for secrets manager. The S3 artifacts should
+persist between cloudformation deployments, but if for some reason you need to delete the contents of the bucket and recreate,
+you can back up credentials by copying the contents of the admin/ virtual directory to another location.
 
-To create a new user, you would need to run the following two commands:
+To create a user credential for secrets manager, you would need to run the following command:
 
 Creating a user:
 `./scripts/cumulus_upload_data.py --ca user_name auth_secret site_short_name`
 
+To set up, or add to, a dictionary of short names to display names, you can run the following:
+
 Associating a site with an s3 directory:
 `./scripts/cumulus_upload_data.py --cm site_short_name s3_folder_name`
 
-These commands allow you to create a many to one relation of users to a given site, and a many to one relation of site to s3_upload_location, if so desired.
+These commands allow you to create a many to one relation of users to a given site, if so desired.
 
 Without running these commands, no credentials are created by default, and so no access to pre-signed URLs is allowed.
 
@@ -54,6 +60,6 @@ The SAM framework extends native cloudformation, usually with a lighter syntax, 
 
 - If you modify S3 bucket permissions while in watch mode, changes to the bucket may generate a permission denied message. You'll need to delete the bucket and bring down the deployment before restarting to apply your changes.
 
-- Similarly, if you end up in a ROLLBACK_FAILED state, usually the only recourse is to bring the deployment down and resync, or do a regular deployment deployment.
+- Similarly, if you end up in a ROLLBACK_FAILED state, usually the only recourse is to bring the deployment down and resync, do a regular deployment deployment, or manually initiate a rollback from the AWS console.
 
 Using deploy is a little safer than sync in this regard, though it does take longer for each deployment. Use your best judgement.

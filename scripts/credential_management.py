@@ -26,26 +26,10 @@ def _put_s3_data(name: str, bucket_name: str, client, data: dict, path: str = "a
     client.upload_fileobj(Bucket=bucket_name, Key=f"{path}/{name}", Fileobj=b_data)
 
 
-def create_auth(client, bucket_name: str, user: str, auth: str, site: str) -> str:
+def create_auth(client, user: str, auth: str, site: str) -> str:
     """Adds a new entry to the auth dict used to issue pre-signed URLs"""
-    file = "auth.json"
-    auth_dict = _get_s3_data(file, bucket_name, client)
     site_id = _basic_auth_str(user, auth).split(" ")[1]
-    auth_dict[site_id] = {"site": site}
-    _put_s3_data(file, bucket_name, client, auth_dict)
-    return site_id
-
-
-def delete_auth(client, bucket_name: str, site_id: str) -> bool:
-    """Removes an entry from the auth dict used to issue pre-signed urls"""
-    file = "auth.json"
-    auth_dict = _get_s3_data(file, bucket_name, client)
-    if site_id in auth_dict.keys():
-        auth_dict.pop(site_id)
-        _put_s3_data(file, bucket_name, client, auth_dict)
-        return True
-    else:
-        return False
+    return f'"{site_id}"": {{"site":{site}}}'
 
 
 def create_meta(client, bucket_name: str, site: str, folder: str) -> None:
@@ -110,19 +94,11 @@ if __name__ == "__main__":
         bucket = f"{args.bucket}-{args.env}"
     if args.create_auth:
         id_str = create_auth(
-            s3_client,
-            bucket,
             args.create_auth[0],
             args.create_auth[1],
             args.create_auth[2],
         )
-        print(f"{id_str} created")
-    elif args.delete_auth:
-        succeeded = delete_auth(s3_client, bucket, args.delete_auth)
-        if succeeded:
-            print(f"Removed {args.delete_auth}")
-        else:
-            print(f"{args.delete_auth} not found")
+        print(f"Add the following key/valye to secrets manager: \n {id_str}")
     elif args.create_meta:
         create_meta(s3_client, bucket, args.create_meta[0], args.create_meta[1])
         print(f"{args.create_meta[0]} mapped to S3 folder {args.create_meta[1]}")

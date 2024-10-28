@@ -11,8 +11,7 @@ import boto3
 import numpy
 import pandas
 from pandas.core.indexes.range import RangeIndex
-
-from src.handlers.shared import (
+from shared import (
     awswrangler_functions,
     decorators,
     enums,

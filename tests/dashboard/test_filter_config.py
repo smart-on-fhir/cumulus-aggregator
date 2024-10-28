@@ -1,6 +1,6 @@
 import pytest
 
-from src.handlers.dashboard.filter_config import get_filter_string
+from src.dashboard.get_chart_data import filter_config
 
 
 @pytest.mark.parametrize(
@@ -136,4 +136,4 @@ from src.handlers.dashboard.filter_config import get_filter_string
     ],
 )
 def test_filter_string(input_str, output_str):
-    assert get_filter_string(input_str) == output_str
+    assert filter_config.get_filter_string(input_str) == output_str

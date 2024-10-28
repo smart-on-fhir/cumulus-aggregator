@@ -1,8 +1,10 @@
+import json
 from contextlib import nullcontext as does_not_raise
+from unittest import mock
 
 import pytest
 
-from src.handlers.site_upload import api_gateway_authorizer
+from src.site_upload.api_gateway_authorizer import api_gateway_authorizer
 from tests import mock_utils
 
 
@@ -14,7 +16,12 @@ from tests import mock_utils
         (None, pytest.raises(AttributeError)),
     ],
 )
-def test_validate_pw(auth, expects, mock_bucket):
+@mock.patch("botocore.client")
+def test_validate_pw(mock_client, auth, expects):
+    mock_secret_client = mock_client.ClientCreator.return_value.create_client.return_value
+    mock_secret_client.get_secret_value.return_value = {
+        "SecretString": json.dumps(mock_utils.get_mock_auth())
+    }
     mock_headers = {"Authorization": auth}
     event = {
         "headers": mock_headers,
@@ -22,4 +29,5 @@ def test_validate_pw(auth, expects, mock_bucket):
     }
     with expects:
         res = api_gateway_authorizer.lambda_handler(event, {})
+        assert mock_client.is_called()
         assert res["policyDocument"]["Statement"][0]["Effect"] == "Allow"

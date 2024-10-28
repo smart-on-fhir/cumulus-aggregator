@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from src.handlers.dashboard.get_metadata import metadata_handler
+from src.dashboard.get_metadata import get_metadata
 from tests import mock_utils
 
 
@@ -50,7 +50,7 @@ from tests import mock_utils
 def test_get_metadata(mock_bucket, params, status, expected):
     event = {"pathParameters": params}
 
-    res = metadata_handler(event, {})
+    res = get_metadata.metadata_handler(event, {})
     assert res["statusCode"] == status
     if status == 200:
         assert json.loads(res["body"]) == expected

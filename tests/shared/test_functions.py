@@ -4,7 +4,7 @@ from unittest import mock
 import pandas
 import pytest
 
-from src.handlers.shared import functions, pandas_functions
+from src.shared import functions, pandas_functions
 
 
 @pytest.mark.parametrize(

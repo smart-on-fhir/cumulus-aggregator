@@ -7,10 +7,9 @@ import os
 
 import awswrangler
 import boto3
+import filter_config
 import pandas
-
-from src.handlers.dashboard import filter_config
-from src.handlers.shared import decorators, enums, errors, functions
+from shared import decorators, enums, errors, functions
 
 log_level = os.environ.get("LAMBDA_LOG_LEVEL", "INFO")
 logger = logging.getLogger()

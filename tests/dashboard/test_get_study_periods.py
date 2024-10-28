@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from src.handlers.dashboard.get_study_periods import study_periods_handler
+from src.dashboard.get_study_periods import get_study_periods
 from tests.mock_utils import (
     EXISTING_SITE,
     EXISTING_STUDY,
@@ -32,7 +32,7 @@ from tests.mock_utils import (
 )
 def test_get_study_periods(mock_bucket, params, status, expected):
     event = {"pathParameters": params}
-    res = study_periods_handler(event, {})
+    res = get_study_periods.study_periods_handler(event, {})
     assert res["statusCode"] == status
     if status == 200:
         assert json.loads(res["body"]) == expected

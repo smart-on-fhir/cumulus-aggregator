@@ -4,8 +4,8 @@ from unittest import mock
 import botocore
 import pytest
 
-from src.handlers.shared import enums
-from src.handlers.site_upload import fetch_upload_url
+from src.shared import enums
+from src.site_upload.fetch_upload_url import fetch_upload_url
 from tests.mock_utils import (
     EXISTING_DATA_P,
     EXISTING_SITE,

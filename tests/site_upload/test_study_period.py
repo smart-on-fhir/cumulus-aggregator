@@ -5,9 +5,8 @@ import boto3
 import pytest
 from freezegun import freeze_time
 
-from src.handlers.shared.enums import BucketPath
-from src.handlers.shared.functions import read_metadata
-from src.handlers.site_upload.study_period import study_period_handler
+from src.shared import enums, functions
+from src.site_upload.study_period import study_period
 from tests.mock_utils import (
     EXISTING_DATA_P,
     EXISTING_SITE,
@@ -91,12 +90,12 @@ def test_process_upload(
         s3_client.upload_file(
             upload_file,
             TEST_BUCKET,
-            f"{BucketPath.STUDY_META.value}{upload_path}",
+            f"{enums.BucketPath.STUDY_META.value}{upload_path}",
         )
-    event = {"Records": [{"Sns": {"Message": f"{BucketPath.STUDY_META.value}{event_key}"}}]}
-    res = study_period_handler(event, {})
+    event = {"Records": [{"Sns": {"Message": f"{enums.BucketPath.STUDY_META.value}{event_key}"}}]}
+    res = study_period.study_period_handler(event, {})
     assert res["statusCode"] == status
-    metadata = read_metadata(s3_client, TEST_BUCKET, meta_type="study_periods")
+    metadata = functions.read_metadata(s3_client, TEST_BUCKET, meta_type="study_periods")
     if upload_file is not None and upload_path is not None:
         path_params = upload_path.split("/")
         study = path_params[1]

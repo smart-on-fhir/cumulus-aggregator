@@ -30,7 +30,7 @@ import pytest
 from moto import mock_athena, mock_s3, mock_sns
 
 from scripts import credential_management
-from src.handlers.shared import enums, functions
+from src.shared import enums, functions
 from tests import mock_utils
 
 
@@ -95,13 +95,10 @@ def mock_bucket():
     for param_list in aggregate_params:
         _init_mock_data(s3_client, bucket, *param_list)
 
-    credential_management.create_auth(s3_client, bucket, "ppth_1", "test_1", "ppth")
     credential_management.create_meta(
         s3_client, bucket, "ppth", "princeton_plainsboro_teaching_hospital"
     )
-    credential_management.create_auth(s3_client, bucket, "elsewhere_2", "test_2", "elsewhere")
     credential_management.create_meta(s3_client, bucket, "elsewhere", "st_elsewhere")
-    credential_management.create_auth(s3_client, bucket, "hope_3", "test_3", "hope")
     credential_management.create_meta(s3_client, bucket, "hope", "chicago_hope")
 
     metadata = mock_utils.get_mock_metadata()

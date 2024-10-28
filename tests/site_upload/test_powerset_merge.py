@@ -10,8 +10,8 @@ import pytest
 from freezegun import freeze_time
 from pandas import DataFrame, read_parquet
 
-from src.handlers.shared import enums, functions
-from src.handlers.site_upload import powerset_merge
+from src.shared import enums, functions
+from src.site_upload.powerset_merge import powerset_merge
 from tests.mock_utils import (
     EXISTING_DATA_P,
     EXISTING_SITE,

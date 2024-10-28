@@ -2,8 +2,7 @@ import os
 
 import boto3
 import botocore
-
-from src.handlers.shared import decorators, enums, functions
+from shared import decorators, enums, functions
 
 
 def _format_and_validate_key(

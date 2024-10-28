@@ -4,23 +4,37 @@ https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/d49e
 
 # pylint: disable=invalid-name,pointless-string-statement
 
+import json
 import os
 import re
 
-from src.handlers.shared.enums import BucketPath
-from src.handlers.shared.functions import get_s3_json_as_dict
+import boto3
 
 
 class AuthError(Exception):
     pass
 
 
+def get_secret():
+    """Retrieves a specified secret.
+
+    This is largely unmodified boilerplate from the secrets manager recommended approach
+    for fetching secrets, except for getting the values from environment variables"""
+
+    secret_name = os.environ.get("SECRET_NAME")
+    region_name = os.environ.get("REGION")
+
+    session = boto3.session.Session()
+    client = session.client(service_name="secretsmanager", region_name=region_name)
+
+    get_secret_value_response = client.get_secret_value(SecretId=secret_name)
+    return json.loads(get_secret_value_response["SecretString"])
+
+
 def lambda_handler(event, context):
     del context
     # ---- aggregator specific logic
-    user_db = get_s3_json_as_dict(
-        os.environ.get("BUCKET_NAME"), f"{BucketPath.ADMIN.value}/auth.json"
-    )
+    user_db = get_secret()
     try:
         auth_header = event["headers"]["Authorization"].split(" ")
         auth_token = auth_header[1]
