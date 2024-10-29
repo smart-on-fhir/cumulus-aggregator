@@ -30,26 +30,49 @@ _FILTER_MAP_TWO_PARAM = {
     "lt": "%s < %s",
     "lte": "%s <= %s",
     # dates
-    "sameDay": "DATE(%s) = date_trunc('day',DATE('%s'))",
-    "sameWeek": "date_trunc('week',DATE(%s)) = date_trunc('week',DATE('%s'))",
-    "sameMonth": "date_trunc('month',DATE(%s)) = date_trunc('month',DATE('%s'))",
-    "sameYear": "date_trunc('year',DATE(%s)) = date_trunc('year',DATE('%s'))",
-    "sameDayOrBefore": "DATE(%s) <= date_trunc('day',DATE('%s'))",
-    "sameWeekOrBefore": "date_trunc('week',DATE(%s)) <= date_trunc('week',DATE('%s'))",
-    "sameMonthOrBefore": ("date_trunc('month',DATE(%s)) <= date_trunc('month',DATE('%s'))"),
-    "sameYearOrBefore": "date_trunc('year',DATE(%s)) <= date_trunc('year',DATE('%s'))",
-    "sameDayOrAfter": "DATE(%s) >= date_trunc('day',DATE('%s'))",
-    "sameWeekOrAfter": ("date_trunc('week',DATE(%s)) " ">= date_trunc('week',DATE('%s'))"),
-    "sameMonthOrAfter": ("date_trunc('month',DATE(%s)) >= date_trunc('month',DATE('%s'))"),
-    "sameYearOrAfter": "date_trunc('year',DATE(%s)) >= date_trunc('year',DATE('%s'))",
-    "beforeDay": "DATE(%s) < date_trunc('day',DATE('%s'))",
-    "beforeWeek": "date_trunc('week',DATE(%s)) < date_trunc('week',DATE('%s'))",
-    "beforeMonth": "date_trunc('month',DATE(%s)) < date_trunc('month',DATE('%s'))",
-    "beforeYear": "date_trunc('year',DATE(%s)) < date_trunc('year',DATE('%s'))",
-    "afterDay": "DATE(%s) > date_trunc('day',DATE('%s'))",
-    "afterWeek": "date_trunc('week',DATE(%s)) > date_trunc('week',DATE('%s'))",
-    "afterMonth": "date_trunc('month',DATE(%s)) > date_trunc('month',DATE('%s'))",
-    "afterYear": "date_trunc('year',DATE(%s)) > date_trunc('year',DATE('%s'))",
+    "sameDay": "from_iso8601_timestamp(%s) = date_trunc('day',from_iso8601_timestamp('%s'))",
+    "sameWeek": "date_trunc('week',from_iso8601_timestamp(%s)) = "
+    "date_trunc('week',from_iso8601_timestamp('%s'))",
+    "sameMonth": "date_trunc('month',from_iso8601_timestamp(%s)) = "
+    "date_trunc('month',from_iso8601_timestamp('%s'))",
+    "sameYear": "date_trunc('year',from_iso8601_timestamp(%s)) = "
+    "date_trunc('year',from_iso8601_timestamp('%s'))",
+    "sameDayOrBefore": "from_iso8601_timestamp(%s) <= "
+    "date_trunc('day',from_iso8601_timestamp('%s'))",
+    "sameWeekOrBefore": "date_trunc('week',from_iso8601_timestamp(%s)) <= "
+    "date_trunc('week',from_iso8601_timestamp('%s'))",
+    "sameMonthOrBefore": (
+        "date_trunc('month',from_iso8601_timestamp(%s)) <= "
+        "date_trunc('month',from_iso8601_timestamp('%s'))"
+    ),
+    "sameYearOrBefore": "date_trunc('year',from_iso8601_timestamp(%s)) <= "
+    "date_trunc('year',from_iso8601_timestamp('%s'))",
+    "sameDayOrAfter": "from_iso8601_timestamp(%s) >= "
+    "date_trunc('day',from_iso8601_timestamp('%s'))",
+    "sameWeekOrAfter": (
+        "date_trunc('week',from_iso8601_timestamp(%s)) "
+        ">= date_trunc('week',from_iso8601_timestamp('%s'))"
+    ),
+    "sameMonthOrAfter": (
+        "date_trunc('month',from_iso8601_timestamp(%s)) >= "
+        "date_trunc('month',from_iso8601_timestamp('%s'))"
+    ),
+    "sameYearOrAfter": "date_trunc('year',from_iso8601_timestamp(%s)) >= "
+    "date_trunc('year',from_iso8601_timestamp('%s'))",
+    "beforeDay": "from_iso8601_timestamp(%s) < " "date_trunc('day',from_iso8601_timestamp('%s'))",
+    "beforeWeek": "date_trunc('week',from_iso8601_timestamp(%s)) < "
+    "date_trunc('week',from_iso8601_timestamp('%s'))",
+    "beforeMonth": "date_trunc('month',from_iso8601_timestamp(%s)) < "
+    "date_trunc('month',from_iso8601_timestamp('%s'))",
+    "beforeYear": "date_trunc('year',from_iso8601_timestamp(%s)) < "
+    "date_trunc('year',from_iso8601_timestamp('%s'))",
+    "afterDay": "from_iso8601_timestamp(%s) > " "date_trunc('day',from_iso8601_timestamp('%s'))",
+    "afterWeek": "date_trunc('week',from_iso8601_timestamp(%s)) > "
+    "date_trunc('week',from_iso8601_timestamp('%s'))",
+    "afterMonth": "date_trunc('month',from_iso8601_timestamp(%s)) > "
+    "date_trunc('month',from_iso8601_timestamp('%s'))",
+    "afterYear": "date_trunc('year',from_iso8601_timestamp(%s)) > "
+    "date_trunc('year',from_iso8601_timestamp('%s'))",
 }
 
 _FILTER_MAP_ONE_PARAM = {
