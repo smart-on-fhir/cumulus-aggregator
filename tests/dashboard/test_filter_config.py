@@ -42,83 +42,107 @@ from src.dashboard.get_chart_data import filter_config
         (["col:strEq:str"], "col LIKE 'str'"),
         (
             ["column:sameDay:1900-01-01"],
-            "DATE(column) = date_trunc('day',DATE('1900-01-01'))",
+            "from_iso8601_timestamp(column) = "
+            "date_trunc('day',from_iso8601_timestamp('1900-01-01'))",
         ),
         (
             ["column:sameWeek:1900-01-01"],
-            "date_trunc('week',DATE(column)) = date_trunc('week',DATE('1900-01-01'))",
+            "date_trunc('week',from_iso8601_timestamp(column)) = "
+            "date_trunc('week',from_iso8601_timestamp('1900-01-01'))",
         ),
         (
             ["column:sameMonth:1900-01-01"],
-            "date_trunc('month',DATE(column)) = date_trunc('month',DATE('1900-01-01'))",
+            "date_trunc('month',from_iso8601_timestamp(column)) = "
+            "date_trunc('month',from_iso8601_timestamp('1900-01-01'))",
         ),
         (
             ["column:sameYear:1900-01-01"],
-            "date_trunc('year',DATE(column)) = date_trunc('year',DATE('1900-01-01'))",
+            "date_trunc('year',from_iso8601_timestamp(column)) = "
+            "date_trunc('year',from_iso8601_timestamp('1900-01-01'))",
         ),
         (
             ["column:sameDayOrBefore:1900-01-01"],
-            "DATE(column) <= date_trunc('day',DATE('1900-01-01'))",
+            "from_iso8601_timestamp(column) <= "
+            "date_trunc('day',from_iso8601_timestamp('1900-01-01'))",
         ),
         (
             ["column:sameWeekOrBefore:1900-01-01"],
-            "date_trunc('week',DATE(column)) <= date_trunc('week',DATE('1900-01-01'))",
+            "date_trunc('week',from_iso8601_timestamp(column)) <= "
+            "date_trunc('week',from_iso8601_timestamp('1900-01-01'))",
         ),
         (
             ["column:sameMonthOrBefore:1900-01-01"],
-            ("date_trunc('month',DATE(column)) <= " "date_trunc('month',DATE('1900-01-01'))"),
+            (
+                "date_trunc('month',from_iso8601_timestamp(column)) <= "
+                "date_trunc('month',from_iso8601_timestamp('1900-01-01'))"
+            ),
         ),
         (
             ["column:sameYearOrBefore:1900-01-01"],
-            "date_trunc('year',DATE(column)) <= date_trunc('year',DATE('1900-01-01'))",
+            "date_trunc('year',from_iso8601_timestamp(column)) <= "
+            "date_trunc('year',from_iso8601_timestamp('1900-01-01'))",
         ),
         (
             ["column:sameDayOrAfter:1900-01-01"],
-            "DATE(column) >= date_trunc('day',DATE('1900-01-01'))",
+            "from_iso8601_timestamp(column) >= "
+            "date_trunc('day',from_iso8601_timestamp('1900-01-01'))",
         ),
         (
             ["column:sameWeekOrAfter:1900-01-01"],
-            "date_trunc('week',DATE(column)) >= date_trunc('week',DATE('1900-01-01'))",
+            "date_trunc('week',from_iso8601_timestamp(column)) >= "
+            "date_trunc('week',from_iso8601_timestamp('1900-01-01'))",
         ),
         (
             ["column:sameMonthOrAfter:1900-01-01"],
-            ("date_trunc('month',DATE(column)) >= " "date_trunc('month',DATE('1900-01-01'))"),
+            (
+                "date_trunc('month',from_iso8601_timestamp(column)) >= "
+                "date_trunc('month',from_iso8601_timestamp('1900-01-01'))"
+            ),
         ),
         (
             ["column:sameYearOrAfter:1900-01-01"],
-            "date_trunc('year',DATE(column)) >= date_trunc('year',DATE('1900-01-01'))",
+            "date_trunc('year',from_iso8601_timestamp(column)) >= "
+            "date_trunc('year',from_iso8601_timestamp('1900-01-01'))",
         ),
         (
             ["column:beforeDay:1900-01-01"],
-            "DATE(column) < date_trunc('day',DATE('1900-01-01'))",
+            "from_iso8601_timestamp(column) < "
+            "date_trunc('day',from_iso8601_timestamp('1900-01-01'))",
         ),
         (
             ["column:beforeWeek:1900-01-01"],
-            "date_trunc('week',DATE(column)) < date_trunc('week',DATE('1900-01-01'))",
+            "date_trunc('week',from_iso8601_timestamp(column)) < "
+            "date_trunc('week',from_iso8601_timestamp('1900-01-01'))",
         ),
         (
             ["column:beforeMonth:1900-01-01"],
-            "date_trunc('month',DATE(column)) < date_trunc('month',DATE('1900-01-01'))",
+            "date_trunc('month',from_iso8601_timestamp(column)) < "
+            "date_trunc('month',from_iso8601_timestamp('1900-01-01'))",
         ),
         (
             ["column:beforeYear:1900-01-01"],
-            "date_trunc('year',DATE(column)) < date_trunc('year',DATE('1900-01-01'))",
+            "date_trunc('year',from_iso8601_timestamp(column)) < "
+            "date_trunc('year',from_iso8601_timestamp('1900-01-01'))",
         ),
         (
             ["column:afterDay:1900-01-01"],
-            "DATE(column) > date_trunc('day',DATE('1900-01-01'))",
+            "from_iso8601_timestamp(column) > "
+            "date_trunc('day',from_iso8601_timestamp('1900-01-01'))",
         ),
         (
             ["column:afterWeek:1900-01-01"],
-            "date_trunc('week',DATE(column)) > date_trunc('week',DATE('1900-01-01'))",
+            "date_trunc('week',from_iso8601_timestamp(column)) > "
+            "date_trunc('week',from_iso8601_timestamp('1900-01-01'))",
         ),
         (
             ["column:afterMonth:1900-01-01"],
-            "date_trunc('month',DATE(column)) > date_trunc('month',DATE('1900-01-01'))",
+            "date_trunc('month',from_iso8601_timestamp(column)) > "
+            "date_trunc('month',from_iso8601_timestamp('1900-01-01'))",
         ),
         (
             ["column:afterYear:1900-01-01"],
-            "date_trunc('year',DATE(column)) > date_trunc('year',DATE('1900-01-01'))",
+            "date_trunc('year',from_iso8601_timestamp(column)) > "
+            "date_trunc('year',from_iso8601_timestamp('1900-01-01'))",
         ),
         # Checking compound statements
         (

@@ -29,7 +29,7 @@ def _put_s3_data(name: str, bucket_name: str, client, data: dict, path: str = "a
 def create_auth(client, user: str, auth: str, site: str) -> str:
     """Adds a new entry to the auth dict used to issue pre-signed URLs"""
     site_id = _basic_auth_str(user, auth).split(" ")[1]
-    return f'"{site_id}"": {{"site":{site}}}'
+    return f'"{site_id}"": {{"user": {user}, "site":{site}}}'
 
 
 def create_meta(client, bucket_name: str, site: str, folder: str) -> None:
@@ -98,7 +98,7 @@ if __name__ == "__main__":
             args.create_auth[1],
             args.create_auth[2],
         )
-        print(f"Add the following key/valye to secrets manager: \n {id_str}")
+        print(f"Add the following key/value to secrets manager: \n {id_str}")
     elif args.create_meta:
         create_meta(s3_client, bucket, args.create_meta[0], args.create_meta[1])
         print(f"{args.create_meta[0]} mapped to S3 folder {args.create_meta[1]}")
