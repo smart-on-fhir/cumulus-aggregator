@@ -1,0 +1,24 @@
+{%- macro comma_delineate(loop) -%}
+    {%- if not loop.last -%}
+        , 
+    {%- endif -%}
+{%- endmacro -%}
+
+
+{# Note that the following two delineations are meant to be at the front of the string
+in a loop - this is to enable formatting in a WHERE statement like this:
+---
+WHERE
+    b.bar = a.foo
+    AND b.baz != a.foo
+---
+This is slightly easier to work with when debugging queries (and also
+conforms better to the mozilla style guide)
+#}
+{%- macro and_delineate(loop) -%}
+    {%- if not loop.first -%}AND {% endif -%}
+{%- endmacro -%}
+
+{%- macro or_delineate(loop) -%}
+    {%- if not loop.first -%}OR {% endif -%}
+{%- endmacro -%}

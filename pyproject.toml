@@ -9,6 +9,7 @@ dependencies= [
     "arrow >=1.2.3",
     "awswrangler >=3.5, <4",
     "boto3",
+    "Jinja2 >=3.1.4, <4",
     "pandas >=2, <3",
     "requests", # scripts only
     "rich",
@@ -48,8 +49,9 @@ test = [
     "pytest-mock"
 ]
 dev = [
-    "ruff < 0.6",
     "pre-commit",
+    "ruff < 0.6",
+    "sqlfluff >= 3.2.5"
 ]
 
 [tool.coverage.run]
