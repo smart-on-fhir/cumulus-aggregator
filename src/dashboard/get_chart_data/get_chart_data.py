@@ -159,7 +159,7 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
                 config_params.append(params)
                 if filter_config[1] in NONE_FILTERS or filter_config[0] != query_params["column"]:
                     if params.get("bound", "").casefold() == "none":
-                        params["bound"] == "cumulus__none"
+                        params["bound"] = "cumulus__none"
                     none_params.append(params)
             else:
                 raise errors.AggregatorFilterError(
