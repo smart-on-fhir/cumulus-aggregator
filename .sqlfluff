@@ -1,0 +1,49 @@
+[sqlfluff]
+templater = jinja
+dialect = athena
+sql_file_exts = .sql,.sql.jinja
+exclude_rules=
+    # these rule overfires on athena nested arrays
+    references.from,
+    structure.column_order,
+    aliasing.unused,
+    # this rule interferes with FHIR naming conventions
+    capitalisation.identifiers
+max_line_length = 90
+
+[sqlfluff:rules:layout.long_lines]
+ignore_comment_lines = true
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = upper
+
+
+[sqlfluff:templater:jinja]
+load_macros_from_path = src/dashboard/get_chart_data/templates
+
+[sqlfluff:templater:jinja:context]
+data_column = 'foo'
+stratifier_column= 'bar'
+count_columns=['cnt']
+schema='schema'
+data_package_id='study__table__001'
+coalesce_columns=['baz','foobar']
+inline_configs=[
+        [
+            {'data':'foo','type': 'matches': 'a'},
+            {'data':'foo','type': 'matches': 'b'}
+        ],
+        [
+            {'data':'baz','type': 'eq', 'matches': '1'}, 
+            {'data':'baz','type': 'isNull'} 
+        ]
+    ]
+none_configs=[
+        [
+            {'data':'foo','type': 'matches': 'a'},
+            {'data':'foo','type': 'matches': 'b'}
+        ],
+        [
+            {'data':'baz','type': 'isNull'} 
+        ]
+    ]

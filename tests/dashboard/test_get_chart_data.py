@@ -1,7 +1,9 @@
 import json
 import os
+from contextlib import nullcontext as does_not_raise
 from unittest import mock
 
+import botocore
 import pandas
 import pytest
 
@@ -29,53 +31,248 @@ def mock_data_frame(filter_param):
 @mock.patch("src.dashboard.get_chart_data.get_chart_data._get_table_cols", mock_get_table_cols)
 @mock.patch.dict(os.environ, MOCK_ENV)
 @pytest.mark.parametrize(
-    "query_params,filters,path_params,query_str",
+    "query_params,filter_groups,path_params,query_str, raises",
     [
         (
             {"column": "gender"},
             [],
             {"data_package_id": "test_study"},
-            f'SELECT gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
-            "WHERE COALESCE (cast(race AS VARCHAR)) IS NOT NULL AND gender IS NOT NULL "
-            "GROUP BY gender ORDER BY gender",
+            f"""SELECT
+    "gender",
+    "cnt"
+
+FROM "{TEST_GLUE_DB}"."test_study"
+WHERE COALESCE(
+            CAST("race" AS VARCHAR)
+    ) IS NULL
+    AND "gender" IS NOT NULL
+    AND (
+        (
+            gender != 'cumulus__none'
+        )
+        OR (
+            gender = 'cumulus__none'
+        )
+    )
+ORDER BY
+    "gender\"""",
+            does_not_raise(),
         ),
         (
             {"column": "gender", "stratifier": "race"},
             [],
             {"data_package_id": "test_study"},
-            f'SELECT race, gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
-            "WHERE gender IS NOT NULL "
-            "AND race IS NOT NULL "
-            "GROUP BY race, gender ORDER BY race, gender",
+            f"""SELECT
+        "race",
+    "gender",
+    "cnt"
+
+FROM "{TEST_GLUE_DB}"."test_study"
+WHERE "gender" IS NOT NULL
+    AND (
+        (
+            gender != 'cumulus__none'
+        )
+        OR (
+            gender = 'cumulus__none'
+        )
+    )
+        AND "race" IS NOT NULL
+ORDER BY
+        "race", "gender\"""",
+            does_not_raise(),
         ),
         (
             {"column": "gender"},
             ["gender:strEq:female"],
             {"data_package_id": "test_study"},
-            f'SELECT gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
-            "WHERE COALESCE (cast(race AS VARCHAR)) IS NOT NULL AND gender IS NOT NULL "
-            "AND gender LIKE 'female' "
-            "GROUP BY gender ORDER BY gender",
+            f"""SELECT
+    "gender",
+    "cnt"
+
+FROM "{TEST_GLUE_DB}"."test_study"
+WHERE COALESCE(
+            CAST("race" AS VARCHAR)
+    ) IS NULL
+    AND "gender" IS NOT NULL
+    AND (
+        (
+            gender != 'cumulus__none'
+                AND
+                (
+                    
+        (
+            "gender" LIKE 'female'
+                    )
+                )
+        )
+        OR (
+            gender = 'cumulus__none'
+                AND
+                (
+                    
+        (
+            "gender" LIKE 'female'
+                    )
+                )
+        )
+    )
+ORDER BY
+    "gender\"""",
+            does_not_raise(),
         ),
         (
             {"column": "gender", "stratifier": "race"},
-            ["gender:strEq:female"],
+            ["gender:strEq:none"],
             {"data_package_id": "test_study"},
-            f'SELECT race, gender, sum(cnt) as cnt FROM "{TEST_GLUE_DB}"."test_study" '
-            "WHERE gender IS NOT NULL "
-            "AND gender LIKE 'female' "
-            "AND race IS NOT NULL "
-            "GROUP BY race, gender ORDER BY race, gender",
+            f"""SELECT
+        "race",
+    "gender",
+    "cnt"
+
+FROM "{TEST_GLUE_DB}"."test_study"
+WHERE "gender" IS NOT NULL
+    AND (
+        (
+            gender != 'cumulus__none'
+                AND
+                (
+                    
+        (
+            "gender" LIKE 'cumulus__none'
+                    )
+                )
+        )
+        OR (
+            gender = 'cumulus__none'
+                AND
+                (
+                    
+        (
+            "gender" LIKE 'cumulus__none'
+                    )
+                )
+        )
+    )
+        AND "race" IS NOT NULL
+ORDER BY
+        "race", "gender\"""",
+            does_not_raise(),
+        ),
+        (
+            {"column": "gender", "stratifier": "race"},
+            ["cnt:gt:2", "cnt:lt:10"],
+            {"data_package_id": "test_study"},
+            f"""SELECT
+        "race",
+    "gender",
+    "cnt"
+
+FROM "{TEST_GLUE_DB}"."test_study"
+WHERE "gender" IS NOT NULL
+    AND (
+        (
+            gender != 'cumulus__none'
+                AND
+                (
+                    
+        (
+            "cnt" > 2
+                    )
+        OR (
+            "cnt" < 10
+                    )
+                )
+        )
+        OR (
+            gender = 'cumulus__none'
+                AND
+                (
+                    
+        (
+            "cnt" > 2
+                    )
+        OR (
+            "cnt" < 10
+                    )
+                )
+        )
+    )
+        AND "race" IS NOT NULL
+ORDER BY
+        "race", "gender\"""",
+            does_not_raise(),
+        ),
+        (
+            {"column": "gender", "stratifier": "race"},
+            [
+                "gender:matches:a",
+                "gender:matches:e,gender:matches:m",
+            ],
+            {"data_package_id": "test_study"},
+            f"""SELECT
+        "race",
+    "gender",
+    "cnt"
+
+FROM "{TEST_GLUE_DB}"."test_study"
+WHERE "gender" IS NOT NULL
+    AND (
+        (
+            gender != 'cumulus__none'
+                AND
+                (
+                    
+        (
+            regexp_like("gender", 'a')
+                    )
+        OR (
+            regexp_like("gender", 'e')
+            AND regexp_like("gender", 'm')
+                    )
+                )
+        )
+        OR (
+            gender = 'cumulus__none'
+                AND
+                (
+                    
+        (
+            regexp_like("gender", 'a')
+                    )
+        OR (
+            regexp_like("gender", 'e')
+            AND regexp_like("gender", 'm')
+                    )
+                )
+        )
+    )
+        AND "race" IS NOT NULL
+ORDER BY
+        "race", "gender\"""",
+            does_not_raise(),
+        ),
+        (
+            {"column": "gender", "stratifier": "race"},
+            [
+                "gender:invalid:a",
+            ],
+            {"data_package_id": "test_study"},
+            "",
+            # The deployed class vs testing module approach makes getting
+            # the actual error raised here fussy.
+            pytest.raises(Exception),
         ),
     ],
 )
-def test_build_query(query_params, filters, path_params, query_str):
-    query, _ = get_chart_data._build_query(query_params, filters, path_params)
-    assert query == query_str
+def test_build_query(query_params, filter_groups, path_params, query_str, raises):
+    with raises:
+        query, _ = get_chart_data._build_query(query_params, filter_groups, path_params)
+        assert query == query_str
 
 
 @pytest.mark.parametrize(
-    "query_params,filters,expected_payload",
+    "query_params,filter_groups,expected_payload",
     [
         (
             {"column": "gender"},
@@ -99,9 +296,9 @@ def test_build_query(query_params, filters, path_params, query_str):
         ),
     ],
 )
-def test_format_payload(query_params, filters, expected_payload):
-    df = mock_data_frame(filters)
-    payload = get_chart_data._format_payload(df, query_params, filters, "cnt")
+def test_format_payload(query_params, filter_groups, expected_payload):
+    df = mock_data_frame(filter_groups)
+    payload = get_chart_data._format_payload(df, query_params, filter_groups, "cnt")
     assert payload == expected_payload
 
 
@@ -112,9 +309,21 @@ def test_get_data_cols(mock_bucket):
     assert res == list(cols)
 
 
+@mock.patch("botocore.client")
+def test_get_data_cols_err(mock_client):
+    mock_clientobj = mock_client.ClientCreator.return_value.create_client.return_value
+    mock_clientobj.get_object.side_effect = [
+        None,
+        botocore.exceptions.ClientError({}, {}),
+    ]
+    with pytest.raises(Exception):
+        table_id = f"{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}"
+        get_chart_data._get_table_cols(table_id)
+
+
 @mock.patch(
     "src.dashboard.get_chart_data.get_chart_data._build_query",
-    lambda query_params, filters, path_params: (
+    lambda query_params, filter_groups, path_params: (
         (
             "SELECT gender, sum(cnt) as cnt"
             f'FROM "{TEST_GLUE_DB}"."test_study" '
@@ -135,6 +344,17 @@ def test_handler():
     event = {
         "queryStringParameters": {"column": "gender"},
         "multiValueQueryStringParameters": {"filter": ["gender:strEq:female"]},
+        "pathParameters": {},
+    }
+    res = get_chart_data.chart_data_handler(event, {})
+    assert res["body"] == (
+        '{"column": "gender", "filters": ["gender:strEq:female"], '
+        '"rowCount": 2, "totalCount": 20, "data": [{"rows": [["male", 10], '
+        '["female", 10]]}]}'
+    )
+    event = {
+        "queryStringParameters": {"column": "gender", "filter": "gender:strEq:female"},
+        "multiValueQueryStringParameters": {},
         "pathParameters": {},
     }
     res = get_chart_data.chart_data_handler(event, {})
