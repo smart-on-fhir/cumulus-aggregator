@@ -131,7 +131,12 @@ def _get_table_cols(dp_id: str) -> list:
 
 
 def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> str:
-    """Creates a query from the dashboard API spec"""
+    """Creates a query from the dashboard API spec
+    :arg queryparams: All arguments passed to the endpoint
+    :arg filter_groups: Filter params used to generate filtering logic.
+        These should look like ['col:arg:optionalvalue,...','']
+    :path path_params: URL specific arguments, as a convenience
+    """
     dp_id = path_params["data_package_id"]
     columns = _get_table_cols(dp_id)
 
@@ -141,7 +146,7 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
         # in this block we are trying to do the following things:
         # - create a config for where the selected column is not `cumulus__none`
         # - create a config for where the selected column is `cumulus__none`, removing
-        # - filters that would cause type cast errors
+        #   filters that would cause type cast errors
         filter_group = filter_group.split(",")
         config_params = []
         none_params = []
@@ -191,7 +196,12 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
 def _format_payload(
     df: pandas.DataFrame, query_params: dict, filter_groups: list, count_col: str
 ) -> dict:
-    """Coerces query results into the return format defined by the dashboard"""
+    """Coerces query results into the return format defined by the dashboard
+
+    :arg queryparams: All arguments passed to the endpoint
+    :arg filter_groups: Filter params used to generate filtering logic.
+        These should look like ['col:arg:optionalvalue,...','']
+    :path count_col: column to use as the primary count column"""
     payload = {}
     payload["column"] = query_params["column"]
     payload["filters"] = filter_groups
