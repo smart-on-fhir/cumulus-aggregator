@@ -8,86 +8,86 @@
     {#- TODO: replace all LIKE filters with regexp() calls -#}
     {#- Sting filters -#}
     {%- if filter_type == 'strEq' -%}
-"{{ data }}" LIKE '{{ bound }}'
+CAST("{{ data }}" AS VARCHAR) LIKE '{{ bound }}'
 {%- elif filter_type == 'strContains' -%}
-"{{ data }}" LIKE '%{{ bound }}%'
+CAST("{{ data }}" AS VARCHAR) LIKE '%{{ bound }}%'
 {%- elif filter_type == 'strStartsWith' -%}
-"{{ data }}" LIKE '{{ bound }}%'
+CAST("{{ data }}" AS VARCHAR) LIKE '{{ bound }}%'
 {%- elif filter_type == 'strEndsWith' -%}
-"{{ data }}" LIKE '%{{ bound }}'
+CAST("{{ data }}" AS VARCHAR) LIKE '%{{ bound }}'
 {%- elif filter_type == 'matches' -%}
-regexp_like("{{ data }}", '{{ bound }}')
+regexp_like(CAST("{{ data }}" AS VARCHAR), '{{ bound }}')
 {%- elif filter_type == 'strEqCI' -%}
-"{{ data }}" ILIKE '{{ bound }}'
+regexp_like(CAST("{{ data }}" AS VARCHAR), '(?i)^{{ bound }}$')
 {%- elif filter_type == 'strContainsCI' -%}
-"{{ data }}" ILIKE '%{{ bound }}%'
+regexp_like(CAST("{{ data }}" AS VARCHAR), '(?i){{ bound }}')
 {%- elif filter_type == 'strStartsWithCI' -%}
-"{{ data }}" ILIKE '{{ bound }}%'
+regexp_like(CAST("{{ data }}" AS VARCHAR), '(?i)^{{ bound }}')
 {%- elif filter_type == 'strEndsWithCI' -%}
-"{{ data }}" ILIKE '%{{ bound }}'
+regexp_like(CAST("{{ data }}" AS VARCHAR), '(?i){{ bound }}$')
 {%- elif filter_type == 'matchesCI' -%}
-regexp_like("{{ data }}", '(?i){{ bound }}')
+regexp_like(CAST("{{ data }}" AS VARCHAR), '(?i){{ bound }}')
 {%- elif filter_type == 'strNotEq' -%}
-"{{ data }}" NOT LIKE '{{ bound }}'
+CAST("{{ data }}" AS VARCHAR) NOT LIKE '{{ bound }}'
 {%- elif filter_type == 'strNotContains' -%}
-"{{ data }}" NOT LIKE '%{{ bound }}%'
+CAST("{{ data }}" AS VARCHAR) NOT LIKE '%{{ bound }}%'
 {%- elif filter_type == 'strNotStartsWith' -%}
-"{{ data }}" NOT LIKE '{{ bound }}%'
+CAST("{{ data }}" AS VARCHAR) NOT LIKE '{{ bound }}%'
 {%- elif filter_type == 'strNotEndsWith' -%}
-"{{ data }}" NOT LIKE '%{{ bound }}'
+CAST("{{ data }}" AS VARCHAR) NOT LIKE '%{{ bound }}'
 {%- elif filter_type == 'notMatches' -%}
-NOT regexp_like("{{ data }}", '{{ bound }}')
+NOT regexp_like(CAST("{{ data }}" AS VARCHAR), '{{ bound }}')
 {%- elif filter_type == 'strNotEqCI' -%}
-"{{ data }}" NOT ILIKE '{{ bound }}'
+NOT regexp_like(CAST("{{ data }}" AS VARCHAR), '(?i)^{{ bound }}$')
 {%- elif filter_type == 'strNotContainsCI' -%}
-"{{ data }}" NOT ILIKE '%{{ bound }}%'
+NOT regexp_like(CAST("{{ data }}" AS VARCHAR), '(?i){{ bound }}')
 {%- elif filter_type == 'strNotStartsWithCI' -%}
-"{{ data }}" NOT ILIKE '{{ bound }}%'
+NOT regexp_like(CAST("{{ data }}" AS VARCHAR), '(?i)^{{ bound }}')
 {%- elif filter_type == 'strNotEndsWithCI' -%}
-"{{ data }}" NOT ILIKE '%{{ bound }}'
+NOT regexp_like(CAST("{{ data }}" AS VARCHAR), '(?i){{ bound }}$')
 {%- elif filter_type == 'notMatchesCI' -%}
-NOT regexp_like("{{ data }}", '(?i){{ bound }}')
+NOT regexp_like(CAST("{{ data }}" AS VARCHAR), '(?i){{ bound }}')
 {#- Date filters -#}
 {%- elif filter_type == 'sameDay' -%}
 from_iso8601_timestamp("{{ data }}") = date_trunc('day',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'sameWeek' -%}
-date_trunc('week',from_iso8601_timestamp('{{ data }}')) = date_trunc('week',from_iso8601_timestamp('{{ bound }}'))
+date_trunc('week',from_iso8601_timestamp("{{ data }}")) = date_trunc('week',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'sameMonth' -%}
-date_trunc('month',from_iso8601_timestamp('{{ data }}')) = date_trunc('month',from_iso8601_timestamp('{{ bound }}'))
+date_trunc('month',from_iso8601_timestamp("{{ data }}")) = date_trunc('month',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'sameYear' -%}
-date_trunc('year',from_iso8601_timestamp('{{ data }}')) = date_trunc('year',from_iso8601_timestamp('{{ bound }}'))
+date_trunc('year',from_iso8601_timestamp("{{ data }}")) = date_trunc('year',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'sameDayOrBefore' -%}
 from_iso8601_timestamp("{{ data }}") <= date_trunc('day',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'sameWeekOrBefore' -%}
-date_trunc('week',from_iso8601_timestamp('{{ data }}')) <= date_trunc('week',from_iso8601_timestamp('{{ bound }}'))
+date_trunc('week',from_iso8601_timestamp("{{ data }}")) <= date_trunc('week',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'sameMonthOrBefore' -%}
-date_trunc('month',from_iso8601_timestamp('{{ data }}')) <= date_trunc('month',from_iso8601_timestamp('{{ bound }}'))
+date_trunc('month',from_iso8601_timestamp("{{ data }}")) <= date_trunc('month',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'sameYearOrBefore' -%}
-date_trunc('year',from_iso8601_timestamp('{{ data }}')) <= date_trunc('year',from_iso8601_timestamp('{{ bound }}'))
+date_trunc('year',from_iso8601_timestamp("{{ data }}")) <= date_trunc('year',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'sameDayOrAfter' -%}
 from_iso8601_timestamp("{{ data }}") >= date_trunc('day',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'sameWeekOrAfter' -%}
-date_trunc('week',from_iso8601_timestamp('{{ data }}')) >= date_trunc('week',from_iso8601_timestamp('{{ bound }}'))
+date_trunc('week',from_iso8601_timestamp("{{ data }}")) >= date_trunc('week',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'sameMonthOrAfter' -%}
-date_trunc('month',from_iso8601_timestamp('{{ data }}')) >= date_trunc('month',from_iso8601_timestamp('{{ bound }}'))
+date_trunc('month',from_iso8601_timestamp("{{ data }}")) >= date_trunc('month',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'sameYearOrAfter' -%}
-date_trunc('year',from_iso8601_timestamp('{{ data }}')) >= date_trunc('year',from_iso8601_timestamp('{{ bound }}'))
+date_trunc('year',from_iso8601_timestamp("{{ data }}")) >= date_trunc('year',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'beforeDay' -%}
 from_iso8601_timestamp("{{ data }}") < date_trunc('day',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'beforeWeek' -%}
-date_trunc('week',from_iso8601_timestamp('{{ data }}')) < date_trunc('week',from_iso8601_timestamp('{{ bound }}'))
+date_trunc('week',from_iso8601_timestamp("{{ data }}")) < date_trunc('week',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'beforeMonth' -%}
-date_trunc('month',from_iso8601_timestamp('{{ data }}')) < date_trunc('month',from_iso8601_timestamp('{{ bound }}'))
+date_trunc('month',from_iso8601_timestamp("{{ data }}")) < date_trunc('month',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'beforeYear' -%}
-date_trunc('year',from_iso8601_timestamp('{{ data }}')) < date_trunc('year',from_iso8601_timestamp('{{ bound }}'))
+date_trunc('year',from_iso8601_timestamp("{{ data }}")) < date_trunc('year',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'afterDay' -%}
 from_iso8601_timestamp("{{ data }}") > date_trunc('day',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'afterWeek' -%}
-date_trunc('week',from_iso8601_timestamp('{{ data }}')) > date_trunc('week',from_iso8601_timestamp('{{ bound }}'))
+date_trunc('week',from_iso8601_timestamp("{{ data }}")) > date_trunc('week',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'afterMonth' -%}
-date_trunc('month',from_iso8601_timestamp('{{ data }}')) > date_trunc('month',from_iso8601_timestamp('{{ bound }}'))
+date_trunc('month',from_iso8601_timestamp("{{ data }}")) > date_trunc('month',from_iso8601_timestamp('{{ bound }}'))
 {%- elif filter_type == 'afterYear' -%}
-date_trunc('year',from_iso8601_timestamp('{{ data }}')) > date_trunc('year',from_iso8601_timestamp('{{ bound }}'))
+date_trunc('year',from_iso8601_timestamp("{{ data }}")) > date_trunc('year',from_iso8601_timestamp('{{ bound }}'))
 {#- Boolean filters -#}
 {%- elif filter_type == 'isTrue' -%}
 "{{ data }}" IS TRUE

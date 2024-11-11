@@ -12,140 +12,140 @@ import pytest
             ["col:strEq:str"],
             """
         (
-            "col" LIKE 'str'
+            CAST("col" AS VARCHAR) LIKE 'str'
                     )""",
         ),
         (
             ["col:strContains:str"],
             """
         (
-            "col" LIKE '%str%'
+            CAST("col" AS VARCHAR) LIKE '%str%'
                     )""",
         ),
         (
             ["col:strStartsWith:str"],
             """
         (
-            "col" LIKE 'str%'
+            CAST("col" AS VARCHAR) LIKE 'str%'
                     )""",
         ),
         (
             ["col:strEndsWith:str"],
             """
         (
-            "col" LIKE '%str'
+            CAST("col" AS VARCHAR) LIKE '%str'
                     )""",
         ),
         (
             ["col:matches:str"],
             """
         (
-            regexp_like("col", 'str')
+            regexp_like(CAST("col" AS VARCHAR), 'str')
                     )""",
         ),
         (
             ["col:strEqCI:str"],
             """
         (
-            "col" ILIKE 'str'
+            regexp_like(CAST("col" AS VARCHAR), '(?i)^str$')
                     )""",
         ),
         (
             ["col:strContainsCI:str"],
             """
         (
-            "col" ILIKE '%str%'
+            regexp_like(CAST("col" AS VARCHAR), '(?i)str')
                     )""",
         ),
         (
             ["col:strStartsWithCI:str"],
             """
         (
-            "col" ILIKE 'str%'
+            regexp_like(CAST("col" AS VARCHAR), '(?i)^str')
                     )""",
         ),
         (
             ["col:strEndsWithCI:str"],
             """
         (
-            "col" ILIKE '%str'
+            regexp_like(CAST("col" AS VARCHAR), '(?i)str$')
                     )""",
         ),
         (
             ["col:matchesCI:str"],
             """
         (
-            regexp_like("col", '(?i)str')
+            regexp_like(CAST("col" AS VARCHAR), '(?i)str')
                     )""",
         ),
         (
             ["col:strNotEq:str"],
             """
         (
-            "col" NOT LIKE 'str'
+            CAST("col" AS VARCHAR) NOT LIKE 'str'
                     )""",
         ),
         (
             ["col:strNotContains:str"],
             """
         (
-            "col" NOT LIKE '%str%'
+            CAST("col" AS VARCHAR) NOT LIKE '%str%'
                     )""",
         ),
         (
             ["col:strNotStartsWith:str"],
             """
         (
-            "col" NOT LIKE 'str%'
+            CAST("col" AS VARCHAR) NOT LIKE 'str%'
                     )""",
         ),
         (
             ["col:strNotEndsWith:str"],
             """
         (
-            "col" NOT LIKE '%str'
+            CAST("col" AS VARCHAR) NOT LIKE '%str'
                     )""",
         ),
         (
             ["col:notMatches:str"],
             """
         (
-            NOT regexp_like("col", 'str')
+            NOT regexp_like(CAST("col" AS VARCHAR), 'str')
                     )""",
         ),
         (
             ["col:strNotEqCI:str"],
             """
         (
-            "col" NOT ILIKE 'str'
+            NOT regexp_like(CAST("col" AS VARCHAR), '(?i)^str$')
                     )""",
         ),
         (
             ["col:strNotContainsCI:str"],
             """
         (
-            "col" NOT ILIKE '%str%'
+            NOT regexp_like(CAST("col" AS VARCHAR), '(?i)str')
                     )""",
         ),
         (
             ["col:strNotStartsWithCI:str"],
             """
         (
-            "col" NOT ILIKE 'str%'
+            NOT regexp_like(CAST("col" AS VARCHAR), '(?i)^str')
                     )""",
         ),
         (
             ["col:strNotEndsWithCI:str"],
             """
         (
-            "col" NOT ILIKE '%str'
+            NOT regexp_like(CAST("col" AS VARCHAR), '(?i)str$')
                     )""",
         ),
         (
             ["col:notMatchesCI:str"],
             """
         (
-            NOT regexp_like("col", '(?i)str')
+            NOT regexp_like(CAST("col" AS VARCHAR), '(?i)str')
                     )""",
         ),
         (
@@ -233,13 +233,6 @@ import pytest
                     )""",
         ),
         (
-            ["col:strEq:str"],
-            """
-        (
-            "col" LIKE 'str'
-                    )""",
-        ),
-        (
             ["column:sameDay:1900-01-01"],
             """
         (
@@ -251,7 +244,7 @@ import pytest
             ["column:sameWeek:1900-01-01"],
             """
         (
-            date_trunc('week',from_iso8601_timestamp('column')) = """
+            date_trunc('week',from_iso8601_timestamp("column")) = """
             """date_trunc('week',from_iso8601_timestamp('1900-01-01'))
                     )""",
         ),
@@ -259,7 +252,7 @@ import pytest
             ["column:sameMonth:1900-01-01"],
             """
         (
-            date_trunc('month',from_iso8601_timestamp('column')) = """
+            date_trunc('month',from_iso8601_timestamp("column")) = """
             """date_trunc('month',from_iso8601_timestamp('1900-01-01'))
                     )""",
         ),
@@ -267,7 +260,7 @@ import pytest
             ["column:sameYear:1900-01-01"],
             """
         (
-            date_trunc('year',from_iso8601_timestamp('column')) = """
+            date_trunc('year',from_iso8601_timestamp("column")) = """
             """date_trunc('year',from_iso8601_timestamp('1900-01-01'))
                     )""",
         ),
@@ -283,7 +276,7 @@ import pytest
             ["column:sameWeekOrBefore:1900-01-01"],
             """
         (
-            date_trunc('week',from_iso8601_timestamp('column')) <= """
+            date_trunc('week',from_iso8601_timestamp("column")) <= """
             """date_trunc('week',from_iso8601_timestamp('1900-01-01'))
                     )""",
         ),
@@ -292,7 +285,7 @@ import pytest
             (
                 """
         (
-            date_trunc('month',from_iso8601_timestamp('column')) <= """
+            date_trunc('month',from_iso8601_timestamp("column")) <= """
                 """date_trunc('month',from_iso8601_timestamp('1900-01-01'))
                     )"""
             ),
@@ -301,7 +294,7 @@ import pytest
             ["column:sameYearOrBefore:1900-01-01"],
             """
         (
-            date_trunc('year',from_iso8601_timestamp('column')) <= """
+            date_trunc('year',from_iso8601_timestamp("column")) <= """
             """date_trunc('year',from_iso8601_timestamp('1900-01-01'))
                     )""",
         ),
@@ -317,7 +310,7 @@ import pytest
             ["column:sameWeekOrAfter:1900-01-01"],
             """
         (
-            date_trunc('week',from_iso8601_timestamp('column')) >= """
+            date_trunc('week',from_iso8601_timestamp("column")) >= """
             """date_trunc('week',from_iso8601_timestamp('1900-01-01'))
                     )""",
         ),
@@ -326,7 +319,7 @@ import pytest
             (
                 """
         (
-            date_trunc('month',from_iso8601_timestamp('column')) >= """
+            date_trunc('month',from_iso8601_timestamp("column")) >= """
                 """date_trunc('month',from_iso8601_timestamp('1900-01-01'))
                     )"""
             ),
@@ -335,7 +328,7 @@ import pytest
             ["column:sameYearOrAfter:1900-01-01"],
             """
         (
-            date_trunc('year',from_iso8601_timestamp('column')) >= """
+            date_trunc('year',from_iso8601_timestamp("column")) >= """
             """date_trunc('year',from_iso8601_timestamp('1900-01-01'))
                     )""",
         ),
@@ -351,7 +344,7 @@ import pytest
             ["column:beforeWeek:1900-01-01"],
             """
         (
-            date_trunc('week',from_iso8601_timestamp('column')) < """
+            date_trunc('week',from_iso8601_timestamp("column")) < """
             """date_trunc('week',from_iso8601_timestamp('1900-01-01'))
                     )""",
         ),
@@ -359,7 +352,7 @@ import pytest
             ["column:beforeMonth:1900-01-01"],
             """
         (
-            date_trunc('month',from_iso8601_timestamp('column')) < """
+            date_trunc('month',from_iso8601_timestamp("column")) < """
             """date_trunc('month',from_iso8601_timestamp('1900-01-01'))
                     )""",
         ),
@@ -367,7 +360,7 @@ import pytest
             ["column:beforeYear:1900-01-01"],
             """
         (
-            date_trunc('year',from_iso8601_timestamp('column')) < """
+            date_trunc('year',from_iso8601_timestamp("column")) < """
             """date_trunc('year',from_iso8601_timestamp('1900-01-01'))
                     )""",
         ),
@@ -383,7 +376,7 @@ import pytest
             ["column:afterWeek:1900-01-01"],
             """
         (
-            date_trunc('week',from_iso8601_timestamp('column')) > """
+            date_trunc('week',from_iso8601_timestamp("column")) > """
             """date_trunc('week',from_iso8601_timestamp('1900-01-01'))
                     )""",
         ),
@@ -391,7 +384,7 @@ import pytest
             ["column:afterMonth:1900-01-01"],
             """
         (
-            date_trunc('month',from_iso8601_timestamp('column')) > """
+            date_trunc('month',from_iso8601_timestamp("column")) > """
             """date_trunc('month',from_iso8601_timestamp('1900-01-01'))
                     )""",
         ),
@@ -399,7 +392,7 @@ import pytest
             ["column:afterYear:1900-01-01"],
             """
         (
-            date_trunc('year',from_iso8601_timestamp('column')) > """
+            date_trunc('year',from_iso8601_timestamp("column")) > """
             """date_trunc('year',from_iso8601_timestamp('1900-01-01'))
                     )""",
         ),
@@ -408,29 +401,29 @@ import pytest
             ["col:strEq:str", "col:strEqCI:str"],
             """
         (
-            "col" LIKE 'str'
+            CAST("col" AS VARCHAR) LIKE 'str'
                     )
         OR (
-            "col" ILIKE 'str'
+            regexp_like(CAST("col" AS VARCHAR), '(?i)^str$')
                     )""",
         ),
         (
             ["col:strEq:str,col:strEqCI:str"],
             """
         (
-            "col" LIKE 'str'
-            AND "col" ILIKE 'str'
+            CAST("col" AS VARCHAR) LIKE 'str'
+            AND regexp_like(CAST("col" AS VARCHAR), '(?i)^str$')
                     )""",
         ),
         (
             ["col:strEq:str", "col:strEq:str,col:strEqCI:str"],
             """
         (
-            "col" LIKE 'str'
+            CAST("col" AS VARCHAR) LIKE 'str'
                     )
         OR (
-            "col" LIKE 'str'
-            AND "col" ILIKE 'str'
+            CAST("col" AS VARCHAR) LIKE 'str'
+            AND regexp_like(CAST("col" AS VARCHAR), '(?i)^str$')
                     )""",
         ),
     ],
