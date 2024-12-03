@@ -1,6 +1,9 @@
 """functions specifically requiring AWSWranger, which requires a lambda layer"""
 
+import csv
+
 import awswrangler
+import numpy
 
 from .enums import BucketPath
 
@@ -34,4 +37,26 @@ def get_s3_study_meta_list(
             f"{study}__{data_package}/{site}/{version}"
         ),
         suffix=extension,
+    )
+
+
+def generate_csv_from_parquet(
+    bucket_name: str, bucket_root: str, subbucket_path: str, to_path: str | None = None
+):
+    """Convenience function for generating csvs for dashboard upload
+
+    TODO: Remove on dashboard parquet/API support"""
+    if to_path is None:
+        to_path = f"s3://{bucket_name}/{bucket_root}/{subbucket_path}".replace(".parquet", ".csv")
+    last_valid_df = awswrangler.s3.read_parquet(
+        f"s3://{bucket_name}/{bucket_root}" f"/{subbucket_path}"
+    )
+    last_valid_df = last_valid_df.apply(lambda x: x.strip() if isinstance(x, str) else x).replace(
+        '""', numpy.nan
+    )
+    awswrangler.s3.to_csv(
+        last_valid_df,
+        to_path,
+        index=False,
+        quoting=csv.QUOTE_MINIMAL,
     )

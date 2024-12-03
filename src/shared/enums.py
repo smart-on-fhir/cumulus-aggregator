@@ -11,7 +11,9 @@ class BucketPath(enum.Enum):
     ARCHIVE = "archive"
     CACHE = "cache"
     CSVAGGREGATE = "csv_aggregates"
+    CSVFLAT = "csv_flat"
     ERROR = "error"
+    FLAT = "flat"
     LAST_VALID = "last_valid"
     LATEST = "latest"
     META = "metadata"
@@ -33,7 +35,17 @@ class JsonFilename(enum.Enum):
     COLUMN_TYPES = "column_types"
     TRANSACTIONS = "transactions"
     DATA_PACKAGES = "data_packages"
+    FLAT_PACKAGES = "flat_packages"
     STUDY_PERIODS = "study_periods"
+
+
+class StudyPeriodMetadataKeys(enum.Enum):
+    """stores names of expected keys in the study period metadata dictionary"""
+
+    STUDY_PERIOD_FORMAT_VERSION = "study_period_format_version"
+    EARLIEST_DATE = "earliest_date"
+    LATEST_DATE = "latest_date"
+    LAST_DATA_UPDATE = "last_data_update"
 
 
 class TransactionKeys(enum.Enum):
@@ -47,10 +59,12 @@ class TransactionKeys(enum.Enum):
     DELETED = "deleted"
 
 
-class StudyPeriodMetadataKeys(enum.Enum):
-    """stores names of expected keys in the study period metadata dictionary"""
+class UploadTypes(enum.Enum):
+    """stores names of different expected upload formats"""
 
-    STUDY_PERIOD_FORMAT_VERSION = "study_period_format_version"
-    EARLIEST_DATE = "earliest_date"
-    LATEST_DATE = "latest_date"
-    LAST_DATA_UPDATE = "last_data_update"
+    # archive is not expected to be uploaded, but is one of the generated file types
+    # in the library
+    ARCHIVE = "archive"
+    CUBE = "cube"
+    FLAT = "flat"
+    META = "meta"

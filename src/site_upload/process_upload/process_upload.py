@@ -23,15 +23,35 @@ def process_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> N
     metadata = functions.read_metadata(s3_client, s3_bucket_name)
     path_params = s3_key.split("/")
     study = path_params[1]
-    data_package = path_params[2]
+    # This happens when we're processing flat files, due to having to condense one
+    # folder layer.
+    # TODO: revisit on targeted crawling
+    if "__" in path_params[2]:
+        data_package = path_params[2].split("__")[1]
+    else:
+        data_package = path_params[2]
     site = path_params[3]
     version = path_params[4]
     if s3_key.endswith(".parquet"):
-        if "__meta_" in s3_key or "/discovery__" in s3_key:
+        if (
+            s3_key.endswith(f".{enums.UploadTypes.META.value}.parquet")
+            or "/discovery__" in s3_key
+            or "__meta_" in s3_key
+        ):
             new_key = f"{enums.BucketPath.STUDY_META.value}/{s3_key.split('/', 1)[-1]}"
             topic_sns_arn = os.environ.get("TOPIC_PROCESS_STUDY_META_ARN")
             sns_subject = "Process study metadata upload event"
+        elif s3_key.endswith(f".{enums.UploadTypes.FLAT.value}.parquet"):
+            new_key = f"{enums.BucketPath.LATEST.value}/{s3_key.split('/', 1)[-1]}"
+            topic_sns_arn = os.environ.get("TOPIC_PROCESS_FLAT_ARN")
+            sns_subject = "Process flat table upload event"
+        elif s3_key.endswith(f".{enums.UploadTypes.ARCHIVE.value}.parquet"):
+            # These may contain line level data, and so we just throw them out as a matter
+            # of policy
+            s3_client.delete_object(Bucket=s3_bucket_name, Key=s3_key)
+            logging.info(f"Deleted archive file at {s3_key}")
         else:
+            # TODO: Check for .cube.parquet prefix after older versions of the library phase out
             new_key = f"{enums.BucketPath.LATEST.value}/{s3_key.split('/', 1)[-1]}"
             topic_sns_arn = os.environ.get("TOPIC_PROCESS_COUNTS_ARN")
             sns_subject = "Process counts upload event"

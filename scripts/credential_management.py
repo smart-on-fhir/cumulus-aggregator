@@ -26,10 +26,10 @@ def _put_s3_data(name: str, bucket_name: str, client, data: dict, path: str = "a
     client.upload_fileobj(Bucket=bucket_name, Key=f"{path}/{name}", Fileobj=b_data)
 
 
-def create_auth(client, user: str, auth: str, site: str) -> str:
+def create_auth(user: str, auth: str, site: str) -> str:
     """Adds a new entry to the auth dict used to issue pre-signed URLs"""
     site_id = _basic_auth_str(user, auth).split(" ")[1]
-    return f'"{site_id}"": {{"user": {user}, "site":{site}}}'
+    return f'"{site_id}": {{"user": "{user}", "site":"{site}"}}'
 
 
 def create_meta(client, bucket_name: str, site: str, folder: str) -> None:

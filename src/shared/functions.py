@@ -158,7 +158,7 @@ def write_metadata(
     s3_client.put_object(
         Bucket=s3_bucket_name,
         Key=f"{enums.BucketPath.META.value}/{meta_type}.json",
-        Body=json.dumps(metadata, default=str),
+        Body=json.dumps(metadata, default=str, indent=2),
     )
 
 
@@ -180,6 +180,22 @@ def move_s3_file(s3_client, s3_bucket_name: str, old_key: str, new_key: str) -> 
     if delete_response["ResponseMetadata"]["HTTPStatusCode"] != 204:
         logging.error("error deleting file %s", old_key)
         raise S3UploadError
+
+
+def get_s3_keys(s3_client, s3_bucket_name: str, prefix: str, token: str | None = None) -> list:
+    """Gets the list of all keys in S3 starting with the prefix"""
+    if token:
+        res = s3_client.list_objects_v2(
+            Bucket=s3_bucket_name, Prefix=prefix, ContinuationToken=token
+        )
+    else:
+        res = s3_client.list_objects_v2(Bucket=s3_bucket_name, Prefix=prefix)
+    if "Contents" not in res:
+        return []
+    contents = [record["Key"] for record in res["Contents"]]
+    if res["IsTruncated"]:
+        contents += get_s3_keys(s3_client, s3_bucket_name, prefix, res["NextContinuationToken"])
+    return contents
 
 
 def get_s3_site_filename_suffix(s3_path: str):

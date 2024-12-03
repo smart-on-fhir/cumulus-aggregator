@@ -126,7 +126,22 @@ def get_mock_column_types_metadata():
                     "last_data_update": "2023-02-24T15:08:07.771080+00:00",
                 }
             }
-        }
+        },
+        OTHER_STUDY: {
+            EXISTING_DATA_P: {
+                EXISTING_VERSION: {
+                    "column_types_format_version": "1",
+                    "columns": {
+                        "cnt": "integer",
+                        "gender": "string",
+                        "age": "integer",
+                        "race_display": "string",
+                        "site": "string",
+                    },
+                    "last_data_update": "2023-02-24T15:08:07.771080+00:00",
+                }
+            }
+        },
     }
 
 

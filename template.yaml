@@ -173,12 +173,15 @@ Resources:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
           TOPIC_PROCESS_COUNTS_ARN: !Ref SNSTopicProcessCounts
+          TOPIC_PROCESS_FLAT_ARN: !Ref SNSTopicProcessFlat
           TOPIC_PROCESS_STUDY_META_ARN: !Ref SNSTopicProcessStudyMeta
       Policies:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
         - SNSPublishMessagePolicy:
             TopicName: !GetAtt SNSTopicProcessCounts.TopicName
+        - SNSPublishMessagePolicy:
+           TopicName: !GetAtt SNSTopicProcessFlat.TopicName
         - SNSPublishMessagePolicy:
             TopicName: !GetAtt SNSTopicProcessStudyMeta.TopicName
         - Statement:
@@ -215,7 +218,7 @@ Resources:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
           TOPIC_CACHE_API_ARN: !Ref SNSTopicCacheAPI
       Events:
-        ProcessUploadSNSEvent:
+        ProcessCountsUploadSNSEvent:
           Type: SNS
           Properties:
             Topic: !Ref SNSTopicProcessCounts
@@ -236,6 +239,49 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${PowersetMergeFunction}"
+      RetentionInDays: !Ref RetentionTime
+
+  ProcessFlatFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggProcessFlat-${DeployStage}'
+      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
+      CodeUri: ./src/site_upload/process_flat
+      Handler: process_flat.process_flat_handler
+      Runtime: "python3.11"
+      LoggingConfig:
+        ApplicationLogLevel: !Ref LogLevel
+        LogFormat: !Ref LogFormat
+        LogGroup: !Sub "/aws/lambda/CumulusAggProcessFlat-${DeployStage}"
+      MemorySize: 8192
+      Timeout: 800
+      Description: Merges and aggregates powerset count data
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+          TOPIC_CACHE_API_ARN: !Ref SNSTopicCacheAPI
+      Events:
+        ProcessFlatUploadSNSEvent:
+         Type: SNS
+         Properties:
+           Topic: !Ref SNSTopicProcessFlat
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt SNSTopicCacheAPI.TopicName
+        - Statement:
+          - Sid: KMSDecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
+
+  ProcessFlatLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ProcessFlatFunction}"
       RetentionInDays: !Ref RetentionTime
 
   StudyPeriodFunction:
@@ -717,6 +763,14 @@ Resources:
         - Key: Name
           Value: !Sub 'CumulusProcessCounts-${DeployStage}'
 
+  SNSTopicProcessFlat:
+   Type: AWS::SNS::Topic
+   Properties:
+     TopicName: !Sub 'CumulusProcessFlat-${DeployStage}'
+     Tags:
+       - Key: Name
+         Value: !Sub 'CumulusProcessFlat-${DeployStage}'
+
   SNSTopicProcessStudyMeta:
     Type: AWS::SNS::Topic
     Properties:
@@ -779,6 +833,7 @@ Resources:
       Targets:
         S3Targets:
           - Path: !Sub '${AggregatorBucket}/aggregates'
+          - Path: !Sub '${AggregatorBucket}/flat'
 
   AthenaWorkGroup:
     Type: AWS::Athena::WorkGroup
@@ -845,6 +900,17 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                 Resource: !Sub "arn:aws:s3:::${BucketNameParameter}-${AWS::AccountId}-${DeployStage}/aggregates/*"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Sub "arn:aws:s3:::${BucketNameParameter}-${AWS::AccountId}-${DeployStage}/flat/*"
+              - Sid: KMSDecryptPolicy
+                Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource:
+                  - !ImportValue cumulus-kms-KMSKeyArn
 
 
 ### API Gateways
