@@ -29,7 +29,7 @@ INLINE_FILTERS = (
     "strContainsCI",
     "strStartsWithCI",
     "strEndsWithCI",
-    "strMatchesCI",
+    "matchesCI",
     "strNotEq",
     "strNotContains",
     "strNotStartsWith",
@@ -89,7 +89,7 @@ NONE_FILTERS = (
     "strContainsCI",
     "strStartsWithCI",
     "strEndsWithCI",
-    "strMatchesCI",
+    "matchesCI",
     "strNotEq",
     "strNotContains",
     "strNotStartsWith",
@@ -165,9 +165,10 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
                 raise errors.AggregatorFilterError(
                     f"Invalid filter type {filter_config[1]} requested."
                 )
-
-        inline_configs.append(config_params)
-        none_configs.append(none_params)
+        if config_params != []:
+            inline_configs.append(config_params)
+        if none_params != []:
+            none_configs.append(none_params)
     count_col = next(c for c in columns if c.startswith("cnt"))
     columns.remove(count_col)
     # these 'if in' checks is meant to handle the case where the selected column is also

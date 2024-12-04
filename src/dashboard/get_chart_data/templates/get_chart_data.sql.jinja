@@ -21,7 +21,7 @@ WHERE
     AND (
         (
             {{ data_column }} != 'cumulus__none'
-            {%- if inline_configs %}
+            {%- if inline_configs|length > 0 %}
                 AND
                 (
                     {{ inline.get_filters(inline_configs) }}
@@ -30,7 +30,7 @@ WHERE
         )
         OR (
             {{ data_column }} = 'cumulus__none'
-            {%- if none_configs %}
+            {%- if none_configs|length > 0 %}
                 AND
                 (
                     {{ inline.get_filters(none_configs) }}

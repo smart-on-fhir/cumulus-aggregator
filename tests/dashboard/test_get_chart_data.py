@@ -102,7 +102,7 @@ WHERE COALESCE(
                 (
                     
         (
-            "gender" LIKE 'female'
+            CAST("gender" AS VARCHAR) LIKE 'female'
                     )
                 )
         )
@@ -112,7 +112,7 @@ WHERE COALESCE(
                 (
                     
         (
-            "gender" LIKE 'female'
+            CAST("gender" AS VARCHAR) LIKE 'female'
                     )
                 )
         )
@@ -139,7 +139,7 @@ WHERE "gender" IS NOT NULL
                 (
                     
         (
-            "gender" LIKE 'cumulus__none'
+            CAST("gender" AS VARCHAR) LIKE 'cumulus__none'
                     )
                 )
         )
@@ -149,7 +149,7 @@ WHERE "gender" IS NOT NULL
                 (
                     
         (
-            "gender" LIKE 'cumulus__none'
+            CAST("gender" AS VARCHAR) LIKE 'cumulus__none'
                     )
                 )
         )
@@ -224,11 +224,11 @@ WHERE "gender" IS NOT NULL
                 (
                     
         (
-            regexp_like("gender", 'a')
+            regexp_like(CAST("gender" AS VARCHAR), 'a')
                     )
         OR (
-            regexp_like("gender", 'e')
-            AND regexp_like("gender", 'm')
+            regexp_like(CAST("gender" AS VARCHAR), 'e')
+            AND regexp_like(CAST("gender" AS VARCHAR), 'm')
                     )
                 )
         )
@@ -238,11 +238,11 @@ WHERE "gender" IS NOT NULL
                 (
                     
         (
-            regexp_like("gender", 'a')
+            regexp_like(CAST("gender" AS VARCHAR), 'a')
                     )
         OR (
-            regexp_like("gender", 'e')
-            AND regexp_like("gender", 'm')
+            regexp_like(CAST("gender" AS VARCHAR), 'e')
+            AND regexp_like(CAST("gender" AS VARCHAR), 'm')
                     )
                 )
         )
