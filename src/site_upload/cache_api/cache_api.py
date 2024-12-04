@@ -37,20 +37,17 @@ def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None
             "study": dp.split("__")[0],
             "name": dp.split("__")[1],
         }
-        try:
-            versions = column_types[dp_detail["study"]][dp_detail["name"]]
-            for version in versions:
-                dp_dict = {
-                    **dp_detail,
-                    **versions[version],
-                    "version": version,
-                    "id": f"{dp_detail['study']}__{dp_detail['name']}__{version}",
-                }
-                if "__flat" in dp:
-                    dp_dict["type"] = "flat"
-                dp_details.append(dp_dict)
-        except KeyError as e:
-            raise e
+        versions = column_types[dp_detail["study"]][dp_detail["name"]]
+        for version in versions:
+            dp_dict = {
+                **dp_detail,
+                **versions[version],
+                "version": version,
+                "id": f"{dp_detail['study']}__{dp_detail['name']}__{version}",
+            }
+            if "__flat" in dp:
+                dp_dict["type"] = "flat"
+            dp_details.append(dp_dict)
     s3_client.put_object(
         Bucket=s3_bucket_name,
         Key=f"{enums.BucketPath.CACHE.value}/{enums.JsonFilename.DATA_PACKAGES.value}.json",

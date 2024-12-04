@@ -1,10 +1,21 @@
+"""Unit tests for shared functions.
+
+
+As of this writing, since a lot of this was historically covered by other tests,
+this file does not contain a 1-1 set of tests to the source module,
+instead focusing only on edge case scenarios (though in those cases, tests
+should be comprehensive). 1-1 coverage is a desirable long term goal.
+"""
+
 from contextlib import nullcontext as does_not_raise
 from unittest import mock
 
+import boto3
 import pandas
 import pytest
 
-from src.shared import functions, pandas_functions
+from src.shared import enums, functions, pandas_functions
+from tests import mock_utils
 
 
 @pytest.mark.parametrize(
@@ -60,3 +71,44 @@ def test_column_datatypes():
         "bool": "boolean",
         "string": "string",
     }
+
+
+def test_update_metadata_error(mock_bucket):
+    with pytest.raises(ValueError):
+        enums.JsonFilename.FOO = "foo"
+        functions.update_metadata(
+            metadata={}, study="", data_package="", version="", target="", meta_type="foo"
+        )
+
+
+def test_get_s3_keys(mock_bucket):
+    s3_client = boto3.client("s3")
+    res = functions.get_s3_keys(s3_client, mock_utils.TEST_BUCKET, "")
+    assert len(res) == mock_utils.ITEM_COUNT
+    res = functions.get_s3_keys(s3_client, mock_utils.TEST_BUCKET, "", max_keys=2)
+    assert len(res) == mock_utils.ITEM_COUNT
+    res = functions.get_s3_keys(s3_client, mock_utils.TEST_BUCKET, "cache")
+    assert res == ["cache/data_packages.json"]
+
+
+def test_latest_data_package_version(mock_bucket):
+    version = functions.get_latest_data_package_version(
+        mock_utils.TEST_BUCKET, f"{enums.BucketPath.AGGREGATE.value}/{mock_utils.EXISTING_STUDY}"
+    )
+    assert version == mock_utils.EXISTING_VERSION
+    s3_client = boto3.client("s3")
+    s3_client.upload_file(
+        "./tests/test_data/count_synthea_patient_agg.parquet",
+        mock_utils.TEST_BUCKET,
+        f"{enums.BucketPath.AGGREGATE.value}/{mock_utils.EXISTING_STUDY}/"
+        f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}/"
+        f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.NEW_VERSION}/"
+        f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__aggregate.parquet",
+    )
+    version = functions.get_latest_data_package_version(
+        mock_utils.TEST_BUCKET, f"{enums.BucketPath.AGGREGATE.value}/{mock_utils.EXISTING_STUDY}"
+    )
+    version = functions.get_latest_data_package_version(
+        mock_utils.TEST_BUCKET, f"{enums.BucketPath.AGGREGATE.value}/not_a_study"
+    )
+    assert version is None

@@ -237,6 +237,8 @@ def test_powerset_merge_single_upload(
                 or item["Key"].startswith(enums.BucketPath.ERROR.value)
                 or item["Key"].startswith(enums.BucketPath.ADMIN.value)
                 or item["Key"].startswith(enums.BucketPath.CACHE.value)
+                or item["Key"].startswith(enums.BucketPath.FLAT.value)
+                or item["Key"].startswith(enums.BucketPath.CSVFLAT.value)
                 or item["Key"].endswith("study_periods.json")
             )
     if archives:
