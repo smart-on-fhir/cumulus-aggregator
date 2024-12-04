@@ -146,6 +146,7 @@ def mock_notification():
     sns.start()
     sns_client = boto3.client("sns", region_name="us-east-1")
     sns_client.create_topic(Name="test-counts")
+    sns_client.create_topic(Name="test-flat")
     sns_client.create_topic(Name="test-meta")
     sns_client.create_topic(Name="test-cache")
     yield

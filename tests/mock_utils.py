@@ -4,6 +4,7 @@ TEST_BUCKET = "cumulus-aggregator-site-counts-test"
 TEST_WORKGROUP = "cumulus-aggregator-test-wg"
 TEST_GLUE_DB = "cumulus-aggregator-test-db"
 TEST_PROCESS_COUNTS_ARN = "arn:aws:sns:us-east-1:123456789012:test-counts"
+TEST_PROCESS_FLAT_ARN = "arn:aws:sns:us-east-1:123456789012:test-flat"
 TEST_PROCESS_STUDY_META_ARN = "arn:aws:sns:us-east-1:123456789012:test-meta"
 TEST_CACHE_API_ARN = "arn:aws:sns:us-east-1:123456789012:test-cache"
 ITEM_COUNT = 13
@@ -27,6 +28,7 @@ MOCK_ENV = {
     "GLUE_DB_NAME": TEST_GLUE_DB,
     "WORKGROUP_NAME": TEST_WORKGROUP,
     "TOPIC_PROCESS_COUNTS_ARN": TEST_PROCESS_COUNTS_ARN,
+    "TOPIC_PROCESS_FLAT_ARN": TEST_PROCESS_FLAT_ARN,
     "TOPIC_PROCESS_STUDY_META_ARN": TEST_PROCESS_STUDY_META_ARN,
     "TOPIC_CACHE_API_ARN": TEST_CACHE_API_ARN,
 }

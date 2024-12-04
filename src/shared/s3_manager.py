@@ -207,7 +207,7 @@ class S3Manager:
             site = self.site
         if metadata is None:
             metadata = self.metadata
-        metadata = functions.update_metadata(
+        functions.update_metadata(
             metadata=metadata,
             site=site,
             study=self.study,

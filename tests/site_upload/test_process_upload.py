@@ -57,12 +57,23 @@ from tests.mock_utils import (
             200,
             ITEM_COUNT + 1,
         ),
-        (  # Upload of the template study
+        (  # Upload of a flat file
             "./tests/test_data/cube_simple_example.parquet",
-            f"/template/{NEW_DATA_P}/{EXISTING_SITE}" f"/{EXISTING_VERSION}/document.parquet",
-            f"/template/{NEW_DATA_P}/{EXISTING_SITE}" f"/{EXISTING_VERSION}/document.parquet",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/document.flat.parquet",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/document.flat.parquet",
             200,
             ITEM_COUNT + 1,
+        ),
+        (  # Upload of an archive file (which should be deleted)
+            "./tests/test_data/cube_simple_example.parquet",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/document.archive.parquet",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_VERSION}/document.archive.parquet",
+            200,
+            ITEM_COUNT,
         ),
         (  # Non-parquet file
             "./tests/test_data/cube_simple_example.csv",
@@ -136,7 +147,8 @@ def test_process_upload(
     assert res["statusCode"] == status
     s3_res = s3_client.list_objects_v2(Bucket=TEST_BUCKET)
     assert len(s3_res["Contents"]) == expected_contents
-    found_archive = False
+    if event_key.endswith(".archive.parquet"):
+        return
     for item in s3_res["Contents"]:
         if item["Key"].endswith("aggregate.parquet"):
             assert item["Key"].startswith(enums.BucketPath.AGGREGATE.value)
@@ -158,8 +170,6 @@ def test_process_upload(
                     )
         elif item["Key"].startswith(enums.BucketPath.STUDY_META.value):
             assert any(x in item["Key"] for x in ["_meta_", "/discovery__"])
-        elif item["Key"].startswith(enums.BucketPath.ARCHIVE.value):
-            found_archive = True
         else:
             assert (
                 item["Key"].startswith(enums.BucketPath.LATEST.value)
@@ -169,8 +179,7 @@ def test_process_upload(
                 or item["Key"].startswith(enums.BucketPath.CACHE.value)
                 or item["Key"].startswith(enums.BucketPath.FLAT.value)
                 or item["Key"].startswith(enums.BucketPath.CSVFLAT.value)
+                or item["Key"].startswith(enums.BucketPath.ARCHIVE.value)
                 or item["Key"].endswith("study_periods.json")
                 or item["Key"].endswith("column_types.json")
             )
-        if found_archive:
-            assert "template" in upload_path

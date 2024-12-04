@@ -50,6 +50,7 @@ def process_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> N
             # of policy
             s3_client.delete_object(Bucket=s3_bucket_name, Key=s3_key)
             logging.info(f"Deleted archive file at {s3_key}")
+            return
         else:
             # TODO: Check for .cube.parquet prefix after older versions of the library phase out
             new_key = f"{enums.BucketPath.LATEST.value}/{s3_key.split('/', 1)[-1]}"
