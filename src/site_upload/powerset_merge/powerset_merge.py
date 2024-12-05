@@ -1,23 +1,13 @@
 """Lambda for performing joins of site count data"""
 
-import csv
 import datetime
 import logging
 import os
-import traceback
 
 import awswrangler
-import boto3
-import numpy
 import pandas
 from pandas.core.indexes.range import RangeIndex
-from shared import (
-    awswrangler_functions,
-    decorators,
-    enums,
-    functions,
-    pandas_functions,
-)
+from shared import awswrangler_functions, decorators, enums, functions, pandas_functions, s3_manager
 
 log_level = os.environ.get("LAMBDA_LOG_LEVEL", "INFO")
 logger = logging.getLogger()
@@ -30,144 +20,12 @@ class MergeError(ValueError):
         self.filename = filename
 
 
-class S3Manager:
-    """Convenience class for managing S3 Access"""
-
-    def __init__(self, event):
-        self.s3_bucket_name = os.environ.get("BUCKET_NAME")
-        self.s3_client = boto3.client("s3")
-        self.sns_client = boto3.client("sns", region_name=self.s3_client.meta.region_name)
-
-        self.s3_key = event["Records"][0]["Sns"]["Message"]
-        s3_key_array = self.s3_key.split("/")
-        self.study = s3_key_array[1]
-        self.data_package = s3_key_array[2].split("__")[1]
-        self.site = s3_key_array[3]
-        self.version = s3_key_array[4].split("__")[-1]
-        self.metadata = functions.read_metadata(self.s3_client, self.s3_bucket_name)
-        self.types_metadata = functions.read_metadata(
-            self.s3_client,
-            self.s3_bucket_name,
-            meta_type=enums.JsonFilename.COLUMN_TYPES.value,
-        )
-        self.csv_aggerate_path = (
-            f"s3://{self.s3_bucket_name}/{enums.BucketPath.CSVAGGREGATE.value}/"
-            f"{self.study}/{self.study}__{self.data_package}/"
-            f"{self.version}/"
-            f"{self.study}__{self.data_package}__aggregate.csv"
-        )
-
-    # S3 Filesystem operations
-    def get_data_package_list(self, path) -> list:
-        """convenience wrapper for get_s3_data_package_list"""
-        return awswrangler_functions.get_s3_data_package_list(
-            path, self.s3_bucket_name, self.study, self.data_package
-        )
-
-    def move_file(self, from_path: str, to_path: str) -> None:
-        """convenience wrapper for move_s3_file"""
-        functions.move_s3_file(self.s3_client, self.s3_bucket_name, from_path, to_path)
-
-    def copy_file(self, from_path: str, to_path: str) -> None:
-        """convenience wrapper for copy_s3_file"""
-        source = {
-            "Bucket": self.s3_bucket_name,
-            "Key": from_path,
-        }
-        self.s3_client.copy_object(
-            CopySource=source,
-            Bucket=self.s3_bucket_name,
-            Key=to_path,
-        )
-
-    # parquet/csv output creation
-    def write_parquet(self, df: pandas.DataFrame, is_new_data_package: bool) -> None:
-        """writes dataframe as parquet to s3 and sends an SNS notification if new"""
-        parquet_aggregate_path = (
-            f"s3://{self.s3_bucket_name}/{enums.BucketPath.AGGREGATE.value}/"
-            f"{self.study}/{self.study}__{self.data_package}/"
-            f"{self.study}__{self.data_package}__{self.version}/"
-            f"{self.study}__{self.data_package}__aggregate.parquet"
-        )
-        awswrangler.s3.to_parquet(df, parquet_aggregate_path, index=False)
-        if is_new_data_package:
-            topic_sns_arn = os.environ.get("TOPIC_CACHE_API_ARN")
-            self.sns_client.publish(
-                TopicArn=topic_sns_arn, Message="data_packages", Subject="data_packages"
-            )
-
-    def write_csv(self, df: pandas.DataFrame) -> None:
-        """writes dataframe as csv to s3"""
-        df = df.apply(lambda x: x.strip() if isinstance(x, str) else x).replace('""', numpy.nan)
-        df = df.replace(to_replace=r",", value="", regex=True)
-        awswrangler.s3.to_csv(df, self.csv_aggerate_path, index=False, quoting=csv.QUOTE_NONE)
-
-    # metadata
-    def update_local_metadata(
-        self,
-        key,
-        *,
-        site=None,
-        value=None,
-        metadata: dict | None = None,
-        meta_type: str | None = enums.JsonFilename.TRANSACTIONS.value,
-        extra_items: dict | None = None,
-    ):
-        """convenience wrapper for update_metadata"""
-        # We are excluding COLUMN_TYPES explicitly from this first check because,
-        # by design, it should never have a site field in it - the column types
-        # are tied to the study version, not a specific site's data
-        if extra_items is None:
-            extra_items = {}
-        if site is None and meta_type != enums.JsonFilename.COLUMN_TYPES.value:
-            site = self.site
-        if metadata is None:
-            metadata = self.metadata
-        metadata = functions.update_metadata(
-            metadata=metadata,
-            site=site,
-            study=self.study,
-            data_package=self.data_package,
-            version=self.version,
-            target=key,
-            value=value,
-            meta_type=meta_type,
-            extra_items=extra_items,
-        )
-
-    def write_local_metadata(self, metadata: dict | None = None, meta_type: str | None = None):
-        """convenience wrapper for write_metadata"""
-        metadata = metadata or self.metadata
-        meta_type = meta_type or enums.JsonFilename.TRANSACTIONS.value
-        functions.write_metadata(
-            s3_client=self.s3_client,
-            s3_bucket_name=self.s3_bucket_name,
-            metadata=metadata,
-            meta_type=meta_type,
-        )
-
-    def merge_error_handler(
-        self,
-        s3_path: str,
-        subbucket_path: str,
-        error: Exception,
-    ) -> None:
-        """Helper for logging errors and moving files"""
-        logger.error("File %s failed to aggregate: %s", s3_path, str(error))
-        logger.error(traceback.print_exc())
-        self.move_file(
-            s3_path.replace(f"s3://{self.s3_bucket_name}/", ""),
-            f"{enums.BucketPath.ERROR.value}/{subbucket_path}",
-        )
-        self.update_local_metadata(enums.TransactionKeys.LAST_ERROR.value)
-
-
 def get_static_string_series(static_str: str, index: RangeIndex) -> pandas.Series:
     """Helper for the verbose way of defining a pandas string series"""
     return pandas.Series([static_str] * len(index)).astype("string")
 
 
-def expand_and_concat_sets(
+def expand_and_concat_powersets(
     df: pandas.DataFrame, file_path: str, site_name: str
 ) -> pandas.DataFrame:
     """Processes and joins dataframes containing powersets.
@@ -223,31 +81,13 @@ def expand_and_concat_sets(
     return agg_df
 
 
-def generate_csv_from_parquet(bucket_name: str, bucket_root: str, subbucket_path: str):
-    """Convenience function for generating csvs for dashboard upload
-
-    TODO: Remove on dashboard parquet/API support"""
-    last_valid_df = awswrangler.s3.read_parquet(
-        f"s3://{bucket_name}/{bucket_root}" f"/{subbucket_path}"
-    )
-    last_valid_df = last_valid_df.apply(lambda x: x.strip() if isinstance(x, str) else x).replace(
-        '""', numpy.nan
-    )
-    awswrangler.s3.to_csv(
-        last_valid_df,
-        (f"s3://{bucket_name}/{bucket_root}/{subbucket_path}".replace(".parquet", ".csv")),
-        index=False,
-        quoting=csv.QUOTE_MINIMAL,
-    )
-
-
-def merge_powersets(manager: S3Manager) -> None:
+def merge_powersets(manager: s3_manager.S3Manager) -> None:
     """Creates an aggregate powerset from all files with a given s3 prefix"""
     # TODO: this should be memory profiled for large datasets. We can use
     # chunking to lower memory usage during merges.
 
-    # initializing this early in case an empty file causes us to never set it
     logger.info(f"Proccessing data package at {manager.s3_key}")
+    # initializing this early in case an empty file causes us to never set it
     is_new_data_package = False
     df = pandas.DataFrame()
     latest_file_list = manager.get_data_package_list(enums.BucketPath.LATEST.value)
@@ -262,14 +102,14 @@ def merge_powersets(manager: S3Manager) -> None:
         # one instead
         try:
             if not any(x.endswith(site_specific_name) for x in latest_file_list):
-                df = expand_and_concat_sets(df, last_valid_path, last_valid_site)
+                df = expand_and_concat_powersets(df, last_valid_path, last_valid_site)
                 manager.update_local_metadata(
                     enums.TransactionKeys.LAST_AGGREGATION.value, site=last_valid_site
                 )
         except MergeError as e:
-            # This is expected to trigger if there's an issue in expand_and_concat_sets;
+            # This is expected to trigger if there's an issue in expand_and_concat_powersets;
             # this usually means there's a data problem.
-            manager.merge_error_handler(
+            manager.error_handler(
                 e.filename,
                 subbucket_path,
                 e,
@@ -298,7 +138,7 @@ def merge_powersets(manager: S3Manager) -> None:
             # we'll generate a new list of valid tables for the dashboard
             else:
                 is_new_data_package = True
-            df = expand_and_concat_sets(df, latest_path, manager.site)
+            df = expand_and_concat_powersets(df, latest_path, manager.site)
             manager.move_file(
                 f"{enums.BucketPath.LATEST.value}/{subbucket_path}",
                 f"{enums.BucketPath.LAST_VALID.value}/{subbucket_path}",
@@ -309,7 +149,7 @@ def merge_powersets(manager: S3Manager) -> None:
             # This is used for uploading to the dashboard.
             # TODO: remove as soon as we support either parquet upload or
             # the API is supported by the dashboard
-            generate_csv_from_parquet(
+            awswrangler_functions.generate_csv_from_parquet(
                 manager.s3_bucket_name,
                 enums.BucketPath.LAST_VALID.value,
                 subbucket_path,
@@ -324,7 +164,7 @@ def merge_powersets(manager: S3Manager) -> None:
                 enums.TransactionKeys.LAST_AGGREGATION.value, site=latest_site
             )
         except Exception as e:
-            manager.merge_error_handler(
+            manager.error_handler(
                 latest_path,
                 subbucket_path,
                 e,
@@ -332,7 +172,7 @@ def merge_powersets(manager: S3Manager) -> None:
             # if a new file fails, we want to replace it with the last valid
             # for purposes of aggregation
             if any(x.endswith(site_specific_name) for x in last_valid_file_list):
-                df = expand_and_concat_sets(
+                df = expand_and_concat_powersets(
                     df,
                     f"s3://{manager.s3_bucket_name}/{enums.BucketPath.LAST_VALID.value}"
                     f"/{subbucket_path}",
@@ -352,7 +192,7 @@ def merge_powersets(manager: S3Manager) -> None:
         value=column_dict,
         metadata=manager.types_metadata,
         meta_type=enums.JsonFilename.COLUMN_TYPES.value,
-        extra_items={"total": int(df["cnt"][0]), "s3_path": manager.csv_aggerate_path},
+        extra_items={"total": int(df["cnt"][0]), "s3_path": manager.csv_aggregate_path},
     )
     manager.update_local_metadata(
         enums.ColumnTypesKeys.LAST_DATA_UPDATE.value,
@@ -378,7 +218,7 @@ def merge_powersets(manager: S3Manager) -> None:
 def powerset_merge_handler(event, context):
     """manages event from SNS, triggers file processing and merge"""
     del context
-    manager = S3Manager(event)
+    manager = s3_manager.S3Manager(event)
     merge_powersets(manager)
     res = functions.http_response(200, "Merge successful")
     return res

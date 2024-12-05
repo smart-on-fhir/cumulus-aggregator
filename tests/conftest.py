@@ -40,6 +40,8 @@ def _init_mock_data(s3_client, bucket, study, data_package, version):
     The following items are added:
         - Aggregates, with a site of plainsboro, in parquet and csv, for the
           study provided
+        - Flat tables, with a site of plainsboro, in parquet and csv, for the
+          study provided
         - a data_package cache for api testing
         - credentials for the 3 unit test hospitals (princeton, elsewhere, hope)
 
@@ -59,13 +61,27 @@ def _init_mock_data(s3_client, bucket, study, data_package, version):
         f"{study}__{data_package}/{version}/{study}__{data_package}__aggregate.csv",
     )
     s3_client.upload_file(
+        "./tests/test_data/flat_synthea_q_date_recent.parquet",
+        bucket,
+        f"{enums.BucketPath.FLAT.value}/{study}/{mock_utils.EXISTING_SITE}"
+        f"{study}__{data_package}__{version}/"
+        f"{study}__{data_package}__flat.parquet",
+    )
+    s3_client.upload_file(
+        "./tests/test_data/flat_synthea_q_date_recent.csv",
+        bucket,
+        f"{enums.BucketPath.CSVFLAT.value}/{study}/{mock_utils.EXISTING_SITE}"
+        f"{study}__{data_package}__{version}/"
+        f"{study}__{data_package}__flat.csv",
+    )
+    s3_client.upload_file(
         "./tests/test_data/data_packages_cache.json",
         bucket,
         f"{enums.BucketPath.CACHE.value}/{enums.JsonFilename.DATA_PACKAGES.value}.json",
     )
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def mock_env():
     with mock.patch.dict(os.environ, mock_utils.MOCK_ENV):
         yield
@@ -130,6 +146,7 @@ def mock_notification():
     sns.start()
     sns_client = boto3.client("sns", region_name="us-east-1")
     sns_client.create_topic(Name="test-counts")
+    sns_client.create_topic(Name="test-flat")
     sns_client.create_topic(Name="test-meta")
     sns_client.create_topic(Name="test-cache")
     yield

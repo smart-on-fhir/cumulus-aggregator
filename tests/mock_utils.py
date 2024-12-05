@@ -4,9 +4,10 @@ TEST_BUCKET = "cumulus-aggregator-site-counts-test"
 TEST_WORKGROUP = "cumulus-aggregator-test-wg"
 TEST_GLUE_DB = "cumulus-aggregator-test-db"
 TEST_PROCESS_COUNTS_ARN = "arn:aws:sns:us-east-1:123456789012:test-counts"
+TEST_PROCESS_FLAT_ARN = "arn:aws:sns:us-east-1:123456789012:test-flat"
 TEST_PROCESS_STUDY_META_ARN = "arn:aws:sns:us-east-1:123456789012:test-meta"
 TEST_CACHE_API_ARN = "arn:aws:sns:us-east-1:123456789012:test-cache"
-ITEM_COUNT = 9
+ITEM_COUNT = 13
 DATA_PACKAGE_COUNT = 3
 
 EXISTING_SITE = "princeton_plainsboro_teaching_hospital"
@@ -27,6 +28,7 @@ MOCK_ENV = {
     "GLUE_DB_NAME": TEST_GLUE_DB,
     "WORKGROUP_NAME": TEST_WORKGROUP,
     "TOPIC_PROCESS_COUNTS_ARN": TEST_PROCESS_COUNTS_ARN,
+    "TOPIC_PROCESS_FLAT_ARN": TEST_PROCESS_FLAT_ARN,
     "TOPIC_PROCESS_STUDY_META_ARN": TEST_PROCESS_STUDY_META_ARN,
     "TOPIC_CACHE_API_ARN": TEST_CACHE_API_ARN,
 }
@@ -126,7 +128,22 @@ def get_mock_column_types_metadata():
                     "last_data_update": "2023-02-24T15:08:07.771080+00:00",
                 }
             }
-        }
+        },
+        OTHER_STUDY: {
+            EXISTING_DATA_P: {
+                EXISTING_VERSION: {
+                    "column_types_format_version": "1",
+                    "columns": {
+                        "cnt": "integer",
+                        "gender": "string",
+                        "age": "integer",
+                        "race_display": "string",
+                        "site": "string",
+                    },
+                    "last_data_update": "2023-02-24T15:08:07.771080+00:00",
+                }
+            }
+        },
     }
 
 

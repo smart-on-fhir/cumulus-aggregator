@@ -1,8 +1,6 @@
 import io
-import os
 from contextlib import nullcontext as does_not_raise
 from datetime import UTC, datetime
-from unittest import mock
 
 import awswrangler
 import boto3
@@ -18,7 +16,6 @@ from tests.mock_utils import (
     EXISTING_STUDY,
     EXISTING_VERSION,
     ITEM_COUNT,
-    MOCK_ENV,
     NEW_SITE,
     NEW_STUDY,
     NEW_VERSION,
@@ -124,7 +121,6 @@ from tests.mock_utils import (
         ),
     ],
 )
-@mock.patch.dict(os.environ, MOCK_ENV)
 def test_powerset_merge_single_upload(
     upload_file,
     upload_path,
@@ -159,7 +155,10 @@ def test_powerset_merge_single_upload(
     event = {
         "Records": [
             {
-                "Sns": {"Message": f"{enums.BucketPath.LATEST.value}{event_key}"},
+                "Sns": {
+                    "Message": f"{enums.BucketPath.LATEST.value}{event_key}",
+                    "TopicArn": "TOPIC_PROCESS_COUNTS_ARN",
+                },
             }
         ]
     }
@@ -238,6 +237,8 @@ def test_powerset_merge_single_upload(
                 or item["Key"].startswith(enums.BucketPath.ERROR.value)
                 or item["Key"].startswith(enums.BucketPath.ADMIN.value)
                 or item["Key"].startswith(enums.BucketPath.CACHE.value)
+                or item["Key"].startswith(enums.BucketPath.FLAT.value)
+                or item["Key"].startswith(enums.BucketPath.CSVFLAT.value)
                 or item["Key"].endswith("study_periods.json")
             )
     if archives:
@@ -258,7 +259,6 @@ def test_powerset_merge_single_upload(
         ("./tests/test_data/other_schema.parquet", True, 1),
     ],
 )
-@mock.patch.dict(os.environ, MOCK_ENV)
 def test_powerset_merge_join_study_data(
     upload_file,
     archives,
@@ -298,8 +298,9 @@ def test_powerset_merge_join_study_data(
                 "Sns": {
                     "Message": f"{enums.BucketPath.LATEST.value}/{EXISTING_STUDY}"
                     f"/{EXISTING_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}"
-                    f"/{EXISTING_VERSION}/encounter.parquet"
-                },
+                    f"/{EXISTING_VERSION}/encounter.parquet",
+                    "TopicArn": "TOPIC_PROCESS_COUNTS_ARN",
+                }
             }
         ]
     }
@@ -349,25 +350,6 @@ def test_expand_and_concat(mock_bucket, upload_file, load_empty, raises):
             TEST_BUCKET,
             s3_path,
         )
-        powerset_merge.expand_and_concat_sets(df, f"s3://{TEST_BUCKET}/{s3_path}", EXISTING_STUDY)
-
-
-def test_parquet_to_csv(mock_bucket):
-    bucket_root = "test"
-    subbucket_path = "/uploaded.parquet"
-    s3_client = boto3.client("s3", region_name="us-east-1")
-    s3_client.upload_file(
-        "./tests/test_data/cube_strings_with_commas.parquet",
-        TEST_BUCKET,
-        f"{bucket_root}/{subbucket_path}",
-    )
-    powerset_merge.generate_csv_from_parquet(TEST_BUCKET, bucket_root, subbucket_path)
-    df = awswrangler.s3.read_csv(
-        f"s3://{TEST_BUCKET}/{bucket_root}/{subbucket_path.replace('.parquet','.csv')}"
-    )
-    assert list(df["race"].dropna().unique()) == [
-        "White",
-        "Black, or African American",
-        "Asian",
-        "American Indian, or Alaska Native",
-    ]
+        powerset_merge.expand_and_concat_powersets(
+            df, f"s3://{TEST_BUCKET}/{s3_path}", EXISTING_STUDY
+        )

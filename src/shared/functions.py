@@ -140,7 +140,7 @@ def update_metadata(
         # Should only be hit if you add a new JSON dict and forget to add it
         # to this function
         case _:
-            raise OSError(f"{meta_type} does not have a handler for updates.")
+            raise ValueError(f"{meta_type} does not have a handler for updates.")
     data_version_metadata.update(extra_items)
     return metadata
 
@@ -158,7 +158,7 @@ def write_metadata(
     s3_client.put_object(
         Bucket=s3_bucket_name,
         Key=f"{enums.BucketPath.META.value}/{meta_type}.json",
-        Body=json.dumps(metadata, default=str),
+        Body=json.dumps(metadata, default=str, indent=2),
     )
 
 
@@ -180,6 +180,30 @@ def move_s3_file(s3_client, s3_bucket_name: str, old_key: str, new_key: str) -> 
     if delete_response["ResponseMetadata"]["HTTPStatusCode"] != 204:
         logging.error("error deleting file %s", old_key)
         raise S3UploadError
+
+
+def get_s3_keys(
+    s3_client,
+    s3_bucket_name: str,
+    prefix: str,
+    token: str | None = None,
+    max_keys: int | None = None,
+) -> list[str]:
+    """Gets the list of all keys in S3 starting with the prefix"""
+    if max_keys is None:
+        max_keys = 1000
+    if token:
+        res = s3_client.list_objects_v2(
+            Bucket=s3_bucket_name, Prefix=prefix, ContinuationToken=token, MaxKeys=max_keys
+        )
+    else:
+        res = s3_client.list_objects_v2(Bucket=s3_bucket_name, Prefix=prefix, MaxKeys=max_keys)
+    if "Contents" not in res:
+        return []
+    contents = [record["Key"] for record in res["Contents"]]
+    if res["IsTruncated"]:
+        contents += get_s3_keys(s3_client, s3_bucket_name, prefix, res["NextContinuationToken"])
+    return contents
 
 
 def get_s3_site_filename_suffix(s3_path: str):
@@ -209,14 +233,15 @@ def get_latest_data_package_version(bucket, prefix):
         prefix = prefix + "/"
     s3_res = s3_client.list_objects_v2(Bucket=bucket, Prefix=prefix)
     highest_ver = None
-    for item in s3_res["Contents"]:
-        ver_str = item["Key"].replace(prefix, "").split("/")[0]
-        if ver_str.isdigit():
-            if highest_ver is None:
-                highest_ver = ver_str
-            else:
-                if int(highest_ver) < int(ver_str):
+    if "Contents" in s3_res:
+        for item in s3_res["Contents"]:
+            ver_str = item["Key"].replace(prefix, "").split("/")[1].split("__")[2]
+            if ver_str.isdigit():
+                if highest_ver is None:
                     highest_ver = ver_str
-    if highest_ver is None:
+                else:
+                    if int(highest_ver) < int(ver_str):
+                        highest_ver = ver_str
+    if "Contents" not in s3_res or highest_ver is None:
         logging.error("No data package versions found for %s", prefix)
     return highest_ver

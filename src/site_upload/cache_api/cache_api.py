@@ -28,28 +28,30 @@ def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None
         f"{enums.BucketPath.META.value}/{enums.JsonFilename.COLUMN_TYPES.value}.json",
     )
     dp_details = []
+    files = functions.get_s3_keys(s3_client, s3_bucket_name, enums.BucketPath.AGGREGATE.value)
+    files += functions.get_s3_keys(s3_client, s3_bucket_name, enums.BucketPath.FLAT.value)
     for dp in list(data_packages):
-        dp_detail = {
-            "study": dp.split("__", 1)[0],
-            "name": dp.split("__", 1)[1],
-        }
-        try:
-            versions = column_types[dp_detail["study"]][dp_detail["name"]]
-            for version in versions:
-                dp_details.append(
-                    {
-                        **dp_detail,
-                        **versions[version],
-                        "version": version,
-                        "id": dp + "__" + version,
-                    }
-                )
-        except KeyError:
+        if not any([dp in x for x in files]):
             continue
+        dp_detail = {
+            "study": dp.split("__")[0],
+            "name": dp.split("__")[1],
+        }
+        versions = column_types[dp_detail["study"]][dp_detail["name"]]
+        for version in versions:
+            dp_dict = {
+                **dp_detail,
+                **versions[version],
+                "version": version,
+                "id": f"{dp_detail['study']}__{dp_detail['name']}__{version}",
+            }
+            if "__flat" in dp:
+                dp_dict["type"] = "flat"
+            dp_details.append(dp_dict)
     s3_client.put_object(
         Bucket=s3_bucket_name,
         Key=f"{enums.BucketPath.CACHE.value}/{enums.JsonFilename.DATA_PACKAGES.value}.json",
-        Body=json.dumps(dp_details),
+        Body=json.dumps(dp_details, indent=2),
     )
 
 
