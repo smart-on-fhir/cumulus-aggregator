@@ -149,6 +149,7 @@ def mock_notification():
     sns_client.create_topic(Name="test-flat")
     sns_client.create_topic(Name="test-meta")
     sns_client.create_topic(Name="test-cache")
+    sns_client.create_topic(Name="test-payload")
     yield
     sns.stop()
 

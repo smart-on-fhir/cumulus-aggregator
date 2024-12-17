@@ -64,6 +64,8 @@ Parameters:
       - Text
       - JSON
     Default: JSON
+  RemoteAccounts:
+    Type: CommaDelimitedList
 
 
 Resources:
@@ -742,6 +744,53 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${DashboardGetStudyPeriodsFunction}"
       RetentionInDays: !Ref RetentionTime
 
+  DashboardPostDistributeStudyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggDashboardDistributeStudy-${DeployStage}'
+      PackageType: Image
+      ImageConfig:
+        Command: ["post_distribute.distribute_handler"]
+      LoggingConfig:
+        ApplicationLogLevel: !Ref LogLevel
+        LogFormat: !Ref LogFormat
+        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardDistributeStudy-${DeployStage}"
+      MemorySize: 512
+      Timeout: 100
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+          TOPIC_STUDY_PAYLOAD_ARN: !Ref SNSStudyPayload
+      Events:
+        PostDistributeStudyAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /distribute/
+            Method: Post
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+        - Statement:
+          - Sid: KMSDecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt SNSStudyPayload.TopicName
+    Metadata:
+      Dockerfile: post_distribute.Dockerfile
+      DockerContext: ./src/
+      DockerTag: v1
+
+  DashboardPostDistributeStudyLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${DashboardPostDistributeStudyFunction}"
+      RetentionInDays: !Ref RetentionTime
+
 ### Lambda permissions
 
   ProcessUploadFunctionPermission:
@@ -787,6 +836,30 @@ Resources:
         - Key: Name
           Value: !Sub 'SNSTopicCacheAPI-${DeployStage}'
 
+  SNSStudyPayload:
+    Type: AWS::SNS::Topic
+    Properties:
+      ContentBasedDeduplication: True
+      FifoTopic: True
+      TopicName: !Sub 'SNSStudyPayload-${DeployStage}.fifo'
+      Tags:
+        - Key: Name
+          Value: !Sub 'SNSStudyPayload-${DeployStage}.fifo'
+
+  SNSStudyPayloadPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Ref RemoteAccounts
+            Action: 
+              - sns:Subscribe
+            Resource: !Ref SNSStudyPayload
+      Topics: 
+        - !Ref SNSStudyPayload
 
 ### S3 Buckets
 
