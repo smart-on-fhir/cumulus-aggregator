@@ -1,0 +1,7 @@
+study_prefix = "test_study"
+
+[file_config]
+file_names = [
+    "foo.sql",
+    "foobar.sql"
+]

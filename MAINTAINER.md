@@ -58,8 +58,24 @@ The SAM framework extends native cloudformation, usually with a lighter syntax, 
 
 ### Sync --watch mode gotchas
 
-- If you modify S3 bucket permissions while in watch mode, changes to the bucket may generate a permission denied message. You'll need to delete the bucket and bring down the deployment before restarting to apply your changes.
+- If you modify S3 bucket permissions while in watch mode, changes to the bucket may generate a permission denied message. You'll need to delete the bucket and bring down the deployment before restarting to apply your changes, or manually update the S3 bucket permissions.
 
 - Similarly, if you end up in a ROLLBACK_FAILED state, usually the only recourse is to bring the deployment down and resync, do a regular deployment deployment, or manually initiate a rollback from the AWS console.
 
 Using deploy is a little safer than sync in this regard, though it does take longer for each deployment. Use your best judgement.
+
+## Testing ECR containers locally
+
+If you want to test a lambda ECR container, do the following from a console at the root of this repo:
+- `docker buildx build -t <your image name> -f src/<dockerfile> src/`
+- `docker run  \
+-e AWS_REGION='us-east-1' \
+-e AWS_ACCESS_KEY_ID='<your key id' \
+-e AWS_SECRET_ACCESS_KEY='<your access key>' \
+-e AWS_SESSION_TOKEN='<your session token>' \
+-e <any other env vars you need> \
+-p 9000:8080 \
+<your image name>`
+
+You can then post messages to your endpoints on port 9000 on localhost, and it should interact with the rest of your
+AWS account (if required).

@@ -1,0 +1,1 @@
+CREATE TABLE test_study__foobar AS SELECT * FROM bar;
