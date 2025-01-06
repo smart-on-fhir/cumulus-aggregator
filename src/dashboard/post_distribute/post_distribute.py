@@ -6,7 +6,7 @@ import os
 import boto3
 import requests
 
-from shared import functions
+from shared import decorators, functions
 
 sns_client = boto3.client("sns", os.environ.get("AWS_REGION"))
 valid_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,"
@@ -35,10 +35,10 @@ def validate_body(body: dict):
             case "github":
                 validate_github_url(body[key])
             case _:
-                raise ValueError(f"Invalid key {key} received.")
+                raise ValueError(f"Invalid key {body[key]} received.")
 
 
-# @decorators.generic_error_handler(msg="Error generating distributed request")
+@decorators.generic_error_handler(msg="Error generating distributed request")
 def distribute_handler(event: dict, context):
     """Creates a distribution packages and queues for delivery"""
     del context
