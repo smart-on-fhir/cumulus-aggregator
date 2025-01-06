@@ -1,4 +1,4 @@
-""" Handler for submitting studies to an SNS queue for distribution to remote sites.
+"""Handler for submitting studies to an SNS queue for distribution to remote sites.
 
 In the long term, this module (or a submodule imported by this module) will be responsible
 for parsing the output of a dashboard guided workflow/query builder generated payload,
@@ -14,6 +14,7 @@ the home directory is static and we have to write any data to disk inside of /tm
 only writable location.
 
 """
+
 import json
 import os
 import pathlib
@@ -21,6 +22,7 @@ import subprocess
 
 import boto3
 from cumulus_library import cli
+
 from shared import decorators, functions
 
 # lambda performance tuning - moving these two variables to be global in the module
@@ -34,18 +36,20 @@ from shared import decorators, functions
 sns_client = boto3.client("sns", os.environ.get("AWS_REGION"))
 BASE_DIR = "/tmp"  # noqa: S108
 
+
 def get_study_from_github(config):
     try:
-        subprocess.run(['/usr/bin/git', 'clone', config['url'], f"{BASE_DIR}/studies"], check=True)  # noqa: S603
-        if 'tag' in config and config['tag'] is not None:
+        subprocess.run(["/usr/bin/git", "clone", config["url"], f"{BASE_DIR}/studies"], check=True)  # noqa: S603
+        if "tag" in config and config["tag"] is not None:
             subprocess.run(  # noqa: S603
-                ['/usr/bin/git', 'checkout','tag'], 
-                cwd = f"{BASE_DIR}/studies/{config['url'].split('/')[-2]}",
+                ["/usr/bin/git", "checkout", "tag"],
+                cwd=f"{BASE_DIR}/studies/{config['url'].split('/')[-2]}",
             )
-            
+
     except subprocess.CalledProcessError:
         # TODO: retry/backoff logic? or do we just have a user queue again?
         raise ValueError(f"{config['url']} is unavailable")
+
 
 def prepare_study(body: dict):
     write_path = pathlib.Path(f"{BASE_DIR}/prepared")
@@ -89,15 +93,10 @@ def queue_handler(event: dict, context):
         file = f.read()
         sns_client.publish(
             TopicArn=topic_sns_arn,
-            Message=json.dumps({'study': body["study_name"]}),
+            Message=json.dumps({"study": body["study_name"]}),
             MessageGroupId=body["study_name"],
             Subject=body["study_name"],
-            MessageAttributes={
-                'study':{
-                    "DataType": "Binary",
-                    "BinaryValue": file
-                }
-            }
+            MessageAttributes={"study": {"DataType": "Binary", "BinaryValue": file}},
         )
     res = functions.http_response(200, f'Study {body["study_name"]} queued.')
     return res

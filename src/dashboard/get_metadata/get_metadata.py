@@ -3,6 +3,7 @@
 import os
 
 import boto3
+
 from shared.decorators import generic_error_handler
 from shared.functions import http_response, read_metadata
 

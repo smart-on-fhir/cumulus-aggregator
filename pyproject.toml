@@ -53,7 +53,7 @@ test = [
 ]
 dev = [
     "pre-commit",
-    "ruff < 0.6",
+    "ruff < 0.9",
     "sqlfluff >= 3.2.5"
 ]
 

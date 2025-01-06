@@ -1,30 +1,30 @@
-""" Handler for validating the payload contents and submitting to queue
+"""Handler for validating the payload contents and submitting to queue"""
 
-"""
 import json
 import os
 
 import boto3
 import requests
+
 from shared import functions
 
 sns_client = boto3.client("sns", os.environ.get("AWS_REGION"))
-valid_chars ="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,"
+valid_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,"
+
 
 def validate_github_url(config):
-    if (
-        not config['url'].startswith("https://github.com/smart-on-fhir/")
-        or any(c not in valid_chars for c in config['url'])
+    if not config["url"].startswith("https://github.com/smart-on-fhir/") or any(
+        c not in valid_chars for c in config["url"]
     ):
         raise ValueError(f"{config['url']} is not an official Cumulus study.")
-    res = requests.get(config['url'], timeout=10)
+    res = requests.get(config["url"], timeout=10)
     if res.status_code != 200:
         raise ValueError(f"{config['url']} is not a valid git repository")
-    if 'tag' in config and config['tag'] is not None:
-        res = requests.get(config['url'] + f'/tree/{config["tag"]}', timeout=10)
+    if "tag" in config and config["tag"] is not None:
+        res = requests.get(config["url"] + f'/tree/{config["tag"]}', timeout=10)
         if res.status_code != 200:
             raise ValueError(f"{config['tag']} is not a valid tag")
-    
+
 
 def validate_body(body: dict):
     """Selects the appropriate handler for processing study requests"""
@@ -38,7 +38,7 @@ def validate_body(body: dict):
                 raise ValueError(f"Invalid key {key} received.")
 
 
-#@decorators.generic_error_handler(msg="Error generating distributed request")
+# @decorators.generic_error_handler(msg="Error generating distributed request")
 def distribute_handler(event: dict, context):
     """Creates a distribution packages and queues for delivery"""
     del context
