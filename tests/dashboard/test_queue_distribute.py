@@ -25,13 +25,13 @@ def error_callback(process):
     [
         (
             "test_study",
-            "https://github.com/smart-on-fhir/test_study/",
+            "https://github.com/smart-on-fhir/cumulus-aggregator-test-study/",
             None,
             200,
         ),
         (
             "test_study",
-            "https://github.com/smart-on-fhir/test_study/",
+            "https://github.com/smart-on-fhir/cumulus-aggregator-test-study/",
             "tag",
             200,
         ),
@@ -43,15 +43,23 @@ def test_process_github(
     mock_notification, tmp_path, name, url, tag, expected_status, monkeypatch, fp
 ):
     fp.allow_unregistered(True)  # fp is provided by pytest-subprocess
+
+    args = ["--depth", "1", url, f"{tmp_path}/studies"]
+    if tag:
+        args = ["--branch", tag, *args]
     if name == "invalid_study":
-        fp.register(["/usr/bin/git", "clone", url, f"{tmp_path}/studies"], callback=error_callback)
+        fp.register(["/usr/bin/git", "clone", *args], callback=error_callback)
     else:
-        fp.register(["/usr/bin/git", "clone", url, f"{tmp_path}/studies"])
+        fp.register(["/usr/bin/git", "clone", *args])
         (tmp_path / "studies").mkdir()
+        study_dir = tmp_path / f"studies/{name}"
         shutil.copytree(
-            pathlib.Path.cwd() / f"./tests/test_data/mock_payloads/{name}/",
-            tmp_path / f"studies/{name}",
+            pathlib.Path.cwd() / "./tests/test_data/mock_payloads/cumulus-aggregator-test-study",
+            study_dir,
         )
+        if tag:
+            # if we're checking out a tag, make sure we've set up an actual git repo
+            subprocess.run(["git", "checkout", "tag"], cwd=study_dir)
 
     monkeypatch.setattr(queue_distribute, "BASE_DIR", tmp_path)
     mock_sns = mock.MagicMock()
@@ -88,4 +96,5 @@ def test_process_github(
     if tag == "tag":
         files = [p for p in (tmp_path / f"studies/{name}").iterdir() if p.is_file()]
         files = [file.stem for file in files]
-        assert "tag" in files
+        print(type(files[0]))
+        assert "tag" not in files

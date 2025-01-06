@@ -39,12 +39,10 @@ BASE_DIR = "/tmp"  # noqa: S108
 
 def get_study_from_github(config):
     try:
-        subprocess.run(["/usr/bin/git", "clone", config["url"], f"{BASE_DIR}/studies"], check=True)  # noqa: S603
-        if "tag" in config and config["tag"] is not None:
-            subprocess.run(  # noqa: S603
-                ["/usr/bin/git", "checkout", "tag"],
-                cwd=f"{BASE_DIR}/studies/{config['url'].split('/')[-2]}",
-            )
+        args = ["--depth", "1", config["url"], f"{BASE_DIR}/studies"]
+        if config["tag"]:
+            args = ["--branch", config["tag"], *args]
+        subprocess.run(["/usr/bin/git", "clone", *args], check=True)  # noqa: S603
 
     except subprocess.CalledProcessError:
         # TODO: retry/backoff logic? or do we just have a user queue again?

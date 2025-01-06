@@ -2,6 +2,7 @@
 
 import json
 import os
+import urllib
 
 import boto3
 import requests
@@ -13,8 +14,11 @@ valid_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._
 
 
 def validate_github_url(config):
-    if not config["url"].startswith("https://github.com/smart-on-fhir/") or any(
-        c not in valid_chars for c in config["url"]
+    parsed_url = urllib.parse.urlparse(config["url"])
+    if (
+        not parsed_url.netloc == "github.com"
+        or not parsed_url.path.startswith("/smart-on-fhir")
+        or any(c not in valid_chars for c in config["url"])
     ):
         raise ValueError(f"{config['url']} is not an official Cumulus study.")
     res = requests.get(config["url"], timeout=10)
