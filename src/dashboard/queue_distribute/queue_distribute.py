@@ -70,12 +70,8 @@ def process_body(body: dict):
     """Selects the appropriate handler for processing study requests"""
     for key in body.keys():
         match key:
-            case "study_name":
-                pass
             case "github":
                 get_study_from_github(body[key])
-            case _:
-                raise ValueError(f"Invalid key {key} received.")
 
 
 @decorators.generic_error_handler(msg="Error generating distributed request")

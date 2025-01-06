@@ -35,6 +35,12 @@ from src.dashboard.post_distribute import post_distribute
             None,
             500,
         ),
+        (
+            "invalid_tag",
+            "https://github.com/smart-on-fhir/invalid_tag",
+            "tag",
+            500,
+        ),
         ("non_cumulus_repo", "https://github.com/user/non_cumulus_repo", None, 500),
     ],
 )
@@ -46,6 +52,16 @@ def test_process_github(mock_notification, tmp_path, name, url, tag, expected_st
     responses.add(
         responses.GET,
         "https://github.com/smart-on-fhir/invalid_study",
+        status=404,
+    )
+    responses.add(
+        responses.GET,
+        "https://github.com/smart-on-fhir/invalid_tag",
+        status=200,
+    )
+    responses.add(
+        responses.GET,
+        "https://github.com/smart-on-fhir/invalid_tag/tree/tag",
         status=404,
     )
 
