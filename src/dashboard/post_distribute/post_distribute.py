@@ -17,7 +17,7 @@ def validate_github_url(config):
     parsed_url = urllib.parse.urlparse(config["url"])
     if (
         not parsed_url.netloc == "github.com"
-        or not parsed_url.path.startswith("/smart-on-fhir")
+        or not parsed_url.path.startswith("/smart-on-fhir/")
         or any(c not in valid_chars for c in config["url"])
     ):
         raise ValueError(f"{config['url']} is not an official Cumulus study.")
