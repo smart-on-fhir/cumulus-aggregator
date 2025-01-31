@@ -40,8 +40,8 @@ BASE_DIR = "/tmp"  # noqa: S108
 def get_study_from_github(config):
     try:
         args = ["--depth", "1", config["url"], f"{BASE_DIR}/studies"]
-        if config.get("tag"):
-            args = ["--branch", config["tag"], *args]
+        if tag := config.get("tag"):
+            args = ["--branch", tag, *args]
         subprocess.run(["/usr/bin/git", "clone", *args], check=True)  # noqa: S603
 
     except subprocess.CalledProcessError:
