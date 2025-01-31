@@ -205,6 +205,44 @@ ORDER BY
         ),
         (
             {"column": "gender", "stratifier": "race"},
+            ["gender:strEqCI:foo"],
+            {"data_package_id": "test_study"},
+            f"""SELECT
+        "race",
+    "gender",
+    "cnt"
+
+FROM "{TEST_GLUE_DB}"."test_study"
+WHERE "gender" IS NOT NULL
+    AND (
+        (
+            gender != 'cumulus__none'
+                AND
+                (
+                    
+        (
+            regexp_like(CAST("gender" AS VARCHAR), '(?i)^foo$')
+                    )
+                )
+        )
+        OR (
+            gender = 'cumulus__none'
+                AND
+                (
+                    
+        (
+            regexp_like(CAST("gender" AS VARCHAR), '(?i)^foo$')
+                    )
+                )
+        )
+    )
+        AND "race" IS NOT NULL
+ORDER BY
+        "race", "gender\"""",
+            does_not_raise(),
+        ),
+        (
+            {"column": "gender", "stratifier": "race"},
             [
                 "gender:matches:a",
                 "gender:matches:e,gender:matches:m",
