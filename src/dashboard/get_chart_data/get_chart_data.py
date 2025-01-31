@@ -162,6 +162,8 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
                     if params.get("bound", "").casefold() == "none":
                         params["bound"] = "cumulus__none"
                     none_params.append(params)
+                if filter_config[0] in columns:
+                    columns.remove(filter_config[0])
             else:
                 raise errors.AggregatorFilterError(
                     f"Invalid filter type {filter_config[1]} requested."
@@ -170,8 +172,11 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
             inline_configs.append(config_params)
         if none_params != []:
             none_configs.append(none_params)
-    count_col = next(c for c in columns if c.startswith("cnt"))
-    columns.remove(count_col)
+    count_col = next((c for c in columns if c.startswith("cnt")), False)
+    if count_col:
+        columns.remove(count_col)
+    else:
+        count_col = "cnt"
     # these 'if in' checks is meant to handle the case where the selected column is also
     # present in the filter logic and has already been removed
     if query_params["column"] in columns:
