@@ -125,9 +125,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="""Removes artifacts from a site for a given study. """
     )
-    parser.add_argument("-b", "--bucket", help="bucket name")
-    parser.add_argument("-t", "--target", help="target study")
-    parser.add_argument("-s", "--site", help="site data to remove")
+    parser.add_argument("-b", "--bucket", help="bucket name", required=True)
+    parser.add_argument("-t", "--target", help="target study", required=True)
+    parser.add_argument("-s", "--site", help="site data to remove", required=True)
     parser.add_argument("-v", "--version", help="Specific version of data to remove (optional)")
     args = parser.parse_args()
     remove_site_data(args.bucket, args.target, args.site, args.version)
