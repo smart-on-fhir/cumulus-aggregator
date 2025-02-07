@@ -122,24 +122,25 @@ def update_metadata(
             site_metadata = metadata.setdefault(site, {})
             study_metadata = site_metadata.setdefault(study, {})
             data_package_metadata = study_metadata.setdefault(data_package, {})
-            data_version_metadata = data_package_metadata.setdefault(
-                version, copy.deepcopy(TRANSACTION_METADATA_TEMPLATE)
+            data_version_metadata = _update_or_clone_template(
+                data_package_metadata, version, TRANSACTION_METADATA_TEMPLATE
             )
+
             dt = dt or datetime.now(UTC)
             data_version_metadata[target] = dt.isoformat()
         case enums.JsonFilename.STUDY_PERIODS.value:
             site_metadata = metadata.setdefault(site, {})
             study_period_metadata = site_metadata.setdefault(study, {})
-            data_version_metadata = study_period_metadata.setdefault(
-                version, copy.deepcopy(STUDY_PERIOD_METADATA_TEMPLATE)
+            data_version_metadata = _update_or_clone_template(
+                study_period_metadata, version, STUDY_PERIOD_METADATA_TEMPLATE
             )
             dt = dt or datetime.now(UTC)
             data_version_metadata[target] = dt.isoformat()
         case enums.JsonFilename.COLUMN_TYPES.value:
             study_metadata = metadata.setdefault(study, {})
             data_package_metadata = study_metadata.setdefault(data_package, {})
-            data_version_metadata = data_package_metadata.setdefault(
-                version, copy.deepcopy(COLUMN_TYPES_METADATA_TEMPLATE)
+            data_version_metadata = _update_or_clone_template(
+                data_package_metadata, version, COLUMN_TYPES_METADATA_TEMPLATE
             )
             if target == enums.ColumnTypesKeys.COLUMNS.value:
                 data_version_metadata[target] = value
@@ -154,6 +155,10 @@ def update_metadata(
     logger.info(f"Post-update size: {len(metadata.keys())}")
     logger.info(f"### Updated metadata {meta_type}")
     return metadata
+
+
+def _update_or_clone_template(meta_dict: dict, version, template: str):
+    return meta_dict.setdefault(version, copy.deepcopy(template))
 
 
 def write_metadata(
