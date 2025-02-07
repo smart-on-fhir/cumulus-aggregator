@@ -117,7 +117,7 @@ def get_mock_column_types_metadata():
         EXISTING_STUDY: {
             EXISTING_DATA_P: {
                 EXISTING_VERSION: {
-                    "column_types_format_version": "1",
+                    "column_types_format_version": 2,
                     "columns": {
                         "cnt": "integer",
                         "gender": "string",
@@ -126,13 +126,19 @@ def get_mock_column_types_metadata():
                         "site": "string",
                     },
                     "last_data_update": "2023-02-24T15:08:07.771080+00:00",
+                    "s3_path": (
+                        f"aggregates/{EXISTING_STUDY}/{EXISTING_STUDY}_{EXISTING_DATA_P}/"
+                        f"{EXISTING_STUDY}_{EXISTING_DATA_P}__{EXISTING_VERSION}/"
+                        f"{EXISTING_STUDY}_{EXISTING_DATA_P}__aggregate.csv"
+                    ),
+                    "total": 1000,
                 }
             }
         },
         OTHER_STUDY: {
             EXISTING_DATA_P: {
                 EXISTING_VERSION: {
-                    "column_types_format_version": "1",
+                    "column_types_format_version": 2,
                     "columns": {
                         "cnt": "integer",
                         "gender": "string",
@@ -141,6 +147,12 @@ def get_mock_column_types_metadata():
                         "site": "string",
                     },
                     "last_data_update": "2023-02-24T15:08:07.771080+00:00",
+                    "s3_path": (
+                        f"aggregates/{OTHER_STUDY}/{OTHER_STUDY}_{EXISTING_DATA_P}/"
+                        f"{OTHER_STUDY}_{EXISTING_DATA_P}__{EXISTING_VERSION}/"
+                        f"{OTHER_STUDY}_{EXISTING_DATA_P}__aggregate.csv"
+                    ),
+                    "total": 2000,
                 }
             }
         },

@@ -1,5 +1,6 @@
 """Functions used across different lambdas"""
 
+import copy
 import io
 import json
 import logging
@@ -8,6 +9,9 @@ from datetime import UTC, datetime
 import boto3
 
 from . import enums
+
+logger = logging.getLogger()
+logger.setLevel("INFO")
 
 TRANSACTION_METADATA_TEMPLATE = {
     enums.TransactionKeys.TRANSACTION_FORMAT_VERSION.value: "2",
@@ -108,29 +112,35 @@ def update_metadata(
     if extra_items is None:
         extra_items = {}
     check_meta_type(meta_type)
+    logger.info(f"### Updating metadata {meta_type}")
+    logger.info(f"{study} {data_package} {version}")
+    logger.info(f"Key: {target} Value: {value}")
+    logger.info(f"Pre-update size: {len(metadata.keys())}")
+
     match meta_type:
         case enums.JsonFilename.TRANSACTIONS.value:
             site_metadata = metadata.setdefault(site, {})
             study_metadata = site_metadata.setdefault(study, {})
             data_package_metadata = study_metadata.setdefault(data_package, {})
-            data_version_metadata = data_package_metadata.setdefault(
-                version, TRANSACTION_METADATA_TEMPLATE
+            data_version_metadata = _update_or_clone_template(
+                data_package_metadata, version, TRANSACTION_METADATA_TEMPLATE
             )
+
             dt = dt or datetime.now(UTC)
             data_version_metadata[target] = dt.isoformat()
         case enums.JsonFilename.STUDY_PERIODS.value:
             site_metadata = metadata.setdefault(site, {})
             study_period_metadata = site_metadata.setdefault(study, {})
-            data_version_metadata = study_period_metadata.setdefault(
-                version, STUDY_PERIOD_METADATA_TEMPLATE
+            data_version_metadata = _update_or_clone_template(
+                study_period_metadata, version, STUDY_PERIOD_METADATA_TEMPLATE
             )
             dt = dt or datetime.now(UTC)
             data_version_metadata[target] = dt.isoformat()
         case enums.JsonFilename.COLUMN_TYPES.value:
             study_metadata = metadata.setdefault(study, {})
             data_package_metadata = study_metadata.setdefault(data_package, {})
-            data_version_metadata = data_package_metadata.setdefault(
-                version, COLUMN_TYPES_METADATA_TEMPLATE
+            data_version_metadata = _update_or_clone_template(
+                data_package_metadata, version, COLUMN_TYPES_METADATA_TEMPLATE
             )
             if target == enums.ColumnTypesKeys.COLUMNS.value:
                 data_version_metadata[target] = value
@@ -142,7 +152,13 @@ def update_metadata(
         case _:
             raise ValueError(f"{meta_type} does not have a handler for updates.")
     data_version_metadata.update(extra_items)
+    logger.info(f"Post-update size: {len(metadata.keys())}")
+    logger.info(f"### Updated metadata {meta_type}")
     return metadata
+
+
+def _update_or_clone_template(meta_dict: dict, version, template: str):
+    return meta_dict.setdefault(version, copy.deepcopy(template))
 
 
 def write_metadata(
@@ -174,11 +190,11 @@ def move_s3_file(s3_client, s3_bucket_name: str, old_key: str, new_key: str) -> 
     source = {"Bucket": s3_bucket_name, "Key": old_key}
     copy_response = s3_client.copy_object(CopySource=source, Bucket=s3_bucket_name, Key=new_key)
     if copy_response["ResponseMetadata"]["HTTPStatusCode"] != 200:
-        logging.error("error copying file %s to %s", old_key, new_key)
+        logger.error("error copying file %s to %s", old_key, new_key)
         raise S3UploadError
     delete_response = s3_client.delete_object(Bucket=s3_bucket_name, Key=old_key)
     if delete_response["ResponseMetadata"]["HTTPStatusCode"] != 204:
-        logging.error("error deleting file %s", old_key)
+        logger.error("error deleting file %s", old_key)
         raise S3UploadError
 
 
@@ -243,5 +259,5 @@ def get_latest_data_package_version(bucket, prefix):
                     if int(highest_ver) < int(ver_str):
                         highest_ver = ver_str
     if "Contents" not in s3_res or highest_ver is None:
-        logging.error("No data package versions found for %s", prefix)
+        logger.error("No data package versions found for %s", prefix)
     return highest_ver
