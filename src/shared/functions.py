@@ -115,7 +115,7 @@ def update_metadata(
     logger.info(f"### Updating metadata {meta_type}")
     logger.info(f"{study} {data_package} {version}")
     logger.info(f"Key: {target} Value: {value}")
-    logger.info(f"Pre-update size: {len(metadata.keys)}")
+    logger.info(f"Pre-update size: {len(metadata.keys())}")
 
     match meta_type:
         case enums.JsonFilename.TRANSACTIONS.value:
@@ -151,7 +151,7 @@ def update_metadata(
         case _:
             raise ValueError(f"{meta_type} does not have a handler for updates.")
     data_version_metadata.update(extra_items)
-    logger.info(f"Post-update size: {len(metadata.keys)}")
+    logger.info(f"Post-update size: {len(metadata.keys())}")
     logger.info(f"### Updated metadata {meta_type}")
     return metadata
 
