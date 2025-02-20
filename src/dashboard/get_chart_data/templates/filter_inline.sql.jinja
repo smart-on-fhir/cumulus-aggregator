@@ -90,18 +90,18 @@ date_trunc('month',from_iso8601_timestamp("{{ data }}")) > date_trunc('month',fr
 date_trunc('year',from_iso8601_timestamp("{{ data }}")) > date_trunc('year',from_iso8601_timestamp('{{ bound }}'))
 {#- Boolean filters -#}
 {%- elif filter_type == 'isTrue' -%}
-"{{ data }}" IS TRUE
+"{{ data }}" IS TRUE AND "{{ data }}" IS NOT NULL
 {%- elif filter_type == 'isNotTrue' -%}
-"{{ data }}" IS NOT TRUE
+"{{ data }}" IS NOT TRUE AND "{{ data }}" IS NOT NULL
 {%- elif filter_type == 'isFalse' -%}
-"{{ data }}" IS FALSE
+"{{ data }}" IS FALSE AND "{{ data }}" IS NOT NULL
 {%- elif filter_type == 'isNotFalse' -%}
-"{{ data }}" IS NOT FALSE
+"{{ data }}" IS NOT FALSE AND "{{ data }}" IS NOT NULL
 {#- Null filters -#}
 {%- elif filter_type == 'isNull' -%}
 "{{ data }}" IS NULL
 {%- elif filter_type == 'isNotNull' -%}
-"{{ data }}" IS NOT NULL
+"{{ data }}" IS NOT NULL 
 {#- Numeric filters -#}
 {%- elif filter_type == 'eq'-%}
 "{{ data }}" = {{ bound }}
