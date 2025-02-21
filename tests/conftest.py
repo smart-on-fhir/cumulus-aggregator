@@ -66,15 +66,15 @@ def _init_mock_data(s3_client, bucket, study, data_package, version):
     s3_client.upload_file(
         "./tests/test_data/flat_synthea_q_date_recent.parquet",
         bucket,
-        f"{enums.BucketPath.FLAT.value}/{study}/{mock_utils.EXISTING_SITE}"
-        f"{study}__{data_package}__{version}/"
+        f"{enums.BucketPath.FLAT.value}/{study}/{mock_utils.EXISTING_SITE}/"
+        f"{study}__{data_package}_flat__{version}/"
         f"{study}__{data_package}__flat.parquet",
     )
     s3_client.upload_file(
         "./tests/test_data/flat_synthea_q_date_recent.csv",
         bucket,
-        f"{enums.BucketPath.CSVFLAT.value}/{study}/{mock_utils.EXISTING_SITE}"
-        f"{study}__{data_package}__{version}/"
+        f"{enums.BucketPath.CSVFLAT.value}/{study}/{mock_utils.EXISTING_SITE}/"
+        f"{study}__{data_package}_flat__{version}/"
         f"{study}__{data_package}__flat.csv",
     )
     s3_client.upload_file(
