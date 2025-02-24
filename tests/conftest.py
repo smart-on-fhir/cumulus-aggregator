@@ -22,10 +22,13 @@ set of states:
   aggregator
 """
 
+import datetime
 import os
+import re
 from unittest import mock
 
 import boto3
+import duckdb
 import pytest
 from moto import mock_athena, mock_s3, mock_sns
 
@@ -63,15 +66,15 @@ def _init_mock_data(s3_client, bucket, study, data_package, version):
     s3_client.upload_file(
         "./tests/test_data/flat_synthea_q_date_recent.parquet",
         bucket,
-        f"{enums.BucketPath.FLAT.value}/{study}/{mock_utils.EXISTING_SITE}"
-        f"{study}__{data_package}__{version}/"
+        f"{enums.BucketPath.FLAT.value}/{study}/{mock_utils.EXISTING_SITE}/"
+        f"{study}__{data_package}_flat__{version}/"
         f"{study}__{data_package}__flat.parquet",
     )
     s3_client.upload_file(
         "./tests/test_data/flat_synthea_q_date_recent.csv",
         bucket,
-        f"{enums.BucketPath.CSVFLAT.value}/{study}/{mock_utils.EXISTING_SITE}"
-        f"{study}__{data_package}__{version}/"
+        f"{enums.BucketPath.CSVFLAT.value}/{study}/{mock_utils.EXISTING_SITE}/"
+        f"{study}__{data_package}_flat__{version}/"
         f"{study}__{data_package}__flat.csv",
     )
     s3_client.upload_file(
@@ -155,7 +158,7 @@ def mock_notification():
 
 
 @pytest.fixture
-def mock_db():
+def mock_athena_db():
     """Leaving this unused here for now - there are some low level inconsistencies
     between moto and AWS wrangler w.r.t. how workgroups are mocked out, but we might
     be able to use this in the future/mock AWSwranger below the entrypoint if we are
@@ -174,6 +177,36 @@ def mock_db():
     )
     yield
     athena.stop()
+
+
+@pytest.fixture
+def mock_db(tmp_path):
+    def _compat_regexp_like(string: str | None, pattern: str | None) -> bool:
+        match = re.search(pattern, string)
+        return match is not None
+
+    def _compat_from_iso8601_timestamp(
+        value: str | datetime.datetime,
+    ) -> datetime.datetime:
+        if type(value) is str:
+            return datetime.datetime.fromisoformat(value)
+        return value
+
+    db = duckdb.connect(tmp_path / "duck.db")
+    db.create_function(
+        # DuckDB's version is regexp_matches.
+        "regexp_like",
+        _compat_regexp_like,
+        None,
+        duckdb.typing.BOOLEAN,
+    )
+    db.create_function(
+        "from_iso8601_timestamp",
+        _compat_from_iso8601_timestamp,
+        None,
+        duckdb.typing.TIMESTAMP,
+    )
+    yield db
 
 
 def test_mock_bucket():

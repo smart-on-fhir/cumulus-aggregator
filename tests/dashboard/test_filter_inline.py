@@ -194,28 +194,28 @@ import pytest
             ["col:isTrue"],
             """
         (
-            "col" IS TRUE
+            "col" IS TRUE AND "col" IS NOT NULL
                     )""",
         ),
         (
             ["col:isNotTrue"],
             """
         (
-            "col" IS NOT TRUE
+            "col" IS NOT TRUE AND "col" IS NOT NULL
                     )""",
         ),
         (
             ["col:isFalse"],
             """
         (
-            "col" IS FALSE
+            "col" IS FALSE AND "col" IS NOT NULL
                     )""",
         ),
         (
             ["col:isNotFalse"],
             """
         (
-            "col" IS NOT FALSE
+            "col" IS NOT FALSE AND "col" IS NOT NULL
                     )""",
         ),
         (

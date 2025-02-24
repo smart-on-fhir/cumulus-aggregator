@@ -52,6 +52,7 @@ test = [
     "responses",
 ]
 dev = [
+    "duckdb",
     "pre-commit",
     "ruff < 0.9",
     "sqlfluff >= 3.2.5"

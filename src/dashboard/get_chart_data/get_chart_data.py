@@ -52,12 +52,14 @@ INLINE_FILTERS = (
     "sameYearOrBefore",
     "sameDayOrAfter",
     "sameWeekOrAfter",
+    "sameMonthOrAfter",
     "sameYearOrAfter",
     "beforeDay",
     "beforeWeek",
     "beforeMonth",
     "beforeYear",
     "afterDay",
+    "afterWeek",
     "afterMonth",
     "afterYear",
     # Boolean filters (one param only)
@@ -140,7 +142,6 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
     """
     dp_id = path_params["data_package_id"]
     columns = _get_table_cols(dp_id)
-
     inline_configs = []
     none_configs = []
     for filter_group in filter_groups:
@@ -183,6 +184,7 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
         columns.remove(query_params["column"])
     if query_params.get("stratifier") in columns:
         columns.remove(query_params["stratifier"])
+
     with open(pathlib.Path(__file__).parent / "templates/get_chart_data.sql.jinja") as file:
         template = file.read()
         loader = jinja2.FileSystemLoader(pathlib.Path(__file__).parent / "templates/")

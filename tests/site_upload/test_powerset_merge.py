@@ -32,9 +32,9 @@ from tests.mock_utils import (
         (  # Adding a new data package to a site with uploads
             "./tests/test_data/count_synthea_patient.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}/"
-            f"{EXISTING_VERSION}/encounter.parquet",
+            f"{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}/"
-            f"{EXISTING_VERSION}/encounter.parquet",
+            f"{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             False,
             200,
             ITEM_COUNT + 4,
@@ -42,9 +42,9 @@ from tests.mock_utils import (
         (  # Adding a new data package to a site without uploads
             "./tests/test_data/count_synthea_patient.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             False,
             200,
             ITEM_COUNT + 4,
@@ -52,9 +52,9 @@ from tests.mock_utils import (
         (  # Updating an existing data package
             "./tests/test_data/count_synthea_patient.parquet",
             f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             True,
             200,
             ITEM_COUNT + 3,
@@ -62,9 +62,9 @@ from tests.mock_utils import (
         (  # New version of existing data package
             "./tests/test_data/count_synthea_patient.parquet",
             f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{NEW_VERSION}/encounter.parquet",
+            f"/{EXISTING_STUDY}__{EXISTING_DATA_P}__{NEW_VERSION}/encounter.parquet",
             f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{NEW_VERSION}/encounter.parquet",
+            f"/{EXISTING_STUDY}__{EXISTING_DATA_P}__{NEW_VERSION}/encounter.parquet",
             True,
             200,
             ITEM_COUNT + 5,
@@ -72,9 +72,9 @@ from tests.mock_utils import (
         (  # Invalid parquet file
             "./tests/site_upload/test_powerset_merge.py",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/patient.parquet",
+            f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/patient.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/patient.parquet",
+            f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/patient.parquet",
             False,
             500,
             ITEM_COUNT + 1,
@@ -82,9 +82,9 @@ from tests.mock_utils import (
         (  # Checks presence of commas in strings does not cause an error
             "./tests/test_data/cube_strings_with_commas.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             False,
             200,
             ITEM_COUNT + 4,
@@ -93,9 +93,9 @@ from tests.mock_utils import (
             # merged by substr match
             "./tests/test_data/count_synthea_patient.parquet",
             f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/{EXISTING_SITE}/"
-            f"{EXISTING_VERSION}/encount.parquet",
+            f"{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}__{EXISTING_VERSION}/encount.parquet",
             f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/{EXISTING_SITE}/"
-            f"{EXISTING_VERSION}/encount.parquet",
+            f"{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}__{EXISTING_VERSION}/encount.parquet",
             False,
             200,
             ITEM_COUNT + 4,
@@ -103,9 +103,9 @@ from tests.mock_utils import (
         (  # Empty file upload
             None,
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             False,
             500,
             ITEM_COUNT + 1,
@@ -114,7 +114,7 @@ from tests.mock_utils import (
             None,
             None,
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             False,
             500,
             ITEM_COUNT,
@@ -163,12 +163,13 @@ def test_powerset_merge_single_upload(
         ]
     }
     # This array looks like:
-    # ['', 'study', 'package', 'site', 'version','file']
+    # ['', 'study', 'package', 'site', 'package_id','file']
     event_list = event_key.split("/")
     study = event_list[1]
     data_package = event_list[2]
     site = event_list[3]
-    version = event_list[4]
+    package_id = event_list[4]
+    version = package_id.split("__")[2]
     res = powerset_merge.powerset_merge_handler(event, {})
     assert res["statusCode"] == status
     s3_res = s3_client.list_objects_v2(Bucket=TEST_BUCKET)
@@ -219,10 +220,10 @@ def test_powerset_merge_single_upload(
 
             else:
                 assert (
-                    metadata["study"]["encounter"]["099"]["last_data_update"]
-                    == get_mock_column_types_metadata()["study"]["encounter"]["099"][
-                        "last_data_update"
-                    ]
+                    metadata["study"]["encounter"]["study__encounter__099"]["last_data_update"]
+                    == get_mock_column_types_metadata()["study"]["encounter"][
+                        "study__encounter__099"
+                    ]["last_data_update"]
                 )
         elif item["Key"].startswith(enums.BucketPath.LAST_VALID.value):
             if item["Key"].endswith(".parquet"):

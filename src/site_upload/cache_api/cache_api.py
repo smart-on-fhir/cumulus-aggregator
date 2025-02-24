@@ -32,17 +32,23 @@ def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None
     files = functions.get_s3_keys(s3_client, s3_bucket_name, enums.BucketPath.AGGREGATE.value)
     files += functions.get_s3_keys(s3_client, s3_bucket_name, enums.BucketPath.FLAT.value)
     for dp in list(data_packages):
-        if not any([dp in x for x in files]):
+        if not any([f"/{dp}" in x for x in files]):
             continue
         dp_detail = {
             "study": dp.split("__")[0],
             "name": dp.split("__")[1],
         }
-        versions = column_types[dp_detail["study"]][dp_detail["name"]]
-        for version in versions:
+        studies = column_types.get(dp_detail["study"], {"name": None})
+        dp_ids = studies.get(dp_detail["name"], None)
+        if dp_ids is None:  # pragma: no cover
+            continue
+        for dp_id in dp_ids:
+            if dp_id != dp:
+                continue
+            version = dp_id.split("__")[2]
             dp_dict = {
                 **dp_detail,
-                **versions[version],
+                **dp_ids[dp_id],
                 "version": version,
                 "id": f"{dp_detail['study']}__{dp_detail['name']}__{version}",
             }

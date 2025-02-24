@@ -25,7 +25,7 @@ def _mock_last_valid():
         "./tests/test_data/count_synthea_patient_agg.csv",
         bucket,
         f"{enums.BucketPath.LAST_VALID.value}/{study}/"
-        f"{study}__{data_package}/{site}/{version}/{filename}",
+        f"{study}__{data_package}/{site}/{study}__{data_package}__{version}/{filename}",
     )
 
 
@@ -48,7 +48,7 @@ def _mock_last_valid():
                 "site": site,
                 "study": study,
                 "data_package": data_package,
-                "version": version,
+                "version": f"{study}__{data_package}__{version}",
                 "filename": filename,
             },
             302,
@@ -94,6 +94,7 @@ def test_get_csv(mock_bucket, params, status, expected):
     if "site" in params and params["site"] is not None:
         _mock_last_valid()
     res = get_csv.get_csv_handler(event, {})
+
     assert res["statusCode"] == status
     if status == 302:
         if "site" not in params or params["site"] is None:
@@ -104,7 +105,7 @@ def test_get_csv(mock_bucket, params, status, expected):
         else:
             url = (
                 "https://cumulus-aggregator-site-counts-test.s3.amazonaws.com/last_valid/"
-                f"{study}/{study}__{data_package}/{site}/{version}/{filename}"
+                f"{study}/{study}__{data_package}/{site}/{study}__{data_package}__{version}/{filename}"
             )
         assert res["headers"]["x-column-types"] == "integer,string,integer,string,string"
         assert res["headers"]["x-column-names"] == "cnt,gender,age,race_display,site"
@@ -128,7 +129,7 @@ def test_get_csv(mock_bucket, params, status, expected):
             "/last-valid",
             200,
             [
-                "last-valid/study/encounter/princeton_plainsboro_teaching_hospital/099/study__encounter__aggregate.csv"
+                "last-valid/study/encounter/princeton_plainsboro_teaching_hospital/study__encounter__099/study__encounter__aggregate.csv"
             ],
             does_not_raise(),
         ),
