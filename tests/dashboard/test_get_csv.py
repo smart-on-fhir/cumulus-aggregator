@@ -97,8 +97,6 @@ def test_get_csv(mock_bucket, params, status, expected):
 
     assert res["statusCode"] == status
     if status == 302:
-        print(res["headers"]["Location"])
-        print(res["headers"])
         if "site" not in params or params["site"] is None:
             url = (
                 "https://cumulus-aggregator-site-counts-test.s3.amazonaws.com/csv_aggregates/"
@@ -112,7 +110,6 @@ def test_get_csv(mock_bucket, params, status, expected):
         assert res["headers"]["x-column-types"] == "integer,string,integer,string,string"
         assert res["headers"]["x-column-names"] == "cnt,gender,age,race_display,site"
         assert res["headers"]["x-column-descriptions"] == ""
-        print(url)
         assert res["headers"]["Location"].startswith(url)
 
 

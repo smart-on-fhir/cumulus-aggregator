@@ -41,8 +41,6 @@ def _get_column_types(
         s3_bucket_name,
         meta_type=enums.JsonFilename.COLUMN_TYPES.value,
     )
-    print(version)
-    print(types_metadata)
     try:
         return types_metadata[study][data_package][f"{study}__{data_package}__{version}"][
             enums.ColumnTypesKeys.COLUMNS.value
@@ -61,8 +59,6 @@ def get_csv_handler(event, context):
     s3_bucket_name = os.environ.get("BUCKET_NAME")
     s3_client = boto3.client("s3")
     res = s3_client.list_objects_v2(Bucket=s3_bucket_name)
-    for file in res["Contents"]:
-        print(file["Key"])
     key = _format_and_validate_key(s3_client, s3_bucket_name, **event["pathParameters"])
     types = _get_column_types(s3_client, s3_bucket_name, **event["pathParameters"])
     presign_url = s3_client.generate_presigned_url(
