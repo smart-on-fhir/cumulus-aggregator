@@ -198,7 +198,6 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
             coalesce_columns=columns,
             inline_configs=inline_configs,
             none_configs=none_configs,
-            extra_filter_configs=[],  # extra_filter_configs
         )
     return query_str, count_col
 

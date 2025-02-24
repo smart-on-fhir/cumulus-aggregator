@@ -39,17 +39,18 @@ def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None
             "name": dp.split("__")[1],
         }
         studies = column_types.get(dp_detail["study"], {"name": None})
-        versions = studies.get(dp_detail["name"], None)
-        if versions is None:  # pragma: no cover
+        dp_ids = studies.get(dp_detail["name"], None)
+        if dp_ids is None:  # pragma: no cover
             continue
-        for version in versions:
-            if version != dp:
+        for dp_id in dp_ids:
+            if dp_id != dp:
                 continue
+            version = dp_id.split("__")[2]
             dp_dict = {
                 **dp_detail,
-                **versions[version],
-                "version": version.split("__")[2],
-                "id": f"{dp_detail['study']}__{dp_detail['name']}__{version.split('__')[2]}",
+                **dp_ids[dp_id],
+                "version": version,
+                "id": f"{dp_detail['study']}__{dp_detail['name']}__{version}",
             }
             if "__flat" in dp:
                 dp_dict["type"] = "flat"
