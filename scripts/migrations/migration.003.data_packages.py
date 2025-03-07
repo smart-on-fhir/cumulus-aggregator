@@ -99,7 +99,7 @@ def update_column_type_metadata(bucket: str):
         output[study][subscription][version]["last_data_update"] = (
             resource["LastModified"].now().isoformat()
         )
-        output[study][subscription][version]["s3_path"] = resource["Key"][:-8] + ".csv"
+        output[study][subscription][version]["s3_path"] = resource["Key"]
         output[study][subscription][version]["total"] = int(df["cnt"][0])
     _put_s3_data("metadata/column_types.json", bucket, client, output)
 

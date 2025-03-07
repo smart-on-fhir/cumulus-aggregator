@@ -86,10 +86,10 @@ If for some reason you don't want to use the samconfig.toml, you could instead d
 Assuming you have done the above configuration, you can deploy the Aggregator with the following command:
 
 ```bash
-sam build && sam deploy --config-env [stagename]
+sam build && sam deploy --config-env [stagename] --resolve-image-repos
 ```
 
-This will show you a list of changes to your environment and ask you to confirm. Responding to the prompt with 'Y' will kick off the deployment.
+This will show you a list of changes to your environment and ask you to confirm. Note that docker must be running to build some images for lambdas. Responding to the prompt with 'Y' will kick off the deployment.
 
 ## Local Development
 
@@ -100,6 +100,8 @@ You'll want to use SAM to build an image, and then use a specific lambda functio
 ```bash
 sam build && sam local invoke FetchUploadUrlFunction --event events/event-fetch-upload-url.json
 ```
+
+You only need the `--resolve-image-repos` command if you're working with a docker-backed lambda (as of this writing, only `post_distribute`)
 
 ## Cloud Development
 
@@ -133,7 +135,7 @@ sam sync --config-env dev --watch
 If you'd rather sync on demand, just omit the --watch parameter.
 
 ```bash
-sam sync --config-env dev
+sam sync --config-env dev --image-repository [arn of ecr repo]
 ```
 
 After the build completes, you should be able to test with real events, either using the contents of the `scripts/` directory, hitting the API gateway, or via another means of your choosing.

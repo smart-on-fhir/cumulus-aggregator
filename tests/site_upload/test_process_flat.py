@@ -42,4 +42,4 @@ def test_process_flat(mock_cache, mock_bucket):
         Filename="./tests/test_data/count_synthea_patient_agg.parquet",
     )
     process_flat.process_flat_handler(event, {})
-    assert not mock_cache.called
+    assert mock_cache.called

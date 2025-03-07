@@ -60,7 +60,7 @@ The SAM framework extends native cloudformation, usually with a lighter syntax, 
 
 - If you modify S3 bucket permissions while in watch mode, changes to the bucket may generate a permission denied message. You'll need to delete the bucket and bring down the deployment before restarting to apply your changes, or manually update the S3 bucket permissions.
 
-- Similarly, if you end up in a ROLLBACK_FAILED state, usually the only recourse is to bring the deployment down and resync, do a regular deployment deployment, or manually initiate a rollback from the AWS console.
+- Similarly, if you end up in a ROLLBACK_FAILED state, usually the only recourse is to bring the deployment down and resync (if you're deploying for the first time), do a regular deployment, or manually initiate a rollback from the AWS console.
 
 Using deploy is a little safer than sync in this regard, though it does take longer for each deployment. Use your best judgement.
 
