@@ -23,11 +23,16 @@ def from_parquet_handler(event, context):
                 payload = df.to_csv(index=False)
             case "tsv":
                 payload = df.to_csv(index=False, sep="|")
+            case "json":
+                return functions.http_response(
+                    200, df.to_json(orient="table", index=False), skip_convert=True
+                )
+        # TODO: this should be converted to a streamingresponse at some point
+        # https://github.com/awslabs/aws-lambda-web-adapter/tree/main/examples/fastapi-response-streaming
         return functions.http_response(
             200, payload, extra_headers={"Content-Type": "text/csv"}, skip_convert=True
         )
     else:
-        payload = df.to_json(orient="table", index=False)
-    # TODO: this should be converted to a streamingresponse at some point
-    # https://github.com/awslabs/aws-lambda-web-adapter/tree/main/examples/fastapi-response-streaming
-    return functions.http_response(200, payload, skip_convert=True)
+        return functions.http_response(
+            200, df.to_json(orient="table", index=False), skip_convert=True
+        )

@@ -75,7 +75,7 @@ def test_cache_api_data(mock_bucket):
             "last_data_update": "2023-02-24T15:08:07.771080+00:00",
             "s3_path": (
                 "aggregates/study/study__encounter/study__encounter__099"
-                "/study__encounter__aggregate.csv"
+                "/study__encounter__aggregate.parquet"
             ),
             "total": 1000,
             "version": "099",

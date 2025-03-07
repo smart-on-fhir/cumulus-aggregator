@@ -129,10 +129,10 @@ def get_mock_column_types_metadata():
                     "s3_path": (
                         f"aggregates/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/"
                         f"{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/"
-                        f"{EXISTING_STUDY}__{EXISTING_DATA_P}__aggregate.csv"
+                        f"{EXISTING_STUDY}__{EXISTING_DATA_P}__aggregate.parquet"
                     ),
                     "total": 1000,
-                }
+                },
             }
         },
         OTHER_STUDY: {
@@ -150,7 +150,7 @@ def get_mock_column_types_metadata():
                     "s3_path": (
                         f"aggregates/{OTHER_STUDY}/{OTHER_STUDY}__{EXISTING_DATA_P}/"
                         f"{OTHER_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/"
-                        f"{OTHER_STUDY}__{EXISTING_DATA_P}__aggregate.csv"
+                        f"{OTHER_STUDY}__{EXISTING_DATA_P}__aggregate.parquet"
                     ),
                     "total": 2000,
                 }

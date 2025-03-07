@@ -49,6 +49,27 @@ S3_PATH = (
         ),
         (
             S3_PATH,
+            "json",
+            200,
+            506,
+            {"cnt": 1103, "gender": None, "age": None, "race_display": None, "site": None},
+            {
+                "cnt": 10,
+                "gender": None,
+                "age": 78.0,
+                "race_display": "Not Hispanic or Latino",
+                "site": "princeton_plainsboro_teaching_hospital",
+            },
+            [
+                {"name": "cnt", "type": "integer", "extDtype": "Int64"},
+                {"name": "gender", "type": "any", "extDtype": "string"},
+                {"name": "age", "type": "integer", "extDtype": "Int64"},
+                {"name": "race_display", "type": "any", "extDtype": "string"},
+                {"name": "site", "type": "any", "extDtype": "string"},
+            ],
+        ),
+        (
+            S3_PATH,
             "csv",
             200,
             507,
@@ -73,7 +94,7 @@ def test_get_data_packages(mock_bucket, target, payload_type, code, length, firs
     res = get_from_parquet.from_parquet_handler(payload, {})
     assert (res["statusCode"]) == code
     if code == 200:
-        if payload_type is None:
+        if payload_type is None or payload_type == "json":
             res = json.loads(res["body"])
             assert res["schema"]["fields"] == [
                 {"name": "cnt", "type": "integer", "extDtype": "Int64"},
