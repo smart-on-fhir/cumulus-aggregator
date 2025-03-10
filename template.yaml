@@ -453,101 +453,6 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${DashboardGetChartDataFunction}"
       RetentionInDays: !Ref RetentionTime
 
-  DashboardGetCsvFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub 'CumulusAggDashboardGetCsv-${DeployStage}'
-      CodeUri: ./src/dashboard/get_csv
-      Handler: get_csv.get_csv_handler
-      Runtime: "python3.11"
-      LoggingConfig:
-        ApplicationLogLevel: !Ref LogLevel
-        LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardGetCsvFunction-${DeployStage}"
-      MemorySize: 128
-      Timeout: 100
-      Description: Redirect to presigned URL for download of aggregate CSVs
-      Environment:
-        Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
-      Events:
-        GetAggregateAPI:
-          Type: Api
-          Properties:
-            RestApiId: !Ref DashboardApiGateway
-            Path: /aggregates/{study}/{data_package}/{version}/{filename}
-            Method: GET
-        GetLastValidAPI:
-          Type: Api
-          Properties:
-            RestApiId: !Ref DashboardApiGateway
-            Path: /last-valid/{study}/{data_package}/{site}/{version}/{filename}
-            Method: GET
-      Policies:
-        - S3ReadPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
-        - Statement:
-          - Sid: DecryptPolicy
-            Effect: Allow
-            Action:
-              - kms:Decrypt
-            Resource:
-              - !ImportValue cumulus-kms-KMSKeyArn
-
-  DashboardGetCsvLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${DashboardGetCsvFunction}"
-      RetentionInDays: !Ref RetentionTime
-
-  DashboardGetCsvListFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub 'CumulusAggDashboardGetCsvList-${DeployStage}'
-      CodeUri: ./src/dashboard/get_csv
-      Handler: get_csv.get_csv_list_handler
-      Runtime: "python3.11"
-      LoggingConfig:
-        ApplicationLogLevel: !Ref LogLevel
-        LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardGetCsvList-${DeployStage}"
-      MemorySize: 128
-      Timeout: 100
-      Description: List all available csvs from the aggregator
-      Environment:
-        Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
-      Events:
-        GetAggregateAPI:
-          Type: Api
-          Properties:
-            RestApiId: !Ref DashboardApiGateway
-            Path: /aggregates/
-            Method: GET
-        GetLastValidAPI:
-          Type: Api
-          Properties:
-            RestApiId: !Ref DashboardApiGateway
-            Path: /last-valid/
-            Method: GET
-      Policies:
-        - S3ReadPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
-        - Statement:
-          - Sid: DecryptPolicy
-            Effect: Allow
-            Action:
-              - kms:Decrypt
-            Resource:
-              - !ImportValue cumulus-kms-KMSKeyArn
-
-  DashboardGetCsvListLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${DashboardGetCsvListFunction}"
-      RetentionInDays: !Ref RetentionTime
-
-
   DashboardGetMetadataFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -742,6 +647,48 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${DashboardGetStudyPeriodsFunction}"
+      RetentionInDays: !Ref RetentionTime
+
+  DashboardGetFromParquetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggDashboardFromParquet-${DeployStage}'
+      CodeUri: ./src/dashboard/get_from_parquet
+      Handler: get_from_parquet.from_parquet_handler
+      Runtime: "python3.11"
+      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
+      LoggingConfig:
+        ApplicationLogLevel: !Ref LogLevel
+        LogFormat: !Ref LogFormat
+        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardFromParquet-${DeployStage}"
+      MemorySize: 512
+      Timeout: 100
+      Description: Retrieve data from a parquet source
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+      Events:
+        GetFromParquetAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /from-parquet/
+            Method: GET
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+        - Statement:
+          - Sid: DecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
+
+  DashboardGetFromParquetLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${DashboardGetFromParquetFunction}"
       RetentionInDays: !Ref RetentionTime
 
   DashboardPostDistributeStudyFunction:
@@ -1074,17 +1021,17 @@ Resources:
           UsagePlanName: !Sub "CumulusAggregatorDashboardUsagePlan-${DeployStage}"
 # If your data API does not require external access, remove/comment this domain node
       Domain:
-       DomainName: !Ref DashboardApiDomainName
-       CertificateArn: !Ref DashboardApiCertArn
-       EndpointConfiguration: EDGE
-       Route53:
-         HostedZoneId: !Ref AggregatorHostedZoneID
-#      MethodSettings:
-#        - LoggingLevel: INFO
-#          MetricsEnabled: True
-#          DataTraceEnabled: True
-#          ResourcePath: '/*' # allows for logging on any resource
-#          HttpMethod: '*' # allows for logging on any method
+        DomainName: !Ref DashboardApiDomainName
+        CertificateArn: !Ref DashboardApiCertArn
+        EndpointConfiguration: EDGE
+        Route53:
+          HostedZoneId: !Ref AggregatorHostedZoneID
+      # MethodSettings:
+      #   - LoggingLevel: INFO
+      #     MetricsEnabled: True
+      #     DataTraceEnabled: True
+      #     ResourcePath: '/*' # allows for logging on any resource
+      #     HttpMethod: '*' # allows for logging on any method
 
 
 ### Cloudwatch Logging infra for API gateway
@@ -1092,24 +1039,24 @@ Resources:
 # The following ensures that logs generated by SiteAPIGateway will actually get
 # to cloudwatch for the gateway
 
-#  ApiCWLRoleArn:
-#    Type: AWS::ApiGateway::Account
-#    Properties:
-#      CloudWatchRoleArn: !GetAtt CloudWatchRole.Arn
+    ApiCWLRoleArn:
+     Type: AWS::ApiGateway::Account
+     Properties:
+       CloudWatchRoleArn: !GetAtt CloudWatchRole.Arn
 
-#  CloudWatchRole:
-#      Type: AWS::IAM::Role
-#      Properties:
-#        AssumeRolePolicyDocument:
-#          Version: '2012-10-17'
-#          Statement:
-#            Action: 'sts:AssumeRole'
-#            Effect: Allow
-#            Principal:
-#              Service: apigateway.amazonaws.com
-#        Path: /
-#        ManagedPolicyArns:
-#          - 'arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
+    CloudWatchRole:
+       Type: AWS::IAM::Role
+       Properties:
+         AssumeRolePolicyDocument:
+           Version: '2012-10-17'
+           Statement:
+             Action: 'sts:AssumeRole'
+             Effect: Allow
+             Principal:
+               Service: apigateway.amazonaws.com
+         Path: /
+         ManagedPolicyArns:
+           - 'arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
 
 
 Outputs:

@@ -37,7 +37,11 @@ COLUMN_TYPES_METADATA_TEMPLATE = {
 
 
 def http_response(
-    status: int, body: str, allow_cors: bool = False, extra_headers: dict | None = None
+    status: int,
+    body: str,
+    allow_cors: bool = False,
+    extra_headers: dict | None = None,
+    skip_convert: bool = False,
 ) -> dict:
     """Generates the payload AWS lambda expects as a return value"""
     headers = {"Content-Type": "application/json"}
@@ -54,7 +58,7 @@ def http_response(
     return {
         "isBase64Encoded": False,
         "statusCode": status,
-        "body": json.dumps(body, default=str),
+        "body": body if skip_convert else json.dumps(body, default=str),
         "headers": headers,
     }
 

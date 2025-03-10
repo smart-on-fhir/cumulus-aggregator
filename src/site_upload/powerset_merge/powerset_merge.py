@@ -193,7 +193,7 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
         value=column_dict,
         metadata=manager.types_metadata,
         meta_type=enums.JsonFilename.COLUMN_TYPES.value,
-        extra_items={"total": int(df["cnt"][0]), "s3_path": manager.csv_aggregate_path},
+        extra_items={"total": int(df["cnt"][0]), "s3_path": manager.parquet_aggregate_path},
     )
     manager.update_local_metadata(
         enums.ColumnTypesKeys.LAST_DATA_UPDATE.value,

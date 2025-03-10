@@ -11,7 +11,6 @@ logger.setLevel(log_level)
 
 
 def process_flat(manager: s3_manager.S3Manager):
-    new_file = False
     if awswrangler.s3.does_object_exist(
         f"s3://{manager.s3_bucket_name}/{manager.parquet_flat_key}"
     ):
@@ -21,8 +20,7 @@ def process_flat(manager: s3_manager.S3Manager):
                 enums.BucketPath.FLAT.value, enums.BucketPath.ARCHIVE.value
             ),
         )
-    else:
-        new_file = True
+
     manager.move_file(
         manager.s3_key,
         manager.parquet_flat_key,
@@ -57,8 +55,7 @@ def process_flat(manager: s3_manager.S3Manager):
         metadata=manager.types_metadata, meta_type=enums.JsonFilename.COLUMN_TYPES.value
     )
     manager.write_local_metadata()
-    if new_file:
-        manager.cache_api()
+    manager.cache_api()
 
 
 @decorators.generic_error_handler(msg="Error processing flat upload")

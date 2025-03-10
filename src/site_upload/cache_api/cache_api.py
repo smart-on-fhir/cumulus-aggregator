@@ -30,7 +30,8 @@ def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None
     )
     dp_details = []
     files = functions.get_s3_keys(s3_client, s3_bucket_name, enums.BucketPath.AGGREGATE.value)
-    files += functions.get_s3_keys(s3_client, s3_bucket_name, enums.BucketPath.FLAT.value)
+    flat_files = functions.get_s3_keys(s3_client, s3_bucket_name, enums.BucketPath.FLAT.value)
+    files += flat_files
     for dp in list(data_packages):
         if not any([f"/{dp}" in x for x in files]):
             continue
@@ -43,17 +44,23 @@ def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None
         if dp_ids is None:  # pragma: no cover
             continue
         for dp_id in dp_ids:
-            if dp_id != dp:
+            if dp_id not in dp:
                 continue
-            version = dp_id.split("__")[2]
+            if "__" in dp_id:
+                version = dp_id.split("__")[2]
+            else:
+                version = dp_id  # pragma: no cover
             dp_dict = {
                 **dp_detail,
                 **dp_ids[dp_id],
                 "version": version,
                 "id": f"{dp_detail['study']}__{dp_detail['name']}__{version}",
             }
-            if "__flat" in dp:
+            if "__flat" in dp_dict["s3_path"]:  # pragma: no cover
+                site = dp_dict["s3_path"].split("/")[5]
                 dp_dict["type"] = "flat"
+                dp_dict["site"] = site
+                dp_dict["id"] = dp_dict["id"] + f"__{site}"
             dp_details.append(dp_dict)
     s3_client.put_object(
         Bucket=s3_bucket_name,
