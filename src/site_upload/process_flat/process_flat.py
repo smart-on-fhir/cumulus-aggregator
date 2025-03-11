@@ -42,6 +42,7 @@ def process_flat(manager: s3_manager.S3Manager):
         extra_items={
             "s3_path": f"s3://{manager.s3_bucket_name}/{manager.parquet_flat_key}",
             "type": "flat",
+            "total": len(df),
         },
     )
     manager.update_local_metadata(enums.TransactionKeys.LAST_DATA_UPDATE.value, site=manager.site)

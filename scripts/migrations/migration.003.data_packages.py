@@ -35,7 +35,7 @@ class BucketPath(enum.Enum):
     UPLOAD = "site_upload"
 
 
-def get_csv_column_datatypes(dtypes):
+def get_column_datatypes(dtypes):
     """helper for generating column type for dashboard API"""
     column_dict = {}
     for column in dtypes.index:
@@ -45,23 +45,25 @@ def get_csv_column_datatypes(dtypes):
             column_dict[column] = "month"
         elif column.endswith("week"):
             column_dict[column] = "week"
-        elif column.endswith("day") or str(dtypes[column]) == "datetime64":
+        elif column.endswith("day") or str(dtypes[column]).lower() == "datetime64":
             column_dict[column] = "day"
-        elif "cnt" in column or str(dtypes[column]) in (
-            "Int8",
-            "Int16",
-            "Int32",
-            "Int64",
-            "UInt8",
-            "UInt16",
-            "UInt32",
-            "UInt64",
+        elif column.startswith("cnt") or str(dtypes[column]).lower() in (
+            "int8",
+            "int16",
+            "int32",
+            "int64",
+            "uint8",
+            "uint16",
+            "uint32",
+            "uint64",
         ):
             column_dict[column] = "integer"
-        elif str(dtypes[column]) in ("Float32", "Float64"):
+        elif str(dtypes[column]).lower() in ("float32", "float64"):
             column_dict[column] = "float"
         elif str(dtypes[column]) == "boolean":
-            column_dict[column] = "float"
+            column_dict[column] = "boolean"
+        elif column in ["median", "average", "std_dev", "percentage"]:
+            column_dict[column] = "double"
         else:
             column_dict[column] = "string"
     return column_dict
@@ -69,7 +71,7 @@ def get_csv_column_datatypes(dtypes):
 
 def _put_s3_data(key: str, bucket_name: str, client, data: dict) -> None:
     """Convenience class for writing a dict to S3"""
-    b_data = io.BytesIO(json.dumps(data).encode())
+    b_data = io.BytesIO(json.dumps(data, indent=2).encode())
     client.upload_fileobj(Bucket=bucket_name, Key=key, Fileobj=b_data)
 
 
@@ -79,28 +81,36 @@ def update_column_type_metadata(bucket: str):
     By design, this will replaces an existing column type dict if one already exists.
     """
     client = boto3.client("s3")
-    res = client.list_objects_v2(Bucket=bucket, Prefix="aggregates/")
-    contents = res["Contents"]
     output = {}
-    for resource in progress.track(contents):
-        dirs = resource["Key"].split("/")
-        study = dirs[1]
-        subscription = dirs[2].split("__")[1]
-        version = dirs[3]
-        bytes_buffer = io.BytesIO()
-        client.download_fileobj(Bucket=bucket, Key=resource["Key"], Fileobj=bytes_buffer)
-        df = pandas.read_parquet(bytes_buffer)
-        type_dict = get_csv_column_datatypes(df.dtypes)
-        output.setdefault(study, {})
-        output[study].setdefault(subscription, {})
-        output[study][subscription].setdefault(version, {})
-        output[study][subscription][version]["column_types_format_version"] = 2
-        output[study][subscription][version]["columns"] = type_dict
-        output[study][subscription][version]["last_data_update"] = (
-            resource["LastModified"].now().isoformat()
-        )
-        output[study][subscription][version]["s3_path"] = resource["Key"]
-        output[study][subscription][version]["total"] = int(df["cnt"][0])
+    for subbucket in ["aggregates", "flat"]:
+        res = client.list_objects_v2(Bucket=bucket, Prefix=f"{subbucket}/")
+        contents = res.get("Contents", [])
+        for resource in progress.track(contents, description=f"Processing {subbucket}"):
+            dirs = resource["Key"].split("/")
+            study = dirs[1]
+            if subbucket == "aggregates":
+                data_package = dirs[2].split("__")[1]
+            elif subbucket == "flat":
+                data_package = dirs[3].split("__")[1]
+            version = dirs[3]
+            bytes_buffer = io.BytesIO()
+            client.download_fileobj(Bucket=bucket, Key=resource["Key"], Fileobj=bytes_buffer)
+            df = pandas.read_parquet(bytes_buffer)
+            type_dict = get_column_datatypes(df.dtypes)
+            output.setdefault(study, {})
+            output[study].setdefault(data_package, {})
+            output[study][data_package].setdefault(version, {})
+            output[study][data_package][version]["column_types_format_version"] = 2
+            output[study][data_package][version]["columns"] = type_dict
+            output[study][data_package][version]["last_data_update"] = (
+                resource["LastModified"].now().isoformat()
+            )
+            output[study][data_package][version]["s3_path"] = resource["Key"]
+            if subbucket == "aggregates":
+                output[study][data_package][version]["total"] = int(df["cnt"][0])
+            elif subbucket == "flat":
+                output[study][data_package][version]["type"] = "flat"
+                output[study][data_package][version]["total"] = len(df)
     _put_s3_data("metadata/column_types.json", bucket, client, output)
 
 

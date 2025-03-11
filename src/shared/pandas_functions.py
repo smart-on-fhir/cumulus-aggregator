@@ -13,23 +13,25 @@ def get_column_datatypes(dtypes: pandas.DataFrame):
             column_dict[column] = "month"
         elif column.endswith("week"):
             column_dict[column] = "week"
-        elif column.endswith("day") or str(dtypes[column]) == "datetime64":
+        elif column.endswith("day") or str(dtypes[column]).lower() == "datetime64":
             column_dict[column] = "day"
-        elif column.startswith("cnt") or str(dtypes[column]) in (
-            "Int8",
-            "Int16",
-            "Int32",
-            "Int64",
-            "UInt8",
-            "UInt16",
-            "UInt32",
-            "UInt64",
+        elif column.startswith("cnt") or str(dtypes[column]).lower() in (
+            "int8",
+            "int16",
+            "int32",
+            "int64",
+            "uint8",
+            "uint16",
+            "uint32",
+            "uint64",
         ):
             column_dict[column] = "integer"
-        elif str(dtypes[column]) in ("Float32", "Float64"):
+        elif str(dtypes[column]).lower() in ("float32", "float64"):
             column_dict[column] = "float"
         elif str(dtypes[column]) == "boolean":
             column_dict[column] = "boolean"
+        elif column in ["median", "average", "std_dev", "percentage"]:
+            column_dict[column] = "double"
         else:
             column_dict[column] = "string"
     return column_dict

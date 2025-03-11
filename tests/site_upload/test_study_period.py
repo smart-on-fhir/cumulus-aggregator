@@ -21,7 +21,7 @@ from tests.mock_utils import (
 
 @freeze_time("2020-01-01")
 @pytest.mark.parametrize(
-    "upload_file,upload_path,event_key,status",
+    "upload_file,upload_path,event_key,multiple_files,status",
     [
         (  # Adding a new study to an existing site
             "./tests/test_data/meta_date.parquet",
@@ -33,6 +33,7 @@ from tests.mock_utils import (
                 f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
                 f"/{EXISTING_VERSION}/test_meta_date.parquet"
             ),
+            False,
             200,
         ),
         (  # Adding a new study to a new site
@@ -41,6 +42,7 @@ from tests.mock_utils import (
             f"/{EXISTING_VERSION}/test_meta_date.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}"
             f"/{EXISTING_VERSION}/test_meta_date.parquet",
+            False,
             200,
         ),
         (  # newer version of existing study
@@ -53,6 +55,7 @@ from tests.mock_utils import (
                 f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}"
                 f"/{EXISTING_SITE}/{NEW_VERSION}/test_meta_date.parquet"
             ),
+            False,
             200,
         ),
         (  # updating an existing study
@@ -65,6 +68,33 @@ from tests.mock_utils import (
                 f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}"
                 f"/{EXISTING_SITE}/{EXISTING_VERSION}/test_meta_date.parquet"
             ),
+            False,
+            200,
+        ),
+        (  # updating an existing study
+            "./tests/test_data/meta_date.parquet",
+            (
+                f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}"
+                f"/{EXISTING_SITE}/{EXISTING_VERSION}/test_meta_date.parquet"
+            ),
+            (
+                f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}"
+                f"/{EXISTING_SITE}/{EXISTING_VERSION}/test_meta_date.parquet"
+            ),
+            False,
+            200,
+        ),
+        (  # updating an existing study with a differently named file
+            "./tests/test_data/meta_date.parquet",
+            (
+                f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}"
+                f"/{EXISTING_SITE}/{EXISTING_VERSION}/test_meta_date.parquet"
+            ),
+            (
+                f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}"
+                f"/{EXISTING_SITE}/{EXISTING_VERSION}/test_meta_date.parquet"
+            ),
+            True,
             200,
         ),
         (  # invalid file
@@ -74,6 +104,7 @@ from tests.mock_utils import (
                 f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}"
                 f"/{EXISTING_SITE}/{EXISTING_VERSION}/wrong.parquet"
             ),
+            False,
             500,
         ),
     ],
@@ -82,10 +113,21 @@ def test_process_upload(
     upload_file,
     upload_path,
     event_key,
+    multiple_files,
     status,
     mock_bucket,
 ):
     s3_client = boto3.client("s3", region_name="us-east-1")
+    if multiple_files:
+        s3_client.upload_file(
+            upload_file,
+            TEST_BUCKET,
+            (
+                f"{enums.BucketPath.STUDY_META.value}"
+                f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}"
+                f"/{EXISTING_SITE}/{EXISTING_VERSION}/test_old_meta_date.parquet"
+            ),
+        )
     if upload_file is not None:
         s3_client.upload_file(
             upload_file,
@@ -110,3 +152,15 @@ def test_process_upload(
             row = next(reader)
             assert metadata[site][study][version]["earliest_date"] == f"{row[0]}T00:00:00"
             assert metadata[site][study][version]["latest_date"] == f"{row[1]}T00:00:00"
+    if multiple_files:
+        res = s3_client.list_objects_v2(
+            Bucket=TEST_BUCKET,
+            Prefix=(
+                f"{enums.BucketPath.STUDY_META.value}"
+                f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}"
+                f"/{EXISTING_SITE}/{EXISTING_VERSION}"
+            ),
+        )
+        assert len(res["Contents"]) == 1
+        assert res["Contents"][0]["Key"] == f"{enums.BucketPath.STUDY_META.value}{upload_path}"
+        assert res["Contents"][0]["LastModified"] == datetime(2020, 1, 1, tzinfo=UTC)
