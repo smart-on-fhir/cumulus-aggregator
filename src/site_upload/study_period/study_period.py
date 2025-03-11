@@ -15,17 +15,16 @@ def update_study_period(s3_client, s3_bucket, site, study, data_package, version
         s3_bucket, study, data_package, site, version
     )
     if len(paths) > 1:
-        latest_key = None
-        latest_date = datetime(1000, 1, 1, tzinfo=UTC)
-        for path in paths:
+
+        def modified_time(path):
             key = functions.get_s3_key_from_path(path)
             res = s3_client.head_object(Bucket=s3_bucket, Key=key)
-            if res["LastModified"] > latest_date:
-                latest_key = key
-                latest_date = res["LastModified"]
+            return res["LastModified"]
+
+        latest_path = max(paths, key=modified_time)
         for path in paths:
-            if latest_key not in path:
-                s3_client.delete_object(Bucket=s3_bucket, Key=key)
+            if latest_path != path:
+                s3_client.delete_object(Bucket=s3_bucket, Key=functions.get_s3_key_from_path(path))
                 paths.remove(path)
     df = awswrangler.s3.read_parquet(paths[0])
     study_meta = functions.read_metadata(
