@@ -225,7 +225,12 @@ def get_s3_site_filename_suffix(s3_path: str):
     # The expected s3 path for site data packages looks like:
     #   s3://bucket_name/enum_value/site/study/data_package/file
     # so this is returning data_package/file
-    return "/".join(s3_path.split("/")[6:])
+    return "/".join(s3_path.split("/")[-3:])
+
+
+def get_s3_key_from_path(s3_path: str):
+    """returns a valid S3 key given an S3 path"""
+    return "/".join(s3_path.split("/")[3:])
 
 
 def get_s3_json_as_dict(bucket, key: str):

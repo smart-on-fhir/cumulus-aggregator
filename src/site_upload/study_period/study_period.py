@@ -11,12 +11,22 @@ from shared import awswrangler_functions, decorators, enums, functions
 
 def update_study_period(s3_client, s3_bucket, site, study, data_package, version):
     """gets earliest/latest date from study metadata files"""
-    path = awswrangler_functions.get_s3_study_meta_list(
+    paths = awswrangler_functions.get_s3_study_meta_list(
         s3_bucket, study, data_package, site, version
     )
-    if len(path) != 1:
-        raise KeyError("Unique date path not found")
-    df = awswrangler.s3.read_parquet(path[0])
+    if len(paths) > 1:
+
+        def modified_time(path):
+            key = functions.get_s3_key_from_path(path)
+            res = s3_client.head_object(Bucket=s3_bucket, Key=key)
+            return res["LastModified"]
+
+        latest_path = max(paths, key=modified_time)
+        for path in paths:
+            if latest_path != path:
+                s3_client.delete_object(Bucket=s3_bucket, Key=functions.get_s3_key_from_path(path))
+                paths.remove(path)
+    df = awswrangler.s3.read_parquet(paths[0])
     study_meta = functions.read_metadata(
         s3_client, s3_bucket, meta_type=enums.JsonFilename.STUDY_PERIODS.value
     )
