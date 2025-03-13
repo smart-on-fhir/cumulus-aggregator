@@ -60,7 +60,7 @@ def test_init_manager(mock_bucket):
         f"flat/study/{mock_utils.EXISTING_SITE}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_VERSION}/{mock_utils.EXISTING_STUDY}__encounter_{mock_utils.EXISTING_SITE}__flat.parquet"
     )
     assert manager.csv_flat_key == (
-        f"csv_flat/study/{mock_utils.EXISTING_SITE}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_VERSION}/{mock_utils.EXISTING_STUDY}__encounter_{mock_utils.EXISTING_SITE}__flat.parquet"
+        f"csv_flat/study/{mock_utils.EXISTING_SITE}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_VERSION}/{mock_utils.EXISTING_STUDY}__encounter_{mock_utils.EXISTING_SITE}__flat.csv"
     )
 
 
