@@ -71,7 +71,7 @@ class S3Manager:
             f"{enums.BucketPath.CSVFLAT.value}/"
             f"{self.study}/{self.site}/"  # {self.study}__{self.data_package}/"
             f"{self.study}__{self.data_package}__{self.version}/"
-            f"{self.study}__{self.data_package}_{self.site}__flat.parquet"
+            f"{self.study}__{self.data_package}_{self.site}__flat.csv"
         )
 
     def error_handler(
