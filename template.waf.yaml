@@ -9,7 +9,6 @@ Parameters:
     AllowedValues:
       - dev
       - test
-      - regression
       - prod
   WAFArn:
     Type: String
