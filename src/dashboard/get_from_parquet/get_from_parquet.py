@@ -30,7 +30,16 @@ def from_parquet_handler(event, context):
         # TODO: this should be converted to a streamingresponse at some point
         # https://github.com/awslabs/aws-lambda-web-adapter/tree/main/examples/fastapi-response-streaming
         return functions.http_response(
-            200, payload, extra_headers={"Content-Type": "text/csv"}, skip_convert=True
+            200,
+            payload,
+            extra_headers={
+                "Content-Type": "text/csv",
+                "Content-disposition": (
+                    f"attachment; filename={s3_path.split('/')[-1].replace('.parquet','.csv')}"
+                ),
+                "Content-Length": len(payload.encode("UTF-8")),
+            },
+            skip_convert=True,
         )
     else:
         return functions.http_response(
