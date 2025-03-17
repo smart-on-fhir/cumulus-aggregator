@@ -18,9 +18,7 @@ def rename_csvs(bucket):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="""Removes artifacts from a site for a given study. """
-    )
+    parser = argparse.ArgumentParser(description="""Renames flat csv files in s3. """)
     parser.add_argument("-b", "--bucket", help="bucket name")
     parser.add_argument("-d", "--db", help="database name")
     args = parser.parse_args()

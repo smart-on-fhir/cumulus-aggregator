@@ -57,7 +57,7 @@ def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None
                 "id": f"{dp_detail['study']}__{dp_detail['name']}__{version}",
             }
             if "__flat" in dp_dict["s3_path"]:  # pragma: no cover
-                site = dp_dict["s3_path"].split("/")[5]
+                site = dp_dict["s3_path"].split("/")[2]
                 dp_dict["type"] = "flat"
                 dp_dict["site"] = site
                 dp_dict["id"] = dp_dict["id"] + f"__{site}"

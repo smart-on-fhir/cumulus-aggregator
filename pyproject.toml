@@ -1,5 +1,5 @@
 [project]
-name = "aggregator"
+name = "cumulus-aggregator"
 requires-python = ">= 3.10"
 version = "0.3.0"
 # This project is designed to run on the AWS serverless application framework (SAM).
@@ -31,11 +31,8 @@ classifiers = [
 "Homepage" = "https://github.com/smart-on-fhir/cumulus-aggregator"
 
 [build-system]
-build-backend = "setuptools.build_meta"
-requires = [
-    "setuptools ~=63.2.0",
-    "wheel ~=0.37.1",
-]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
 
 [project.optional-dependencies]
 test = [
@@ -58,6 +55,8 @@ dev = [
     "sqlfluff >= 3.2.5"
 ]
 
+[tool.flit.module]
+name = "src"
 [tool.coverage.run]
 omit = [
     "*/api_gateway_authorizer.py",
