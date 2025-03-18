@@ -1,3 +1,7 @@
+"""this migration is the basis of reset_data_package_cache - it is kept around
+mostly as a historical artifact of how migrations were run until then/utility
+for quickly cribbing together new migrations through reuse."""
+
 import argparse
 import enum
 import io

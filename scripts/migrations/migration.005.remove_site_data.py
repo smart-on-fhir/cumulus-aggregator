@@ -1,3 +1,7 @@
+"""this migration is the basis of delete_site_data - it is kept around
+mostly as a historical artifact of how deletions were run until then/utility
+for quickly cribbing together new migrations through reuse."""
+
 import argparse
 import enum
 from collections import defaultdict
