@@ -95,6 +95,7 @@ def test_get_data_packages(mock_bucket, target, payload_type, code, length, firs
     assert (res["statusCode"]) == code
     if code == 200:
         if payload_type is None or payload_type == "json":
+            assert res["headers"] == {"Content-Type": "application/json"}
             res = json.loads(res["body"])
             assert res["schema"]["fields"] == [
                 {"name": "cnt", "type": "integer", "extDtype": "Int64"},
@@ -105,6 +106,11 @@ def test_get_data_packages(mock_bucket, target, payload_type, code, length, firs
             ]
             res = res["data"]
         else:
+            assert res["headers"] == {
+                "Content-Type": "text/csv",
+                "Content-disposition": "attachment; filename=study__encounter__aggregate.csv",
+                "Content-Length": len(res["body"].encode("utf-8")),
+            }
             res = res["body"].split("\n")[:-1]
         assert len(res) == length
         assert res[0] == first
