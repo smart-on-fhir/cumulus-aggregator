@@ -227,3 +227,16 @@ def test_query_results(mock_db, mock_bucket, query_params, filter_groups, expect
     assert len(res) == len(expected)
     for i in range(0, len(res)):
         assert res[i] == expected[i]
+
+
+# while duckdb can handle boolean to string equality comparisons, athena does not.
+# So, we'll validate that casts show up for cumulus__none checks.
+@mock.patch(
+    "src.dashboard.get_chart_data.get_chart_data._get_table_cols", mock_get_table_cols_results
+)
+def test_cast_filter(mock_db, mock_bucket):
+    query, count_col = get_chart_data._build_query(
+        {"column": "nato"}, ["bool:isTrue"], {"data_package_id": "test__cube__001"}
+    )
+    assert """CAST("nato" AS VARCHAR) != 'cumulus__none'""" in query
+    assert """CAST("nato" AS VARCHAR) = 'cumulus__none'""" in query

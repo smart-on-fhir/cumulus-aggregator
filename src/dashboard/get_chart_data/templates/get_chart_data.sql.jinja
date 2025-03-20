@@ -20,7 +20,7 @@ WHERE
     AND{%- endif %} "{{ data_column }}" IS NOT NULL
     AND (
         (
-            {{ data_column }} != 'cumulus__none'
+            CAST("{{ data_column }}" AS VARCHAR) != 'cumulus__none'
             {%- if inline_configs|length > 0 %}
                 AND
                 (
@@ -29,7 +29,7 @@ WHERE
             {%- endif %}
         )
         OR (
-            {{ data_column }} = 'cumulus__none'
+            CAST("{{ data_column }}" AS VARCHAR) = 'cumulus__none'
             {%- if none_configs|length > 0 %}
                 AND
                 (
