@@ -275,10 +275,9 @@ class PackageMetadata:
     version: str
 
 
-def parse_s3_key(key: str) -> dict:
+def parse_s3_key(key: str) -> PackageMetadata:
     """Handles extraction of package metadata from an s3 key"""
     key = key.split("/")
-    print(key)
     match key[0]:
         case enums.BucketPath.AGGREGATE.value | enums.BucketPath.CSVAGGREGATE.value:
             package = PackageMetadata(
@@ -290,16 +289,11 @@ def parse_s3_key(key: str) -> dict:
         case (
             enums.BucketPath.ARCHIVE.value
             | enums.BucketPath.CSVFLAT.value
+            | enums.BucketPath.ERROR.value
             | enums.BucketPath.FLAT.value
+            | enums.BucketPath.LAST_VALID.value
             | enums.BucketPath.LATEST.value
         ):
-            package = PackageMetadata(
-                study=key[1],
-                site=key[3],
-                data_package=key[2].split("__")[1],
-                version=key[4],
-            )
-        case enums.BucketPath.ERROR.value | enums.BucketPath.LAST_VALID.value:
             package = PackageMetadata(
                 study=key[1],
                 site=key[3],
