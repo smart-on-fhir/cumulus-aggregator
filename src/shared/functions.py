@@ -1,6 +1,7 @@
 """Functions used across different lambdas"""
 
 import copy
+import dataclasses
 import io
 import json
 import logging
@@ -8,7 +9,7 @@ from datetime import UTC, datetime
 
 import boto3
 
-from . import enums
+from . import enums, errors
 
 logger = logging.getLogger()
 logger.setLevel("INFO")
@@ -254,7 +255,7 @@ def get_latest_data_package_version(bucket, prefix):
     highest_ver = None
     if "Contents" in s3_res:
         for item in s3_res["Contents"]:
-            ver_str = item["Key"].replace(prefix, "").split("/")[1].split("__")[2]
+            ver_str = parse_s3_key(item["Key"]).version
             if ver_str.isdigit():
                 if highest_ver is None:
                     highest_ver = ver_str
@@ -264,3 +265,51 @@ def get_latest_data_package_version(bucket, prefix):
     if "Contents" not in s3_res or highest_ver is None:
         logger.error("No data package versions found for %s", prefix)
     return highest_ver
+
+
+@dataclasses.dataclass()
+class PackageMetadata:
+    study: str
+    site: str | None
+    data_package: str
+    version: str
+
+
+def parse_s3_key(key: str) -> PackageMetadata:
+    """Handles extraction of package metadata from an s3 key"""
+    key = key.split("/")
+    match key[0]:
+        case enums.BucketPath.AGGREGATE.value | enums.BucketPath.CSVAGGREGATE.value:
+            package = PackageMetadata(
+                study=key[1],
+                site=None,
+                data_package=key[2].split("__")[1],
+                version=key[3],
+            )
+        case (
+            enums.BucketPath.ARCHIVE.value
+            | enums.BucketPath.CSVFLAT.value
+            | enums.BucketPath.ERROR.value
+            | enums.BucketPath.FLAT.value
+            | enums.BucketPath.LAST_VALID.value
+            | enums.BucketPath.LATEST.value
+            | enums.BucketPath.STUDY_META.value
+        ):
+            package = PackageMetadata(
+                study=key[1],
+                site=key[3],
+                data_package=key[2].split("__")[1],
+                version=key[4],
+            )
+        case enums.BucketPath.UPLOAD.value:
+            package = PackageMetadata(
+                study=key[1],
+                site=key[3],
+                data_package=key[2],
+                version=key[4],
+            )
+        case _:
+            raise errors.AggregatorS3Error(f"{key} does not correspond to a data package")
+    if "__" in package.version:
+        package.version = package.version.split("__")[2]
+    return package

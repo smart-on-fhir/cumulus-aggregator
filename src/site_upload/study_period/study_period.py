@@ -75,11 +75,9 @@ def study_period_handler(event, context):
     s3_bucket = os.environ.get("BUCKET_NAME")
     s3_client = boto3.client("s3")
     s3_key = event["Records"][0]["Sns"]["Message"]
-    path_params = s3_key.split("/")
-    study = path_params[1]
-    data_package = path_params[2].split("__")[1]
-    site = path_params[3]
-    version = path_params[4]
-    update_study_period(s3_client, s3_bucket, site, study, data_package, version)
+    dp_meta = functions.parse_s3_key(s3_key)
+    update_study_period(
+        s3_client, s3_bucket, dp_meta.site, dp_meta.study, dp_meta.data_package, dp_meta.version
+    )
     res = functions.http_response(200, "Study period update successful")
     return res

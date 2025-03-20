@@ -22,17 +22,12 @@ def process_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> N
 
     logger.info(f"Proccessing upload at {s3_key}")
     metadata = functions.read_metadata(s3_client, s3_bucket_name)
-    path_params = s3_key.split("/")
-    study = path_params[1]
-    # This happens when we're processing flat files, due to having to condense one
-    # folder layer.
-    # TODO: revisit on targeted crawling
-    if "__" in path_params[2]:
-        data_package = path_params[2].split("__")[1]
-    else:
-        data_package = path_params[2]
-    site = path_params[3]
-    version = path_params[4]
+    dp_meta = functions.parse_s3_key(s3_key)
+
+    study = dp_meta.study
+    data_package = dp_meta.data_package
+    site = dp_meta.site
+    version = dp_meta.version
     if s3_key.endswith(".parquet"):
         if (
             s3_key.endswith(f".{enums.UploadTypes.META.value}.parquet")

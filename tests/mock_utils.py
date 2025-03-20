@@ -17,6 +17,7 @@ NEW_STUDY = "new_study"
 EXISTING_STUDY = "study"
 OTHER_STUDY = "other_study"
 EXISTING_DATA_P = "encounter"
+EXISTING_FLAT_DATA_P = "c_encounter"
 NEW_DATA_P = "document"
 EXISTING_VERSION = "099"
 NEW_VERSION = "100"
@@ -47,7 +48,17 @@ def get_mock_metadata():
                         "last_error": None,
                         "deleted": None,
                     }
-                }
+                },
+                EXISTING_FLAT_DATA_P: {
+                    EXISTING_VERSION: {
+                        "transaction_format_version": "2",
+                        "last_upload": "2023-02-24T15:03:34+00:00",
+                        "last_data_update": "2023-02-24T15:03:40.657583+00:00",
+                        "last_aggregation": "2023-02-24T15:08:07.504595+00:00",
+                        "last_error": None,
+                        "deleted": None,
+                    }
+                },
             },
             OTHER_STUDY: {
                 EXISTING_DATA_P: {
@@ -132,6 +143,30 @@ def get_mock_column_types_metadata():
                         f"{EXISTING_STUDY}__{EXISTING_DATA_P}__aggregate.parquet"
                     ),
                     "total": 1000,
+                    "id": f"{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}",
+                },
+                EXISTING_FLAT_DATA_P: {
+                    f"{EXISTING_STUDY}__{EXISTING_FLAT_DATA_P}__{EXISTING_VERSION}": {
+                        "column_types_format_version": 2,
+                        "columns": {
+                            "resource": "string",
+                            "subgroup": "string",
+                            "numerator": "integer",
+                            "denominator": "double",
+                            "percentage": "double",
+                        },
+                        "last_data_update": "2023-02-24T15:08:07.771080+00:00",
+                        "s3_path": (
+                            f"aggregates/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_FLAT_DATA_P}/"
+                            f"{EXISTING_STUDY}__{EXISTING_FLAT_DATA_P}__{EXISTING_VERSION}/"
+                            f"{EXISTING_STUDY}__{EXISTING_FLAT_DATA_P}__flat.parquet"
+                        ),
+                        "site": EXISTING_SITE,
+                        "id": (
+                            f"{EXISTING_STUDY}__{EXISTING_FLAT_DATA_P}__"
+                            f"{EXISTING_VERSION}__{EXISTING_SITE}"
+                        ),
+                    },
                 },
             }
         },
@@ -153,6 +188,7 @@ def get_mock_column_types_metadata():
                         f"{OTHER_STUDY}__{EXISTING_DATA_P}__aggregate.parquet"
                     ),
                     "total": 2000,
+                    "id": f"{OTHER_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/",
                 }
             }
         },

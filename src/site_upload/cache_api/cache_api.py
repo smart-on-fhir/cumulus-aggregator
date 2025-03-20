@@ -23,6 +23,7 @@ def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None
         )
     else:
         raise KeyError("Invalid API caching target")
+    # this filters out system tables
     data_packages = df[df["table_name"].str.contains("__")].iloc[:, 0]
     column_types = functions.get_s3_json_as_dict(
         os.environ.get("BUCKET_NAME"),
@@ -56,10 +57,11 @@ def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None
                 "version": version,
                 "id": f"{dp_detail['study']}__{dp_detail['name']}__{version}",
             }
-            if "__flat" in dp_dict["s3_path"]:  # pragma: no cover
-                site = dp_dict["s3_path"].split("/")[2]
+            if "__flat" in dp_dict["s3_path"]:
+                site = functions.parse_s3_key(
+                    functions.get_s3_key_from_path(dp_dict["s3_path"])
+                ).site
                 dp_dict["type"] = "flat"
-                dp_dict["site"] = site
                 dp_dict["id"] = dp_dict["id"] + f"__{site}"
             dp_details.append(dp_dict)
     s3_client.put_object(
