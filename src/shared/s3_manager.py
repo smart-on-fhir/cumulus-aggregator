@@ -34,11 +34,12 @@ class S3Manager:
         self.sns_client = boto3.client("sns", region_name=self.s3_client.meta.region_name)
         self.event_source = event["Records"][0]["Sns"]["TopicArn"]
         self.s3_key = event["Records"][0]["Sns"]["Message"]
-        s3_key_array = self.s3_key.split("/")
-        self.study = s3_key_array[1]
-        self.data_package = s3_key_array[2].split("__")[1]
-        self.site = s3_key_array[3]
-        self.version = s3_key_array[4].split("__")[-1]
+        print(self.s3_key)
+        package = functions.parse_s3_key(self.s3_key)
+        self.study = package.study
+        self.data_package = package.data_package
+        self.site = package.site
+        self.version = package.version
         self.metadata = functions.read_metadata(
             self.s3_client, self.s3_bucket_name, meta_type=enums.JsonFilename.TRANSACTIONS.value
         )

@@ -17,7 +17,7 @@ def mock_sns_event(site, study, data_package, version):
                 "Sns": {
                     "TopicArn": "arn",
                     "Message": (
-                        f"/{study}/{study}__{data_package}/{site}/"
+                        f"latest/{study}/{study}__{data_package}/{site}/"
                         f"{study}__{data_package}__{version}/file.parquet"
                     ),
                 }
@@ -38,7 +38,7 @@ def test_init_manager(mock_bucket):
     assert manager.s3_bucket_name == "cumulus-aggregator-site-counts-test"
     assert manager.event_source == "arn"
     assert manager.s3_key == (
-        f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}/"
+        f"latest/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}/"
         f"{mock_utils.EXISTING_SITE}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__"
         f"{mock_utils.EXISTING_VERSION}/file.parquet"
     )
