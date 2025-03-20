@@ -293,6 +293,7 @@ def parse_s3_key(key: str) -> PackageMetadata:
             | enums.BucketPath.FLAT.value
             | enums.BucketPath.LAST_VALID.value
             | enums.BucketPath.LATEST.value
+            | enums.BucketPath.STUDY_META.value
         ):
             package = PackageMetadata(
                 study=key[1],
