@@ -34,7 +34,6 @@ class S3Manager:
         self.sns_client = boto3.client("sns", region_name=self.s3_client.meta.region_name)
         self.event_source = event["Records"][0]["Sns"]["TopicArn"]
         self.s3_key = event["Records"][0]["Sns"]["Message"]
-        print(self.s3_key)
         package = functions.parse_s3_key(self.s3_key)
         self.study = package.study
         self.data_package = package.data_package
