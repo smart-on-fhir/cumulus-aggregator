@@ -86,6 +86,12 @@ if __name__ == "__main__":
         cache_api.cache_api_data(
             s3_client, args.bucket, args.db, enums.JsonFilename.DATA_PACKAGES.value
         )
+    except AttributeError as e:
+        print(e)
+        print(
+            "You may need to hot modify the imports inside of cache_api to "
+            "point at the project root."
+        )
     finally:
         os.environ.clear()
         os.environ.update(env_cache)

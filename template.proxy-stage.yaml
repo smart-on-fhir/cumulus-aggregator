@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  DeployStage:
+    Type: String
+    AllowedValues:
+      - dev
+      - test
+      - prod
+
+Resources:
+  SiteApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: 
+        Fn::ImportValue:
+          Fn::Sub: "CumulusSiteApiProxy-${DeployStage}"
+      StageName: !Ref DeployStage
+
+  DashboardApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: 
+        Fn::ImportValue:
+          Fn::Sub: "CumulusDashboardApiProxy-${DeployStage}"
+      StageName: !Ref DeployStage
+

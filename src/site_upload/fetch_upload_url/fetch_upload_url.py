@@ -39,9 +39,12 @@ def create_presigned_post(
 def upload_url_handler(event, context):
     """Processes event from API Gateway"""
     del context
-    metadata_db = get_s3_json_as_dict(
-        os.environ.get("BUCKET_NAME"), f"{BucketPath.ADMIN.value}/metadata.json"
-    )
+    try:
+        metadata_db = get_s3_json_as_dict(
+            os.environ.get("BUCKET_NAME"), f"{BucketPath.ADMIN.value}/metadata.json"
+        )
+    except Excpetion:  # noqa: F821
+        return http_response(500, "Stack configuration error - check bucket name & metadata.")
     user = event["requestContext"]["authorizer"]["principalId"]
     body = json.loads(event["body"])
     for key in ["study", "data_package", "filename"]:

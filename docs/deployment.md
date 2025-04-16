@@ -83,13 +83,28 @@ If for some reason you don't want to use the samconfig.toml, you could instead d
 
 ## Deployment
 
-Assuming you have done the above configuration, you can deploy the Aggregator with the following command:
+Our deployment structure assumes that you may want to deploy more than one instance of the aggregator.
+You would want to do this if you have multiple networks of research partners, and don't want them
+to be able to see each others data. If you don't need this behavior, skip the steps here involving a proxy,
+and comment out the section at the end of template.yaml referencing proxy stages.
+
+Before deploying the aggregator, deploy the proxy gateway with the following command:
+```bash
+sam deploy --guided --stack-name=cumulus-dns -t template.proxy.yaml
+```
+
+Assuming you have done the SAM configuration, you can deploy the Aggregator with the following command:
 
 ```bash
 sam build && sam deploy --config-env [stagename] --resolve-image-repos
 ```
 
 This will show you a list of changes to your environment and ask you to confirm. Note that docker must be running to build some images for lambdas. Responding to the prompt with 'Y' will kick off the deployment.
+
+After that has finished, you can add endpoints to the proxy endpoint with the following command:
+```bash
+sam deploy --guided --stack-name=cumulus-dns -t template.proxy-stages.yaml
+```
 
 ## Local Development
 

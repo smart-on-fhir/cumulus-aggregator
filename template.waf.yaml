@@ -20,11 +20,27 @@ Resources:
     Properties:
       WebACLArn: !Ref WAFArn
       ResourceArn: 
-        Fn::ImportValue: !Sub "cumulus-aggregator-${DeployStage}-SiteAPIArn"
+        Fn::Join:
+          - ''
+          - - 'arn:'
+            - !Ref AWS::Partition
+            - ':apigateway:'
+            - !Ref AWS::Region
+            - '::/restapis/'
+            - Fn::ImportValue: !Sub "CumulusSiteApiProxy-${DeployStage}"
+            - !Sub '/stages/${DeployStage}'
 
   DashboardWebACLAssociation:
     Type: 'AWS::WAFv2::WebACLAssociation'
     Properties:
       WebACLArn: !Ref WAFArn
-      ResourceArn: 
-        Fn::ImportValue: !Sub "cumulus-aggregator-${DeployStage}-DashboardAPIArn"
+      ResourceArn:
+        Fn::Join:
+          - ''
+          - - 'arn:'
+            - !Ref AWS::Partition
+            - ':apigateway:'
+            - !Ref AWS::Region
+            - '::/restapis/'
+            - Fn::ImportValue: !Sub "CumulusDashboardApiProxy-${DeployStage}"
+            - !Sub '/stages/${DeployStage}'

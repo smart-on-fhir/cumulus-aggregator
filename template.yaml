@@ -1,17 +1,12 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >-
-  SAM stack for Cumulus aggregator
+  SAM stack for Cumulus aggregator 
 Transform:
 - AWS::Serverless-2016-10-31
 
 # TODO: The global section is only meant for the dashboard API. We may want to split
 # out the dashboard API into its own cloudformation template to limit this scope.
 
-# Generally we are being lax w.r.t. CORS at the moment because the dashboard
-# API is not actively being used, and is protected by an API Key.
-
-# TODO: Restrict to calls from shared subdomains, and possibly allowlist of IP ranges.
-# It may also be possible to use the BCH external gateway to accomplish this
 Globals:
   Api:
     Cors:
@@ -22,7 +17,7 @@ Globals:
 Parameters:
   BucketNameParameter:
     Type: String
-    Default: cumulus-aggregator-site-counts
+    Default: cumulus-aggregator
   GlueNameParameter:
     Type: String
     Default: cumulus-aggregator
@@ -34,18 +29,7 @@ Parameters:
     AllowedValues:
       - dev
       - test
-      - regression
       - prod
-  AggregatorDomainName:
-    Type: String
-  DashboardApiDomainName:
-    Type: String
-  AggregatorCertArn:
-    Type: String
-  DashboardApiCertArn:
-    Type: String
-  AggregatorHostedZoneID:
-    Type: String
   RetentionTime:
     Type: Number
   LogLevel:
@@ -66,7 +50,8 @@ Parameters:
     Default: JSON
   RemoteAccounts:
     Type: CommaDelimitedList
-
+  NetworkName:
+    Type: String
 
 Resources:
 
@@ -77,20 +62,20 @@ Resources:
   FetchAuthorizerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'CumulusAggFetchAuthorizer-${DeployStage}'
+      FunctionName: !Sub 'CumulusAggFetchAuthorizer-${DeployStage}-${NetworkName}'
       CodeUri: ./src/site_upload/api_gateway_authorizer
       Handler: api_gateway_authorizer.lambda_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggFetchAuthorizer-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggFetchAuthorizer-${DeployStage}-${NetworkName}"
       MemorySize: 128
       Timeout: 100
       Description: Validates credentials before providing signed urls
       Environment:
         Variables:
-          SECRET_NAME: !Sub 'CumulusUserSecrets-${DeployStage}'
+          SECRET_NAME: !Sub 'CumulusUserSecrets-${DeployStage}-${NetworkName}'
           REGION: !Ref "AWS::Region"
       Policies:
         - Statement:
@@ -108,7 +93,6 @@ Resources:
             Resource:
               - !Ref UserSecrets
 
-
   FetchAuthorizerLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -118,20 +102,20 @@ Resources:
   FetchUploadUrlFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'CumulusAggFetchUploadUrl-${DeployStage}'
+      FunctionName: !Sub 'CumulusAggFetchUploadUrl-${DeployStage}-${NetworkName}'
       CodeUri: ./src/site_upload/fetch_upload_url
       Handler: fetch_upload_url.upload_url_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggFetchUploadUrl-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggFetchUploadUrl-${DeployStage}-${NetworkName}"
       MemorySize: 128
       Timeout: 100
       Description: Generates a presigned URL for uploading files to S3
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
           REGION: !Ref "AWS::Region"
       Events:
         SiteUploadAPI:
@@ -142,7 +126,7 @@ Resources:
             Method: POST
       Policies:
         - S3CrudPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
         - Statement:
           - Sid: KMSDecryptPolicy
             Effect: Allow
@@ -160,26 +144,26 @@ Resources:
   ProcessUploadFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'CumulusAggProcessUpload-${DeployStage}'
+      FunctionName: !Sub 'CumulusAggProcessUpload-${DeployStage}-${NetworkName}'
       CodeUri: ./src/site_upload/process_upload
       Handler: process_upload.process_upload_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggProcessUpload-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggProcessUpload-${DeployStage}-${NetworkName}"
       MemorySize: 128
       Timeout: 800
       Description: Handles initial relocation of upload data
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
           TOPIC_PROCESS_COUNTS_ARN: !Ref SNSTopicProcessCounts
           TOPIC_PROCESS_FLAT_ARN: !Ref SNSTopicProcessFlat
           TOPIC_PROCESS_STUDY_META_ARN: !Ref SNSTopicProcessStudyMeta
       Policies:
         - S3CrudPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
         - SNSPublishMessagePolicy:
             TopicName: !GetAtt SNSTopicProcessCounts.TopicName
         - SNSPublishMessagePolicy:
@@ -203,7 +187,7 @@ Resources:
   PowersetMergeFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'CumulusAggPowersetMerge-${DeployStage}'
+      FunctionName: !Sub 'CumulusAggPowersetMerge-${DeployStage}-${NetworkName}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
       CodeUri: ./src/site_upload/powerset_merge
       Handler: powerset_merge.powerset_merge_handler
@@ -211,13 +195,13 @@ Resources:
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggPowersetMerge-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggPowersetMerge-${DeployStage}-${NetworkName}"
       MemorySize: 8192
       Timeout: 800
       Description: Merges and aggregates powerset count data
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
           TOPIC_CACHE_API_ARN: !Ref SNSTopicCacheAPI
       Events:
         ProcessCountsUploadSNSEvent:
@@ -226,7 +210,7 @@ Resources:
             Topic: !Ref SNSTopicProcessCounts
       Policies:
         - S3CrudPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
         - SNSPublishMessagePolicy:
             TopicName: !GetAtt SNSTopicCacheAPI.TopicName
         - Statement:
@@ -246,7 +230,7 @@ Resources:
   ProcessFlatFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'CumulusAggProcessFlat-${DeployStage}'
+      FunctionName: !Sub 'CumulusAggProcessFlat-${DeployStage}-${NetworkName}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
       CodeUri: ./src/site_upload/process_flat
       Handler: process_flat.process_flat_handler
@@ -254,13 +238,13 @@ Resources:
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggProcessFlat-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggProcessFlat-${DeployStage}-${NetworkName}"
       MemorySize: 8192
       Timeout: 800
       Description: Merges and aggregates powerset count data
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
           TOPIC_CACHE_API_ARN: !Ref SNSTopicCacheAPI
       Events:
         ProcessFlatUploadSNSEvent:
@@ -269,7 +253,7 @@ Resources:
            Topic: !Ref SNSTopicProcessFlat
       Policies:
         - S3CrudPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
         - SNSPublishMessagePolicy:
             TopicName: !GetAtt SNSTopicCacheAPI.TopicName
         - Statement:
@@ -289,7 +273,7 @@ Resources:
   StudyPeriodFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'CumulusAggStudyPeriod-${DeployStage}'
+      FunctionName: !Sub 'CumulusAggStudyPeriod-${DeployStage}-${NetworkName}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
       CodeUri: ./src/site_upload/study_period
       Handler: study_period.study_period_handler
@@ -297,13 +281,13 @@ Resources:
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggStudyPeriod-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggStudyPeriod-${DeployStage}-${NetworkName}"
       MemorySize: 512
       Timeout: 800
       Description: Handles metadata outside of upload/processing for studies
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
       Events:
         ProcessUploadSNSEvent:
           Type: SNS
@@ -311,7 +295,7 @@ Resources:
             Topic: !Ref SNSTopicProcessStudyMeta
       Policies:
         - S3CrudPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
         - Statement:
           - Sid: KMSDecryptPolicy
             Effect: Allow
@@ -329,7 +313,7 @@ Resources:
   CacheAPIFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'CumulusAggCacheAPI-${DeployStage}'
+      FunctionName: !Sub 'CumulusAggCacheAPI-${DeployStage}-${NetworkName}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
       CodeUri: ./src/site_upload/cache_api
       Handler: cache_api.cache_api_handler
@@ -337,15 +321,15 @@ Resources:
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggCacheAPI-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggCacheAPI-${DeployStage}-${NetworkName}"
       MemorySize: 512
       Timeout: 800
       Description: Caches selected database queries to S3
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
-          GLUE_DB_NAME: !Sub '${GlueNameParameter}-${DeployStage}'
-          WORKGROUP_NAME: !Sub '${AthenaWorkgroupNameParameter}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+          GLUE_DB_NAME: !Sub '${GlueNameParameter}-${DeployStage}-${NetworkName}'
+          WORKGROUP_NAME: !Sub '${AthenaWorkgroupNameParameter}-${DeployStage}-${NetworkName}'
       Events:
         CacheAPISNSEvent:
           Type: SNS
@@ -353,7 +337,7 @@ Resources:
             Topic: !Ref SNSTopicCacheAPI
       Policies:
         - S3CrudPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
         - Statement:
           - Sid: GluePermissionsPolicy
             Effect: Allow
@@ -362,14 +346,14 @@ Resources:
               - glue:*Partition*
             Resource:
               - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog'
-              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueNameParameter}-${DeployStage}'
-              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueNameParameter}-${DeployStage}/*'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueNameParameter}-${DeployStage}-${NetworkName}'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueNameParameter}-${DeployStage}-${NetworkName}/*'
         - Statement:
           - Sid: AthenaExecuteQueryPermissionsPolicy
             Effect: Allow
             Action:
               - athena:*
-            Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}'
+            Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}-${NetworkName}'
         - Statement:
           - Sid: KMSDecryptPolicy
             Effect: Allow
@@ -389,7 +373,7 @@ Resources:
   DashboardGetChartDataFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'CumulusAggDashboardGetChartData-${DeployStage}'
+      FunctionName: !Sub 'CumulusAggDashboardGetChartData-${DeployStage}-${NetworkName}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
       CodeUri: ./src/dashboard/get_chart_data
       Handler: get_chart_data.chart_data_handler
@@ -397,15 +381,15 @@ Resources:
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardGetChartData-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardGetChartData-${DeployStage}-${NetworkName}"
       MemorySize: 2048
       Timeout: 100
       Description: Retrieve data for chart display in Cumulus Dashboard
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
-          GLUE_DB_NAME: !Sub '${GlueNameParameter}-${DeployStage}'
-          WORKGROUP_NAME: !Sub '${AthenaWorkgroupNameParameter}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+          GLUE_DB_NAME: !Sub '${GlueNameParameter}-${DeployStage}-${NetworkName}'
+          WORKGROUP_NAME: !Sub '${AthenaWorkgroupNameParameter}-${DeployStage}-${NetworkName}'
       Events:
         GetChartDataAPI:
           Type: Api
@@ -431,14 +415,14 @@ Resources:
               - glue:*Partition*
             Resource:
               - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog'
-              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueNameParameter}-${DeployStage}'
-              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueNameParameter}-${DeployStage}/*'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueNameParameter}-${DeployStage}-${NetworkName}'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueNameParameter}-${DeployStage}-${NetworkName}/*'
         - Statement:
           - Sid: AthenaExecuteQueryPermissionsPolicy
             Effect: Allow
             Action:
               - athena:*
-            Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}'
+            Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}-${NetworkName}'
         - Statement:
           - Sid: DecryptPolicy
             Effect: Allow
@@ -456,20 +440,20 @@ Resources:
   DashboardGetMetadataFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'CumulusAggDashboardGetMetadata-${DeployStage}'
+      FunctionName: !Sub 'CumulusAggDashboardGetMetadata-${DeployStage}-${NetworkName}'
       CodeUri: ./src/dashboard/get_metadata
       Handler: get_metadata.metadata_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardGetMetadata-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardGetMetadata-${DeployStage}-${NetworkName}"
       MemorySize: 128
       Timeout: 100
       Description: Retrieve data about site uploads
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
       Events:
         GetMetadataAPI:
           Type: Api
@@ -503,7 +487,7 @@ Resources:
             Method: GET
       Policies:
         - S3ReadPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
         - Statement:
           - Sid: KMSDecryptPolicy
             Effect: Allow
@@ -521,7 +505,7 @@ Resources:
   DashboardDataPackagesFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'CumulusAggDashboardDataPackages-${DeployStage}'
+      FunctionName: !Sub 'CumulusAggDashboardDataPackages-${DeployStage}-${NetworkName}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
       CodeUri: ./src/dashboard/get_data_packages
       Handler: get_data_packages.data_packages_handler
@@ -529,15 +513,15 @@ Resources:
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardDataPackages-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardDataPackages-${DeployStage}-${NetworkName}"
       MemorySize: 512
       Timeout: 100
       Description: Retrieve data for chart display in Cumulus Dashboard
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
-          GLUE_DB_NAME: !Sub '${GlueNameParameter}-${DeployStage}'
-          WORKGROUP_NAME: !Sub '${AthenaWorkgroupNameParameter}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+          GLUE_DB_NAME: !Sub '${GlueNameParameter}-${DeployStage}-${NetworkName}'
+          WORKGROUP_NAME: !Sub '${AthenaWorkgroupNameParameter}-${DeployStage}-${NetworkName}'
       Events:
         DataPackagesAPI:
           Type: Api
@@ -570,8 +554,8 @@ Resources:
               - glue:*Partition*
             Resource:
               - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog'
-              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueNameParameter}-${DeployStage}'
-              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueNameParameter}-${DeployStage}/*'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueNameParameter}-${DeployStage}-${NetworkName}'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueNameParameter}-${DeployStage}-${NetworkName}/*'
         - Statement:
           - Sid: AthenaSubscriptionsPolicy
             Effect: Allow
@@ -581,7 +565,7 @@ Resources:
               - athena:GetWorkGroup
               - athena:GetQueryExecution
               - athena:StopQueryExecution
-            Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}'
+            Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}-${NetworkName}'
         - Statement:
           - Sid: KMSDecryptPolicy
             Effect: Allow
@@ -599,20 +583,20 @@ Resources:
   DashboardGetStudyPeriodsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'CumulusAggDashboardStudyPeriods-${DeployStage}'
+      FunctionName: !Sub 'CumulusAggDashboardStudyPeriods-${DeployStage}-${NetworkName}'
       CodeUri: ./src/dashboard/get_study_periods
       Handler: get_study_periods.study_periods_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardStudyPeriods-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardStudyPeriods-${DeployStage}-${NetworkName}"
       MemorySize: 128
       Timeout: 100
       Description: Retrieve data about the study period
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
       Events:
         GetStudyPeriodAPI:
           Type: Api
@@ -634,7 +618,7 @@ Resources:
             Method: GET
       Policies:
         - S3ReadPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
         - Statement:
           - Sid: DecryptPolicy
             Effect: Allow
@@ -652,7 +636,7 @@ Resources:
   DashboardGetFromParquetFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'CumulusAggDashboardFromParquet-${DeployStage}'
+      FunctionName: !Sub 'CumulusAggDashboardFromParquet-${DeployStage}-${NetworkName}'
       CodeUri: ./src/dashboard/get_from_parquet
       Handler: get_from_parquet.from_parquet_handler
       Runtime: "python3.11"
@@ -660,13 +644,13 @@ Resources:
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardFromParquet-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardFromParquet-${DeployStage}-${NetworkName}"
       MemorySize: 512
       Timeout: 100
       Description: Retrieve data from a parquet source
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
       Events:
         GetFromParquetAPI:
           Type: Api
@@ -676,7 +660,7 @@ Resources:
             Method: GET
       Policies:
         - S3ReadPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
         - Statement:
           - Sid: DecryptPolicy
             Effect: Allow
@@ -694,14 +678,14 @@ Resources:
   DashboardPostDistributeStudyFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'CumulusAggDashboardDistributeStudy-${DeployStage}'
+      FunctionName: !Sub 'CumulusAggDashboardDistributeStudy-${DeployStage}-${NetworkName}'
       CodeUri: ./src/dashboard/post_distribute
       Handler: post_distribute.distribute_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardDistributeStudy-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardDistributeStudy-${DeployStage}-${NetworkName}"
       MemorySize: 128
       Timeout: 30
       Environment:
@@ -727,19 +711,19 @@ Resources:
   DashboardQueueDistributeStudyFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'CumulusAggDashboardQueueStudy-${DeployStage}'
+      FunctionName: !Sub 'CumulusAggDashboardQueueStudy-${DeployStage}-${NetworkName}'
       PackageType: Image
       ImageConfig:
         Command: ["queue_distribute.queue_handler"]
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardQueueStudy-${DeployStage}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardQueueStudy-${DeployStage}-${NetworkName}"
       MemorySize: 512
       Timeout: 100
       Environment:
         Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
           TOPIC_STUDY_PAYLOAD_ARN: !Ref SNSStudyPayload
       Events:
         ProcessQueueDistributeSNSEvent:
@@ -748,7 +732,7 @@ Resources:
             Topic: !Ref SNSTopicQueueDistribution
       Policies:
         - S3ReadPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
         - Statement:
           - Sid: KMSDecryptPolicy
             Effect: Allow
@@ -778,59 +762,59 @@ Resources:
       FunctionName: !Ref ProcessUploadFunction
       Principal: s3.amazonaws.com
       #This can't be a !Ref due to circular refs
-      SourceArn: !Sub 'arn:aws:s3:::${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+      SourceArn: !Sub 'arn:aws:s3:::${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
       SourceAccount: !Ref AWS::AccountId
 
 ### SNS topics
   SNSTopicProcessCounts:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub 'CumulusProcessCounts-${DeployStage}'
+      TopicName: !Sub 'CumulusProcessCounts-${DeployStage}-${NetworkName}'
       Tags:
         - Key: Name
-          Value: !Sub 'CumulusProcessCounts-${DeployStage}'
+          Value: !Sub 'CumulusProcessCounts-${DeployStage}-${NetworkName}'
 
   SNSTopicProcessFlat:
    Type: AWS::SNS::Topic
    Properties:
-     TopicName: !Sub 'CumulusProcessFlat-${DeployStage}'
+     TopicName: !Sub 'CumulusProcessFlat-${DeployStage}-${NetworkName}'
      Tags:
        - Key: Name
-         Value: !Sub 'CumulusProcessFlat-${DeployStage}'
+         Value: !Sub 'CumulusProcessFlat-${DeployStage}-${NetworkName}'
 
   SNSTopicProcessStudyMeta:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub 'CumulusProcessStudyMeta-${DeployStage}'
+      TopicName: !Sub 'CumulusProcessStudyMeta-${DeployStage}-${NetworkName}'
       Tags:
         - Key: Name
-          Value: !Sub 'CumulusProcessStudyMeta-${DeployStage}'
+          Value: !Sub 'CumulusProcessStudyMeta-${DeployStage}-${NetworkName}'
 
   SNSTopicCacheAPI:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub 'SNSTopicCacheAPI-${DeployStage}'
+      TopicName: !Sub 'SNSTopicCacheAPI-${DeployStage}-${NetworkName}'
       Tags:
         - Key: Name
-          Value: !Sub 'SNSTopicCacheAPI-${DeployStage}'
+          Value: !Sub 'SNSTopicCacheAPI-${DeployStage}-${NetworkName}'
 
   SNSTopicQueueDistribution:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub 'SNSTopicQueueDistribution-${DeployStage}'
+      TopicName: !Sub 'SNSTopicQueueDistribution-${DeployStage}-${NetworkName}'
       Tags:
         - Key: Name
-          Value: !Sub 'SNSTopicQueueDistribution-${DeployStage}'
+          Value: !Sub 'SNSTopicQueueDistribution-${DeployStage}-${NetworkName}'
 
   SNSStudyPayload:
     Type: AWS::SNS::Topic
     Properties:
       ContentBasedDeduplication: True
       FifoTopic: True
-      TopicName: !Sub 'SNSStudyPayload-${DeployStage}.fifo'
+      TopicName: !Sub 'SNSStudyPayload-${DeployStage}-${NetworkName}.fifo'
       Tags:
         - Key: Name
-          Value: !Sub 'SNSStudyPayload-${DeployStage}.fifo'
+          Value: !Sub 'SNSStudyPayload-${DeployStage}-${NetworkName}.fifo'
 
   SNSStudyPayloadPolicy:
     Type: AWS::SNS::TopicPolicy
@@ -854,7 +838,7 @@ Resources:
     DependsOn:
       - ProcessUploadFunctionPermission
     Properties:
-      BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}'
+      BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
       NotificationConfiguration:
         LambdaConfigurations:
           - Event: s3:ObjectCreated:*
@@ -872,13 +856,13 @@ Resources:
     Properties:
       CatalogId: !Ref AWS::AccountId
       DatabaseInput:
-        Name: !Sub '${GlueNameParameter}-${DeployStage}'
+        Name: !Sub '${GlueNameParameter}-${DeployStage}-${NetworkName}'
         Description: Database for serving data to the Cumulus Dashboard
 
   GlueCrawler:
     Type: AWS::Glue::Crawler
     Properties:
-      Name: !Sub '${GlueNameParameter}-crawler-${DeployStage}'
+      Name: !Sub '${GlueNameParameter}-crawler-${DeployStage}-${NetworkName}'
       DatabaseName: !Ref GlueDB
       Role: !GetAtt CrawlerRole.Arn
       Configuration: "{\"Version\":1.0,\"Grouping\":{\"TableLevelConfiguration\":5}}"
@@ -897,7 +881,7 @@ Resources:
   AthenaWorkGroup:
     Type: AWS::Athena::WorkGroup
     Properties:
-      Name: !Sub '${AthenaWorkgroupNameParameter}-${DeployStage}'
+      Name: !Sub '${AthenaWorkgroupNameParameter}-${DeployStage}-${NetworkName}'
       State: ENABLED
       WorkGroupConfiguration:
         EnforceWorkGroupConfiguration: True
@@ -905,14 +889,14 @@ Resources:
         EngineVersion:
           SelectedEngineVersion: "Athena engine version 3"
         ResultConfiguration:
-          OutputLocation: !Sub "s3://${BucketNameParameter}-${AWS::AccountId}-${DeployStage}/athena/"
+          OutputLocation: !Sub "s3://${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}/athena/"
 
 ### User login secrets
 
   UserSecrets:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub 'CumulusUserSecrets-${DeployStage}'
+      Name: !Sub 'CumulusUserSecrets-${DeployStage}-${NetworkName}'
       Description: Upload credentials for Cumulus Users
       # By default, we'll initiate this to an empty JSON object, and populate it via other methods.
       SecretString: '{}'
@@ -958,12 +942,12 @@ Resources:
                 Action:
                   - s3:GetObject
                   - s3:PutObject
-                Resource: !Sub "arn:aws:s3:::${BucketNameParameter}-${AWS::AccountId}-${DeployStage}/aggregates/*"
+                Resource: !Sub "arn:aws:s3:::${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}/aggregates/*"
               - Effect: Allow
                 Action:
                   - s3:GetObject
                   - s3:PutObject
-                Resource: !Sub "arn:aws:s3:::${BucketNameParameter}-${AWS::AccountId}-${DeployStage}/flat/*"
+                Resource: !Sub "arn:aws:s3:::${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}/flat/*"
               - Sid: KMSDecryptPolicy
                 Effect: Allow
                 Action:
@@ -980,6 +964,7 @@ Resources:
 
   SiteApiGateway:
     Type: AWS::Serverless::Api
+    Name: !Sub "CumulusAggregatorSiteApi-${DeployStage}-${NetworkName}"
 #    DependsOn: ApiCWLRoleArn
     Properties:
       StageName: !Ref DeployStage
@@ -991,16 +976,6 @@ Resources:
             Identity:
               Headers: [Authorization]
         DefaultAuthorizer: FetchAuth
-# If your data API does not require external access, remove/comment this domain node
-      Domain:
-       DomainName: !Ref AggregatorDomainName
-       CertificateArn: !Ref AggregatorCertArn
-       EndpointConfiguration: EDGE
-       Route53:
-         HostedZoneId: !Ref AggregatorHostedZoneID
-       BasePath:
-         - upload
-      Name: !Sub "CumulusAggregatorSiteAPI-${DeployStage}"
 #      MethodSettings:
 #        - LoggingLevel: INFO
 #          MetricsEnabled: True
@@ -1012,26 +987,13 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref DeployStage
-      Name: !Sub "CumulusAggregatorDashboardApi-${DeployStage}"
+      Name: !Sub "CumulusAggregatorDashboardApi-${DeployStage}-${NetworkName}"
       Auth:
         ApiKeyRequired: true
         UsagePlan:
           CreateUsagePlan: PER_API
-          Description: !Sub "Usage plan for Cumulus dashboard ${DeployStage} API"
-          UsagePlanName: !Sub "CumulusAggregatorDashboardUsagePlan-${DeployStage}"
-# If your data API does not require external access, remove/comment this domain node
-      Domain:
-        DomainName: !Ref DashboardApiDomainName
-        CertificateArn: !Ref DashboardApiCertArn
-        EndpointConfiguration: EDGE
-        Route53:
-          HostedZoneId: !Ref AggregatorHostedZoneID
-      # MethodSettings:
-      #   - LoggingLevel: INFO
-      #     MetricsEnabled: True
-      #     DataTraceEnabled: True
-      #     ResourcePath: '/*' # allows for logging on any resource
-      #     HttpMethod: '*' # allows for logging on any method
+          Description: !Sub "Usage plan for Cumulus dashboard ${DeployStage}-${NetworkName} API"
+          UsagePlanName: !Sub "CumulusAggregatorDashboardUsagePlan-${DeployStage}-${NetworkName}"
 
 
 ### Cloudwatch Logging infra for API gateway
@@ -1059,21 +1021,116 @@ Resources:
     #        - 'arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
 
 
+### Proxy Bindings
+# These add proxy endpoints to the fanout proxies created in proxy.yaml
+# If you don't need to run multiple network configurations, you can comment these out
+
+  NetworkSiteResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+          Fn::ImportValue:
+            Fn::Sub: "CumulusSiteApiRootResource-${DeployStage}"
+      PathPart: !Ref NetworkName
+      RestApiId: 
+        Fn::ImportValue: 
+          Fn::Sub: "CumulusSiteApiProxy-${DeployStage}"
+
+  NetworkSiteProxyPassthrough:
+    DependsOn: NetworkSiteResource
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !Ref NetworkSiteResource
+      PathPart: "{proxy+}"
+      RestApiId: 
+        Fn::ImportValue: 
+          Fn::Sub: "CumulusSiteApiProxy-${DeployStage}"
+
+  NetworkSiteRootMethod:
+    DependsOn: 
+    - SiteApiGateway
+    - NetworkSiteResource
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: ANY
+      AuthorizationType: NONE
+      Integration: 
+        IntegrationHttpMethod: ANY
+        Type: HTTP_PROXY
+        Uri: !Sub 'https://${SiteApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${DeployStage}'
+      ResourceId: !Ref NetworkSiteResource
+      RestApiId: 
+        Fn::ImportValue:
+            Fn::Sub: "CumulusSiteApiProxy-${DeployStage}"
+
+  NetworkSitePassthroughMethod:
+    DependsOn: 
+    - SiteApiGateway
+    - NetworkSiteProxyPassthrough
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: ANY
+      AuthorizationType: NONE
+      Integration: 
+        IntegrationHttpMethod: ANY
+        Type: HTTP_PROXY
+        Uri: !Sub 'https://${SiteApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${DeployStage}'
+      ResourceId: !Ref NetworkSiteProxyPassthrough
+      RestApiId: 
+        Fn::ImportValue:
+            Fn::Sub: "CumulusSiteApiProxy-${DeployStage}"
+
+  NetworkDashboardResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+          Fn::ImportValue:
+            Fn::Sub: "CumulusDashboardApiRootResource-${DeployStage}"
+      PathPart: !Ref NetworkName
+      RestApiId: 
+        Fn::ImportValue: 
+          Fn::Sub: "CumulusDashboardApiProxy-${DeployStage}"
+
+  NetworkDashboardProxyPassthrough:
+    DependsOn: NetworkDashboardResource
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !Ref NetworkDashboardResource
+      PathPart: "{proxy+}"
+      RestApiId: 
+        Fn::ImportValue: 
+          Fn::Sub: "CumulusDashboardApiProxy-${DeployStage}"
+
+  NetworkDashboardPassthroughMethod:
+    DependsOn: 
+    - DashboardApiGateway
+    - NetworkDashboardProxyPassthrough
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: ANY
+      AuthorizationType: NONE
+      RequestParameters:
+        method.request.path.proxy: true
+      Integration: 
+        IntegrationHttpMethod: ANY
+        Type: HTTP_PROXY
+        Uri: !Sub 'https://${DashboardApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${DeployStage}/{proxy}'
+        RequestParameters:
+          integration.request.path.proxy: 'method.request.path.proxy'
+      ResourceId: !Ref NetworkDashboardProxyPassthrough
+      RestApiId: 
+        Fn::ImportValue:
+            Fn::Sub: "CumulusDashboardApiProxy-${DeployStage}"
+
+
 Outputs:
-  SiteWebEndpoint:
-    Description: "Site API Gateway endpoint URL"
-    Value: !Sub "https://${SiteApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${DeployStage}/"
 
   SiteAPIArn:
-    Value: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${SiteApiGateway}/stages/${DeployStage}"
+    Value: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${SiteApiGateway}/stages/${DeployStage}-${NetworkName}"
     Export:
       Name: !Sub "${AWS::StackName}-SiteAPIArn"
 
-  DashboardWebEndpoint:
-    Description: "Dashboard API Gateway endpoint URL"
-    Value: !Sub "https://${DashboardApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${DeployStage}/"
-
   DashboardAPIArn:
-    Value: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${DashboardApiGateway}/stages/${DeployStage}"
+    Value: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${DashboardApiGateway}/stages/${DeployStage}-${NetworkName}"
     Export:
       Name: !Sub "${AWS::StackName}-DashboardAPIArn"
