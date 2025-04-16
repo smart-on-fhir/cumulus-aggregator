@@ -113,6 +113,7 @@ def test_latest_data_package_version(mock_bucket):
     )
     assert version is None
 
+
 @pytest.mark.parametrize(
     "path,expected,raises",
     [
@@ -125,9 +126,9 @@ def test_latest_data_package_version(mock_bucket):
                 mock_utils.EXISTING_STUDY,
                 None,
                 mock_utils.EXISTING_DATA_P,
-                mock_utils.EXISTING_VERSION
+                mock_utils.EXISTING_VERSION,
             ),
-            does_not_raise()
+            does_not_raise(),
         ),
         (
             f"{enums.BucketPath.LAST_VALID.value}/{mock_utils.EXISTING_STUDY}/"
@@ -138,11 +139,11 @@ def test_latest_data_package_version(mock_bucket):
                 mock_utils.EXISTING_STUDY,
                 mock_utils.EXISTING_SITE,
                 mock_utils.EXISTING_DATA_P,
-                mock_utils.EXISTING_VERSION
+                mock_utils.EXISTING_VERSION,
             ),
-            does_not_raise()
+            does_not_raise(),
         ),
-        (   
+        (
             f"{enums.BucketPath.FLAT.value}/{mock_utils.EXISTING_STUDY}/"
             f"{mock_utils.EXISTING_SITE}/"
             f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_VERSION}/"
@@ -151,11 +152,11 @@ def test_latest_data_package_version(mock_bucket):
                 mock_utils.EXISTING_STUDY,
                 mock_utils.EXISTING_SITE,
                 mock_utils.EXISTING_DATA_P,
-                mock_utils.EXISTING_VERSION
+                mock_utils.EXISTING_VERSION,
             ),
-            does_not_raise()
+            does_not_raise(),
         ),
-        (   
+        (
             f"{enums.BucketPath.UPLOAD.value}/{mock_utils.EXISTING_STUDY}/"
             f"{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}/"
             f"{mock_utils.EXISTING_VERSION}/"
@@ -164,23 +165,19 @@ def test_latest_data_package_version(mock_bucket):
                 mock_utils.EXISTING_STUDY,
                 mock_utils.EXISTING_SITE,
                 mock_utils.EXISTING_DATA_P,
-                mock_utils.EXISTING_VERSION
+                mock_utils.EXISTING_VERSION,
             ),
-            does_not_raise()
+            does_not_raise(),
         ),
-        (   
-            "badkey",
-            None,
-            pytest.raises(errors.AggregatorS3Error)
-        ),
-        (   
+        ("badkey", None, pytest.raises(errors.AggregatorS3Error)),
+        (
             "badsubbucket/site/study/verison/data.parquet",
             None,
-            pytest.raises(errors.AggregatorS3Error)
+            pytest.raises(errors.AggregatorS3Error),
         ),
-    ]
+    ],
 )
-def test_parse_s3_key(path,expected,raises):
+def test_parse_s3_key(path, expected, raises):
     with raises:
         package = functions.parse_s3_key(path)
         assert package == expected

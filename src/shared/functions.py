@@ -302,10 +302,7 @@ def parse_s3_key(key: str) -> PackageMetadata:
                     data_package=key[2].split("__")[1],
                     version=key[4],
                 )
-            case (
-                enums.BucketPath.CSVFLAT.value 
-                | enums.BucketPath.FLAT.value
-            ):
+            case enums.BucketPath.CSVFLAT.value | enums.BucketPath.FLAT.value:
                 package = PackageMetadata(
                     study=key[1],
                     site=key[2],

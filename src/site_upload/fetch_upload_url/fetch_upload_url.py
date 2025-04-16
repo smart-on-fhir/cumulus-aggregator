@@ -7,9 +7,7 @@ import os
 import boto3
 import botocore.exceptions
 
-from shared.decorators import generic_error_handler
-from shared.enums import BucketPath
-from shared.functions import get_s3_json_as_dict, http_response
+from shared import decorators, enums, functions
 
 
 def create_presigned_post(
@@ -29,27 +27,29 @@ def create_presigned_post(
             Conditions=conditions,
             ExpiresIn=expiration,
         )
-        return http_response(200, response_body)
+        return functions.http_response(200, response_body)
     except botocore.exceptions.ClientError as e:
         logging.error(e)
-        return http_response(400, "Error occured presigning url")
+        return functions.http_response(400, "Error occured presigning url")
 
 
-@generic_error_handler(msg="Error occured presigning url")
+@decorators.generic_error_handler(msg="Error occured presigning url")
 def upload_url_handler(event, context):
     """Processes event from API Gateway"""
     del context
     try:
-        metadata_db = get_s3_json_as_dict(
-            os.environ.get("BUCKET_NAME"), f"{BucketPath.ADMIN.value}/metadata.json"
+        metadata_db = functions.get_s3_json_as_dict(
+            os.environ.get("BUCKET_NAME"), f"{enums.BucketPath.ADMIN.value}/metadata.json"
         )
     except Excpetion:  # noqa: F821
-        return http_response(500, "Stack configuration error - check bucket name & metadata.")
+        return functions.http_response(
+            500, "Stack configuration error - check bucket name & metadata."
+        )
     user = event["requestContext"]["authorizer"]["principalId"]
     body = json.loads(event["body"])
     for key in ["study", "data_package", "filename"]:
-        if body[key] is None:
-            return http_response(
+        if key not in body.keys() or body[key] is None:
+            return functions.http_response(  # test
                 400,
                 "Malformed data payload. See "
                 "https://docs.smarthealthit.org/cumulus/library/sharing-data.html "
@@ -61,7 +61,7 @@ def upload_url_handler(event, context):
         version = "0"
     res = create_presigned_post(
         os.environ.get("BUCKET_NAME"),
-        f"{BucketPath.UPLOAD.value}/{body['study']}/{body['data_package']}/"
+        f"{enums.BucketPath.UPLOAD.value}/{body['study']}/{body['data_package']}/"
         f"{metadata_db[user]['path']}/{int(version):03d}/{body['filename']}",
     )
     return res
