@@ -1,0 +1,162 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Creates environment-level proxy server w/ references for adding routes downstream
+Transform:
+- AWS::Serverless-2016-10-31
+
+Parameters:
+  DeployStage:
+    Type: String
+    AllowedValues:
+      - dev
+      - test
+      - prod
+  RetentionTime:
+    Type: Number
+  HostedZoneId:
+    Type: String
+  AggregatorDomainName:
+    Type: String
+  DashboardDomainName:
+    Type: String
+  AggregatorCertArn:
+    Type: String
+  DashboardCertArn:
+    Type: String
+
+Resources:
+
+  SiteApiProxy:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: 
+        Fn::Join:
+          - "-"
+          - - SiteApiProxy
+            - !Ref DeployStage
+      EndpointConfiguration: 
+        Types: 
+          - EDGE
+      Description: !Sub "API proxy for site uploads in the ${DeployStage} environment"
+
+  SiteCloudfrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - DomainName: !Sub "${SiteApiProxy}.execute-api.${AWS::Region}.amazonaws.com"
+            Id: SiteOrigin
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: https-only
+        Enabled: true
+        DefaultCacheBehavior:
+          TargetOriginId: SiteOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html
+          # This ID is CachingOptimized
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-origin-request-policies.html
+          # This ID is AllViewer
+          OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3
+
+  SiteApiRoute53RecordSetGroup:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      RecordSets:
+        - Name: !Ref AggregatorDomainName
+          Type: A
+          AliasTarget:
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordsetgroup-aliastarget.html
+            # This is the AWS HostedZoneId for cloudfront
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: !GetAtt SiteCloudfrontDistribution.DomainName
+
+  SiteApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/apigateway/${SiteApiProxy}"
+
+      RetentionInDays: !Ref RetentionTime
+
+  DashboardApiProxy:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: 
+        Fn::Join:
+          - "-"
+          - - DashboardApiProxy
+            - !Ref DeployStage
+      EndpointConfiguration: 
+        Types: 
+          - EDGE
+      Description: !Sub "API proxy for dashboard APIs in the ${DeployStage} environment"
+
+  DashboardCloudfrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - DomainName: !Sub "${DashboardApiProxy}.execute-api.${AWS::Region}.amazonaws.com"
+            Id: DashboardOrigin
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: https-only
+        Enabled: true
+        DefaultCacheBehavior:
+          TargetOriginId: DashboardOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html
+          # This ID is CachingOptimized
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-origin-request-policies.html
+          # This ID is AllViewer
+          OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3
+
+  DashboardApiRoute53RecordSetGroup:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      RecordSets:
+        - Name: !Ref DashboardDomainName
+          Type: A
+          AliasTarget:
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordsetgroup-aliastarget.html
+            # This is the AWS HostedZoneId for cloudfront
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: !GetAtt DashboardCloudfrontDistribution.DomainName
+
+  DashboardApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/apigateway/${DashboardApiProxy}"
+      RetentionInDays: !Ref RetentionTime
+
+Outputs:
+  SiteApiProxy:
+    Description: Upload API Name
+    Value: !Ref SiteApiProxy
+    Export:
+      Name: !Sub "CumulusSiteApiProxy-${DeployStage}"
+
+  SiteApiRootResource:
+    Description: Upload API Root
+    Value: !GetAtt SiteApiProxy.RootResourceId
+    Export:
+      Name: !Sub "CumulusSiteApiRootResource-${DeployStage}"
+
+  DashboardApiProxy:
+    Description: Upload API Name
+    Value: !Ref DashboardApiProxy
+    Export:
+      Name: !Sub "CumulusDashboardApiProxy-${DeployStage}"
+
+  DashboardApiRootResource:
+    Description: Upload API Root
+    Value: !GetAtt DashboardApiProxy.RootResourceId
+    Export:
+      Name: !Sub "CumulusDashboardApiRootResource-${DeployStage}"
+

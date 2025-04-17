@@ -230,8 +230,10 @@ def get_s3_site_filename_suffix(s3_path: str):
 
 
 def get_s3_key_from_path(s3_path: str):
-    """returns a valid S3 key given an S3 path"""
-    return "/".join(s3_path.split("/")[3:])
+    """returns a valid S3 key given an S3 path (or given a key, returns the key)"""
+    if s3_path.startswith("s3"):
+        return "/".join(s3_path.split("/")[3:])
+    return s3_path
 
 
 def get_s3_json_as_dict(bucket, key: str):
@@ -277,39 +279,47 @@ class PackageMetadata:
 
 def parse_s3_key(key: str) -> PackageMetadata:
     """Handles extraction of package metadata from an s3 key"""
-    key = key.split("/")
-    match key[0]:
-        case enums.BucketPath.AGGREGATE.value | enums.BucketPath.CSVAGGREGATE.value:
-            package = PackageMetadata(
-                study=key[1],
-                site=None,
-                data_package=key[2].split("__")[1],
-                version=key[3],
-            )
-        case (
-            enums.BucketPath.ARCHIVE.value
-            | enums.BucketPath.CSVFLAT.value
-            | enums.BucketPath.ERROR.value
-            | enums.BucketPath.FLAT.value
-            | enums.BucketPath.LAST_VALID.value
-            | enums.BucketPath.LATEST.value
-            | enums.BucketPath.STUDY_META.value
-        ):
-            package = PackageMetadata(
-                study=key[1],
-                site=key[3],
-                data_package=key[2].split("__")[1],
-                version=key[4],
-            )
-        case enums.BucketPath.UPLOAD.value:
-            package = PackageMetadata(
-                study=key[1],
-                site=key[3],
-                data_package=key[2],
-                version=key[4],
-            )
-        case _:
-            raise errors.AggregatorS3Error(f"{key} does not correspond to a data package")
-    if "__" in package.version:
-        package.version = package.version.split("__")[2]
-    return package
+    try:
+        key = key.split("/")
+        match key[0]:
+            case enums.BucketPath.AGGREGATE.value | enums.BucketPath.CSVAGGREGATE.value:
+                package = PackageMetadata(
+                    study=key[1],
+                    site=None,
+                    data_package=key[2].split("__")[1],
+                    version=key[3],
+                )
+            case (
+                enums.BucketPath.ARCHIVE.value
+                | enums.BucketPath.ERROR.value
+                | enums.BucketPath.LAST_VALID.value
+                | enums.BucketPath.LATEST.value
+                | enums.BucketPath.STUDY_META.value
+            ):
+                package = PackageMetadata(
+                    study=key[1],
+                    site=key[3],
+                    data_package=key[2].split("__")[1],
+                    version=key[4],
+                )
+            case enums.BucketPath.CSVFLAT.value | enums.BucketPath.FLAT.value:
+                package = PackageMetadata(
+                    study=key[1],
+                    site=key[2],
+                    data_package=key[3].split("__")[1],
+                    version=key[3].split("__")[2],
+                )
+            case enums.BucketPath.UPLOAD.value:
+                package = PackageMetadata(
+                    study=key[1],
+                    site=key[3],
+                    data_package=key[2],
+                    version=key[4],
+                )
+            case _:
+                raise errors.AggregatorS3Error(f" {key[0]} does not correspond to a data package")
+        if "__" in package.version:
+            package.version = package.version.split("__")[2]
+        return package
+    except IndexError:
+        raise errors.AggregatorS3Error(f"{key} is not an expected S3 key")

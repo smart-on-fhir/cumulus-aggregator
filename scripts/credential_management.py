@@ -28,6 +28,8 @@ def _put_s3_data(name: str, bucket_name: str, client, data: dict, path: str = "a
 
 def create_auth(user: str, auth: str, site: str) -> str:
     """Adds a new entry to the auth dict used to issue pre-signed URLs"""
+    if "@" in user:
+        sys.exit("Usernames should not contain an @ due to S3 url character re-encoding issues.")
     site_id = _basic_auth_str(user, auth).split(" ")[1]
     return f'"{site_id}": {{"user": "{user}", "site":"{site}"}}'
 
