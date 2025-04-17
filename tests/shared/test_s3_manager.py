@@ -57,10 +57,14 @@ def test_init_manager(mock_bucket):
         == "s3://cumulus-aggregator-site-counts-test/csv_aggregates/study/study__encounter/099/study__encounter__aggregate.csv"
     )
     assert manager.parquet_flat_key == (
-        f"flat/study/{mock_utils.EXISTING_SITE}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_VERSION}/{mock_utils.EXISTING_STUDY}__encounter_{mock_utils.EXISTING_SITE}__flat.parquet"
+        f"flat/study/{mock_utils.EXISTING_SITE}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}"
+        f"__{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_VERSION}/"
+        f"{mock_utils.EXISTING_STUDY}__encounter__{mock_utils.EXISTING_SITE}__flat.parquet"
     )
     assert manager.csv_flat_key == (
-        f"csv_flat/study/{mock_utils.EXISTING_SITE}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_VERSION}/{mock_utils.EXISTING_STUDY}__encounter_{mock_utils.EXISTING_SITE}__flat.csv"
+        f"csv_flat/study/{mock_utils.EXISTING_SITE}/"
+        f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_VERSION}/"
+        f"{mock_utils.EXISTING_STUDY}__encounter__{mock_utils.EXISTING_SITE}__flat.csv"
     )
 
 

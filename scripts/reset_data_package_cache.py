@@ -4,6 +4,7 @@ import argparse
 import io
 import json
 import os
+import traceback
 
 import boto3
 import pandas
@@ -34,7 +35,7 @@ def update_column_type_metadata(bucket: str, client):
             if subbucket == "aggregates":
                 data_package = dirs[2].split("__")[1]
             elif subbucket == "flat":
-                data_package = dirs[3].split("__")[1]
+                data_package = "__".join([dirs[3].split("__")[1], dirs[3].split("__")[2]])
             version = dirs[3]
             bytes_buffer = io.BytesIO()
             client.download_fileobj(Bucket=bucket, Key=resource["Key"], Fileobj=bytes_buffer)
@@ -48,7 +49,7 @@ def update_column_type_metadata(bucket: str, client):
             output[study][data_package][version]["last_data_update"] = (
                 resource["LastModified"].now().isoformat()
             )
-            output[study][data_package][version]["s3_path"] = resource["Key"]
+            output[study][data_package][version]["s3_path"] = f"s3://{bucket}/{resource['Key']}"
             if subbucket == "aggregates":
                 output[study][data_package][version]["total"] = int(df["cnt"][0])
             elif subbucket == "flat":
@@ -88,6 +89,7 @@ if __name__ == "__main__":
         )
     except AttributeError as e:
         print(e)
+        print("".join(traceback.format_exception(e)))
         print(
             "You may need to hot modify the imports inside of cache_api to "
             "point at the project root."
