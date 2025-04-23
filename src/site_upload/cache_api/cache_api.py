@@ -36,10 +36,14 @@ def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None
     for dp in list(data_packages):
         if not any([f"/{dp}" in x for x in files]):
             continue
-        dp_detail = {
-            "study": dp.split("__")[0],
-            "name": dp.split("__")[1],
-        }
+        dp_detail = {}
+        dp_parts = dp.split("__")
+        dp_detail["study"] = dp_parts[0]
+        # if the data package has four elements, it's a flat table
+        if len(dp_parts) == 4:
+            dp_detail["name"] = "__".join([dp_parts[1], dp_parts[2]])
+        else:
+            dp_detail["name"] = dp_parts[1]
         studies = column_types.get(dp_detail["study"], {"name": None})
         dp_ids = studies.get(dp_detail["name"], None)
         if dp_ids is None:  # pragma: no cover
@@ -47,22 +51,23 @@ def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None
         for dp_id in dp_ids:
             if dp_id not in dp:
                 continue
-            if "__" in dp_id:
-                version = dp_id.split("__")[2]
-            else:
-                version = dp_id  # pragma: no cover
+
+            metadata = functions.parse_s3_key(
+                functions.get_s3_key_from_path(dp_ids[dp_id]["s3_path"])
+            )
             dp_dict = {
                 **dp_detail,
                 **dp_ids[dp_id],
-                "version": version,
-                "id": f"{dp_detail['study']}__{dp_detail['name']}__{version}",
+                "version": metadata.version,
+                "id": f"{metadata.study}__{metadata.data_package}__{metadata.version}",
             }
             if "__flat" in dp_dict["s3_path"]:
-                site = functions.parse_s3_key(
-                    functions.get_s3_key_from_path(dp_dict["s3_path"])
-                ).site
+                dp_dict["site"] = metadata.site
                 dp_dict["type"] = "flat"
-                dp_dict["id"] = dp_dict["id"] + f"__{site}"
+                dp_dict["id"] = (
+                    f"{metadata.study}__{metadata.data_package}__"
+                    f"{metadata.site}__{metadata.version}"
+                )
             dp_details.append(dp_dict)
     s3_client.put_object(
         Bucket=s3_bucket_name,

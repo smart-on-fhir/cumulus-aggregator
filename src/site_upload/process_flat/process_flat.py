@@ -33,17 +33,18 @@ def process_flat(manager: s3_manager.S3Manager):
     )
     df = awswrangler.s3.read_parquet(f"s3://{manager.s3_bucket_name}/{manager.parquet_flat_key}")
     column_dict = pandas_functions.get_column_datatypes(df.dtypes)
+    extras = {
+        "s3_path": f"s3://{manager.s3_bucket_name}/{manager.parquet_flat_key}",
+        "type": "flat",
+        "total": len(df),
+    }
     manager.update_local_metadata(
         enums.ColumnTypesKeys.COLUMNS.value,
         value=column_dict,
         site=manager.site,
         metadata=manager.types_metadata,
         meta_type=enums.JsonFilename.COLUMN_TYPES.value,
-        extra_items={
-            "s3_path": f"s3://{manager.s3_bucket_name}/{manager.parquet_flat_key}",
-            "type": "flat",
-            "total": len(df),
-        },
+        extra_items=extras,
     )
     manager.update_local_metadata(enums.TransactionKeys.LAST_DATA_UPDATE.value, site=manager.site)
     manager.update_local_metadata(
@@ -51,6 +52,7 @@ def process_flat(manager: s3_manager.S3Manager):
         value=column_dict,
         metadata=manager.types_metadata,
         meta_type=enums.JsonFilename.COLUMN_TYPES.value,
+        extra_items=extras,
     )
     manager.write_local_metadata(
         metadata=manager.types_metadata, meta_type=enums.JsonFilename.COLUMN_TYPES.value

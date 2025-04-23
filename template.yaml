@@ -1023,7 +1023,6 @@ Resources:
 
 ### Proxy Bindings
 # These add proxy endpoints to the fanout proxies created in proxy.yaml
-# If you don't need to run multiple network configurations, you can comment these out
 
   NetworkSiteResource:
     Type: AWS::ApiGateway::Resource
