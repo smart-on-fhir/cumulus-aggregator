@@ -146,7 +146,8 @@ def test_latest_data_package_version(mock_bucket):
         (
             f"{enums.BucketPath.FLAT.value}/{mock_utils.EXISTING_STUDY}/"
             f"{mock_utils.EXISTING_SITE}/"
-            f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_VERSION}/"
+            f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__"
+            f"{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_VERSION}/"
             f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__aggregate.parquet",
             functions.PackageMetadata(
                 mock_utils.EXISTING_STUDY,

@@ -203,7 +203,10 @@ class S3Manager:
         # are tied to the study version, not a specific site's data
         if extra_items is None:
             extra_items = {}
-        if site is None and meta_type != enums.JsonFilename.COLUMN_TYPES.value:
+        if site is None and (
+            meta_type != enums.JsonFilename.COLUMN_TYPES.value
+            or extra_items.get("type", "") == "flat"
+        ):
             site = self.site
         if metadata is None:
             metadata = self.metadata

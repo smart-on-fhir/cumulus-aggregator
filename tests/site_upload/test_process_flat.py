@@ -14,7 +14,7 @@ def test_process_flat(mock_cache, mock_bucket):
                 "Sns": {
                     "TopicArn": "arn",
                     "Message": (
-                        "latest/study/study__encounter/site/study__encounter__version/file.parquet"
+                        "latest/study/study__encounter/site/study__encounter__site__version/file.parquet"
                     ),
                 }
             }
@@ -33,7 +33,11 @@ def test_process_flat(mock_cache, mock_bucket):
     files = [
         file["Key"] for file in s3_client.list_objects_v2(Bucket=mock_utils.TEST_BUCKET)["Contents"]
     ]
-    assert "flat/study/site/study__encounter__version/study__encounter_site__flat.parquet" in files
+    for file in files:
+        print(file)
+    assert (
+        "flat/study/site/study__encounter__site__version/" "study__encounter__site__flat.parquet"
+    ) in files
 
     mock_cache.reset_mock()
     s3_client.upload_file(

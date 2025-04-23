@@ -1,5 +1,3 @@
-import os
-
 import awswrangler
 import pyarrow
 
@@ -10,10 +8,10 @@ from shared import decorators, functions
 def from_parquet_handler(event, context):
     """manages event and returns parquet file as json dict"""
     del context
-    s3_bucket_name = os.environ.get("BUCKET_NAME")
     try:
+        # just in case we got a full path, we'll strip the bucket from the front
         s3_path = event["queryStringParameters"]["s3_path"]
-        df = awswrangler.s3.read_parquet(f"s3://{s3_bucket_name}/{s3_path}")
+        df = awswrangler.s3.read_parquet(s3_path)
     except (KeyError, FileNotFoundError, pyarrow.lib.ArrowInvalid):
         res = functions.http_response(404, "S3_path not found")
         return res

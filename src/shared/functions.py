@@ -139,7 +139,10 @@ def update_metadata(
             data_version_metadata[target] = dt.isoformat()
         case enums.JsonFilename.COLUMN_TYPES.value:
             study_metadata = metadata.setdefault(study, {})
-            data_package_metadata = study_metadata.setdefault(data_package, {})
+            if extra_items.get("type") == "flat":
+                data_package_metadata = study_metadata.setdefault(f"{data_package}__{site}", {})
+            else:
+                data_package_metadata = study_metadata.setdefault(data_package, {})
             data_version_metadata = _update_or_clone_template(
                 data_package_metadata, version, COLUMN_TYPES_METADATA_TEMPLATE
             )
@@ -307,7 +310,7 @@ def parse_s3_key(key: str) -> PackageMetadata:
                     study=key[1],
                     site=key[2],
                     data_package=key[3].split("__")[1],
-                    version=key[3].split("__")[2],
+                    version=key[3].split("__")[3],
                 )
             case enums.BucketPath.UPLOAD.value:
                 package = PackageMetadata(
@@ -319,7 +322,7 @@ def parse_s3_key(key: str) -> PackageMetadata:
             case _:
                 raise errors.AggregatorS3Error(f" {key[0]} does not correspond to a data package")
         if "__" in package.version:
-            package.version = package.version.split("__")[2]
+            package.version = package.version.split("__")[-1]
         return package
     except IndexError:
         raise errors.AggregatorS3Error(f"{key} is not an expected S3 key")

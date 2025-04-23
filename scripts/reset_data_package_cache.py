@@ -48,7 +48,7 @@ def update_column_type_metadata(bucket: str, client):
             output[study][data_package][version]["last_data_update"] = (
                 resource["LastModified"].now().isoformat()
             )
-            output[study][data_package][version]["s3_path"] = resource["Key"]
+            output[study][data_package][version]["s3_path"] = f"s3://{bucket}/{resource['Key']}"
             if subbucket == "aggregates":
                 output[study][data_package][version]["total"] = int(df["cnt"][0])
             elif subbucket == "flat":

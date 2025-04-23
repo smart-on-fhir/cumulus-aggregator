@@ -5,7 +5,7 @@ from unittest import mock
 import pytest
 
 from src.dashboard.get_from_parquet import get_from_parquet
-from tests.mock_utils import MOCK_ENV
+from tests.mock_utils import MOCK_ENV, TEST_BUCKET
 
 
 def mock_event(target, payload_type):
@@ -17,9 +17,7 @@ def mock_event(target, payload_type):
     return payload
 
 
-S3_PATH = (
-    "aggregates/study/study__encounter/study__encounter__099/study__encounter__aggregate.parquet"
-)
+S3_PATH = f"s3://{TEST_BUCKET}/aggregates/study/study__encounter/study__encounter__099/study__encounter__aggregate.parquet"
 
 
 @pytest.mark.parametrize(
