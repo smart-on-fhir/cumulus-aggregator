@@ -112,25 +112,24 @@ def _get_table_cols(dp_id: str) -> list:
     """Returns the columns associated with a table.
 
     Since running an athena query takes a decent amount of time due to queueing
-    a query with the execution engine, and we already have this data at the top
-    of a CSV, we're getting table cols directly from S3 for speed reasons.
+    a query with the execution engine, and we already have this data in the
+    column_types metadata, we're getting table cols directly from S3 for speed reasons.
+
+    TODO: Read from column_types instead
     """
 
     s3_bucket_name = os.environ.get("BUCKET_NAME")
-    study, name, version = dp_id.split("__")
-    prefix = f"{enums.BucketPath.CSVAGGREGATE.value}/{study}/{study}__{name}"
-    if version is None:
-        version = functions.get_latest_data_package_version(s3_bucket_name, prefix)
-    s3_key = f"{prefix}/{version}/{study}__{name}__aggregate.csv"
     s3_client = boto3.client("s3")
-    try:
-        s3_iter = s3_client.get_object(
-            Bucket=s3_bucket_name,
-            Key=s3_key,
-        )["Body"].iter_lines()
-        return next(s3_iter).decode().split(",")
-    except Exception:
-        raise errors.AggregatorS3Error
+    column_types = functions.read_metadata(
+        s3_client, s3_bucket_name, meta_type=enums.JsonFilename.COLUMN_TYPES.value
+    )
+    for study in column_types.keys():
+        if study in dp_id:
+            for data_package in column_types[study].keys():
+                if dp_id in column_types[study][data_package].keys():
+                    details = column_types[study][data_package][dp_id]
+                    return list(details["columns"].keys())
+    raise errors.AggregatorS3Error
 
 
 def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> str:
@@ -180,7 +179,7 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
         count_col = "cnt"
     # these 'if in' checks is meant to handle the case where the selected column is also
     # present in the filter logic and has already been removed
-    if query_params["column"] in columns:
+    if query_params.get("column") in columns:
         columns.remove(query_params["column"])
     if query_params.get("stratifier") in columns:
         columns.remove(query_params["stratifier"])
@@ -190,7 +189,7 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
         loader = jinja2.FileSystemLoader(pathlib.Path(__file__).parent / "templates/")
         env = jinja2.Environment(loader=loader).from_string(template)  # noqa: S701
         query_str = env.render(
-            data_column=query_params["column"],
+            data_column=query_params.get("column"),
             stratifier_column=query_params.get("stratifier", None),
             count_columns=[count_col],
             schema=os.environ.get("GLUE_DB_NAME"),
