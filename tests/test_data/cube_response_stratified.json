@@ -14,16 +14,18 @@
             "stratifier": "",
             "rows": [
                 [
-                    37990,
-                    ""
+                    "",
+                    37990
                 ],
                 [
-                    21073,
-                    "male"
+                    "female",
+                    16917
+                    
                 ],
                 [
-                    16917,
-                    "female"
+                    "male",
+                    21073
+
                 ]
             ]
         },
@@ -31,16 +33,18 @@
             "stratifier": "White",
             "rows": [
                 [
-                    32392,
-                    ""
+                    "",
+                    32392
                 ],
                 [
-                    18287,
-                    "male"
+                    "female",
+                    14105
+                    
                 ],
                 [
-                    14105,
-                    "female"
+                    "male",
+                    18287
+
                 ]
             ]
         },
@@ -48,16 +52,18 @@
             "stratifier": "Black or African American",
             "rows": [
                 [
-                    3870,
-                    ""
+                    "",
+                    3870
                 ],
                 [
-                    2055,
-                    "female"
+                    "female",
+                    2055
+                    
                 ],
                 [
-                    1815,
-                    "male"
+                    "male",
+                    1815
+
                 ]
             ]
         },
@@ -65,16 +71,16 @@
             "stratifier": "Asian",
             "rows": [
                 [
-                    1675,
-                    ""
+                    "",
+                    1675
                 ],
                 [
-                    940,
-                    "male"
+                    "female",
+                    735
                 ],
                 [
-                    735,
-                    "female"
+                    "male",
+                    940
                 ]
             ]
         },
@@ -82,16 +88,17 @@
             "stratifier": "American Indian or Alaska Native",
             "rows": [
                 [
-                    60,
-                    ""
+                    "",
+                    60
+
                 ],
                 [
-                    33,
-                    "male"
+                    "female",
+                    27
                 ],
                 [
-                    27,
-                    "female"
+                    "male",
+                    33
                 ]
             ]
         }
