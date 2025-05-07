@@ -217,20 +217,33 @@ def _format_payload(
     payload["totalCount"] = int(df["cnt"].sum())
     if "stratifier" in query_params.keys():
         payload["stratifier"] = query_params["stratifier"]
-        counts = {}
-        for unique_val in df[query_params["column"]].unique():
-            column_mask = df[query_params["column"]] == unique_val
-            df_slice = df[column_mask]
-            df_slice = df_slice.drop(columns=[query_params["stratifier"], query_params["column"]])
-            counts[unique_val] = int(df_slice[count_col].sum())
-        payload["counts"] = counts
+
+        counts = df.groupby(query_params["column"]).agg({count_col: ["sum"]})
+        # If the column index is a numpy type, json serialization breaks,
+        # so let's convert it to a python primitive
+        counts.index = counts.index.astype(str)
+        payload["counts"] = counts.to_dict()[(count_col, "sum")]
+
         data = []
-        for unique_strat in df[query_params["stratifier"]].unique():
-            strat_mask = df[query_params["stratifier"]] == unique_strat
-            df_slice = df[strat_mask]
-            df_slice = df_slice.drop(columns=[query_params["stratifier"]])
-            rows = df_slice.values.tolist()
-            data.append({"stratifier": unique_strat, "rows": rows})
+        stratifiers = df[query_params["stratifier"]].unique()
+        df = df.groupby([query_params["stratifier"], query_params["column"]]).agg(
+            {count_col: ["sum"]}
+        )
+        for stratifier in stratifiers:
+            # We have a multiindex dataframe here, so we're going to get the slice
+            # corresponding to the individual stratifier. The second part of the index
+            # contains all our data labels. We'll then join the index and the values
+            # into a list of two element lists for the dashboard payload
+            df_slice = df.loc[stratifier, :]
+            df_slice = [df_slice.columns.tolist()], *df_slice.reset_index().values.tolist()
+
+            data.append(
+                {
+                    "stratifier": stratifier,
+                    # The first element here is the columns of the dataframe, which we don't need
+                    "rows": list(df_slice[1:]),
+                }
+            )
         payload["data"] = data
 
     else:
