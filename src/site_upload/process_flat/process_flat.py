@@ -32,7 +32,7 @@ def process_flat(manager: s3_manager.S3Manager):
         f"s3://{manager.s3_bucket_name}/{manager.csv_flat_key}",
     )
     df = awswrangler.s3.read_parquet(f"s3://{manager.s3_bucket_name}/{manager.parquet_flat_key}")
-    column_dict = pandas_functions.get_column_datatypes(df.dtypes)
+    column_dict = pandas_functions.get_column_datatypes(df)
     extras = {
         "s3_path": f"s3://{manager.s3_bucket_name}/{manager.parquet_flat_key}",
         "type": "flat",
