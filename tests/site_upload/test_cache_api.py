@@ -64,7 +64,7 @@ def test_cache_api_data(mock_bucket):
         {
             "study": "study",
             "name": "encounter",
-            "column_types_format_version": 2,
+            "column_types_format_version": "2",
             "columns": {
                 "cnt": "integer",
                 "gender": "string",
