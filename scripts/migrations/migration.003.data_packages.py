@@ -104,7 +104,7 @@ def update_column_type_metadata(bucket: str):
             output.setdefault(study, {})
             output[study].setdefault(data_package, {})
             output[study][data_package].setdefault(version, {})
-            output[study][data_package][version]["column_types_format_version"] = 2
+            output[study][data_package][version]["column_types_format_version"] = "2"
             output[study][data_package][version]["columns"] = type_dict
             output[study][data_package][version]["last_data_update"] = (
                 resource["LastModified"].now().isoformat()

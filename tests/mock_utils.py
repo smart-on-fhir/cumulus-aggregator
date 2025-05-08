@@ -128,7 +128,7 @@ def get_mock_column_types_metadata():
         EXISTING_STUDY: {
             EXISTING_DATA_P: {
                 f"{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}": {
-                    "column_types_format_version": 2,
+                    "column_types_format_version": "2",
                     "columns": {
                         "cnt": "integer",
                         "gender": "string",
@@ -147,7 +147,7 @@ def get_mock_column_types_metadata():
                 },
                 EXISTING_FLAT_DATA_P: {
                     f"{EXISTING_STUDY}__{EXISTING_FLAT_DATA_P}__{EXISTING_VERSION}": {
-                        "column_types_format_version": 2,
+                        "column_types_format_version": "2",
                         "columns": {
                             "resource": "string",
                             "subgroup": "string",
@@ -173,7 +173,7 @@ def get_mock_column_types_metadata():
         OTHER_STUDY: {
             EXISTING_DATA_P: {
                 f"{OTHER_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}": {
-                    "column_types_format_version": 2,
+                    "column_types_format_version": "2",
                     "columns": {
                         "cnt": "integer",
                         "gender": "string",
