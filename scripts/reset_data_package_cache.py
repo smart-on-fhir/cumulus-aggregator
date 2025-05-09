@@ -40,11 +40,11 @@ def update_column_type_metadata(bucket: str, client):
             bytes_buffer = io.BytesIO()
             client.download_fileobj(Bucket=bucket, Key=resource["Key"], Fileobj=bytes_buffer)
             df = pandas.read_parquet(bytes_buffer)
-            type_dict = pandas_functions.get_column_datatypes(df.dtypes)
+            type_dict = pandas_functions.get_column_datatypes(df)
             output.setdefault(study, {})
             output[study].setdefault(data_package, {})
             output[study][data_package].setdefault(version, {})
-            output[study][data_package][version]["column_types_format_version"] = "2"
+            output[study][data_package][version]["column_types_format_version"] = "3"
             output[study][data_package][version]["columns"] = type_dict
             output[study][data_package][version]["last_data_update"] = (
                 resource["LastModified"].now().isoformat()

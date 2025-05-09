@@ -187,7 +187,7 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
     manager.write_local_metadata()
 
     # Updating the typing dict for the column type API
-    column_dict = pandas_functions.get_column_datatypes(df.dtypes)
+    column_dict = pandas_functions.get_column_datatypes(df)
     manager.update_local_metadata(
         enums.ColumnTypesKeys.COLUMNS.value,
         value=column_dict,

@@ -59,17 +59,17 @@ def test_column_datatypes():
             "string": ["string"],
         }
     )
-    col_types = pandas_functions.get_column_datatypes(df.dtypes)
+    col_types = pandas_functions.get_column_datatypes(df)
     assert col_types == {
-        "study_year": "year",
-        "study_month": "month",
-        "study_week": "week",
-        "study_day": "day",
-        "cnt_item": "integer",
-        "int": "integer",
-        "float": "float",
-        "bool": "boolean",
-        "string": "string",
+        "study_year": {"type": "year", "distinct_values_count": 1},
+        "study_month": {"type": "month", "distinct_values_count": 1},
+        "study_week": {"type": "week", "distinct_values_count": 1},
+        "study_day": {"type": "day", "distinct_values_count": 1},
+        "cnt_item": {"type": "integer"},
+        "int": {"type": "integer", "distinct_values_count": 1},
+        "float": {"type": "float", "distinct_values_count": 1},
+        "bool": {"type": "boolean", "distinct_values_count": 1},
+        "string": {"type": "string", "distinct_values_count": 1},
     }
 
 
