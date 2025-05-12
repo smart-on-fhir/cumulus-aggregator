@@ -118,6 +118,17 @@ def test_process_upload(
     mock_bucket,
 ):
     s3_client = boto3.client("s3", region_name="us-east-1")
+    # we'll get rid of the fixture data in study_meta because we care
+    # about timestamps in this case
+    # TODO - consider having a intermediate position for files to land so
+    # we don't have to do timestamp processing
+    s3_client.delete_object(
+        Bucket=TEST_BUCKET,
+        Key=(
+            "study_metadata/study/study__encounter/princeton_plainsboro_teaching_hospital/"
+            "099/study__meta_date.parquet"
+        ),
+    )
     if multiple_files:
         s3_client.upload_file(
             upload_file,

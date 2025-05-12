@@ -224,7 +224,7 @@ def get_s3_keys(
     return contents
 
 
-def get_s3_filename(s3_path: str):
+def get_filename_from_s3_path(s3_path: str):
     """Given an s3 path/key, returns the filename"""
     return s3_path.split("/")[-1]
 

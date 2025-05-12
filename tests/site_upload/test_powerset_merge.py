@@ -265,6 +265,7 @@ def test_powerset_merge_single_upload(
                 or item["Key"].startswith(enums.BucketPath.ADMIN.value)
                 or item["Key"].startswith(enums.BucketPath.CACHE.value)
                 or item["Key"].startswith(enums.BucketPath.FLAT.value)
+                or item["Key"].startswith(enums.BucketPath.STUDY_META.value)
                 or item["Key"].endswith("study_periods.json")
             )
     if archives:
@@ -272,7 +273,7 @@ def test_powerset_merge_single_upload(
         for resource in s3_res["Contents"]:
             keys.append(resource["Key"])
         date_str = datetime.now(UTC).isoformat()
-        archive_path = f".{date_str}.".join(upload_path.split("."))
+        archive_path = f"/{date_str}.".join(upload_path.rsplit("/", 1))
         assert f"{enums.BucketPath.ARCHIVE.value}{archive_path}" in keys
 
 

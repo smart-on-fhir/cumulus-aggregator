@@ -58,6 +58,13 @@ def _init_mock_data(s3_client, bucket, study, data_package, version):
         f"{study}__{data_package}__aggregate.parquet",
     )
     s3_client.upload_file(
+        "./tests/test_data/meta_date.parquet",
+        bucket,
+        f"{enums.BucketPath.STUDY_META.value}/{study}/"
+        f"{study}__{data_package}/{mock_utils.EXISTING_SITE}/"
+        f"{version}/{study}__meta_date.parquet",
+    )
+    s3_client.upload_file(
         "./tests/test_data/flat_synthea_q_date_recent.parquet",
         bucket,
         f"{enums.BucketPath.FLAT.value}/{study}/{mock_utils.EXISTING_SITE}/"

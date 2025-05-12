@@ -124,30 +124,26 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
             f"{manager.study}/{manager.study}__{manager.data_package}/{latest_metadata.site}/"
             f"{manager.study}__{manager.data_package}__{manager.version}"
         )
-        archives = []
+        archived_files = []
         try:
             is_new_data_package = False
             # if we're going to replace a file in last_valid, archive the old data
-            if matches := filter(lambda x: subbucket_path in x, last_valid_file_list):
-                date_str = datetime.datetime.now(datetime.UTC).isoformat()
-                for match in matches:
-                    match_filename = functions.get_s3_filename(match)
-                    match_timestamped_filename = f".{date_str}.".join(match_filename.split("."))
-                    last_target = (
-                        f"{enums.BucketPath.LAST_VALID.value}/{subbucket_path}/{match_filename}"
-                    )
-                    archive_target = (
-                        f"{enums.BucketPath.ARCHIVE.value}/{subbucket_path}/"
-                        f"{match_timestamped_filename}"
-                    )
-                    manager.move_file(last_target, archive_target)
-                    archives.append((archive_target, last_target))
+            date_str = datetime.datetime.now(datetime.UTC).isoformat()
+            for match in filter(lambda x: subbucket_path in x, last_valid_file_list):
+                match_filename = functions.get_filename_from_s3_path(match)
+                match_timestamped_filename = f"{date_str}.{match_filename}"
+                archive_target = (
+                    f"{enums.BucketPath.ARCHIVE.value}/{subbucket_path}/"
+                    f"{match_timestamped_filename}"
+                )
+                manager.move_file(match, archive_target)
+                archived_files.append((archive_target, match))
             # otherwise, this is the first instance - after it's in the database,
             # we'll generate a new list of valid tables for the dashboard
             else:
                 is_new_data_package = True
             df = expand_and_concat_powersets(df, latest_path, manager.site)
-            filename = functions.get_s3_filename(latest_path)
+            filename = functions.get_filename_from_s3_path(latest_path)
             manager.move_file(
                 f"{enums.BucketPath.LATEST.value}/{subbucket_path}/{filename}",
                 f"{enums.BucketPath.LAST_VALID.value}/{subbucket_path}/{filename}",
@@ -166,18 +162,17 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
                 e,
             )
             # Undo any archiving we tried to do
-            for archive in archives:
+            for archive in archived_files:
                 manager.move_file(archive[0], archive[1])
             # if a new file fails, we want to replace it with the last valid
             # for purposes of aggregation
-            if matches := filter(lambda x: subbucket_path in x, last_valid_file_list):
-                for match in matches:
-                    df = expand_and_concat_powersets(
-                        df,
-                        match,
-                        manager.site,
-                    )
-                    manager.update_local_metadata(enums.TransactionKeys.LAST_AGGREGATION.value)
+            for match in filter(lambda x: subbucket_path in x, last_valid_file_list):
+                df = expand_and_concat_powersets(
+                    df,
+                    match,
+                    manager.site,
+                )
+                manager.update_local_metadata(enums.TransactionKeys.LAST_AGGREGATION.value)
 
     if df.empty:
         raise OSError("File not found")
