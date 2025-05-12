@@ -58,24 +58,11 @@ def _init_mock_data(s3_client, bucket, study, data_package, version):
         f"{study}__{data_package}__aggregate.parquet",
     )
     s3_client.upload_file(
-        "./tests/test_data/count_synthea_patient_agg.csv",
-        bucket,
-        f"{enums.BucketPath.CSVAGGREGATE.value}/{study}/"
-        f"{study}__{data_package}/{version}/{study}__{data_package}__aggregate.csv",
-    )
-    s3_client.upload_file(
         "./tests/test_data/flat_synthea_q_date_recent.parquet",
         bucket,
         f"{enums.BucketPath.FLAT.value}/{study}/{mock_utils.EXISTING_SITE}/"
         f"{study}__{data_package}__{mock_utils.EXISTING_SITE}__{version}/"
         f"{study}__{data_package}__flat.parquet",
-    )
-    s3_client.upload_file(
-        "./tests/test_data/flat_synthea_q_date_recent.csv",
-        bucket,
-        f"{enums.BucketPath.CSVFLAT.value}/{study}/{mock_utils.EXISTING_SITE}/"
-        f"{study}__{data_package}__{mock_utils.EXISTING_SITE}__{version}/"
-        f"{study}__{data_package}__flat.csv",
     )
     s3_client.upload_file(
         "./tests/test_data/data_packages_cache.json",

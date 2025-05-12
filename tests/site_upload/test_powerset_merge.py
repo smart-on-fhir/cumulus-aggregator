@@ -37,7 +37,7 @@ from tests.mock_utils import (
             f"{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             False,
             200,
-            ITEM_COUNT + 4,
+            ITEM_COUNT + 2,
         ),
         (  # Adding a new data package to a site without uploads
             "./tests/test_data/count_synthea_patient.parquet",
@@ -47,7 +47,7 @@ from tests.mock_utils import (
             f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             False,
             200,
-            ITEM_COUNT + 4,
+            ITEM_COUNT + 2,
         ),
         (  # Updating an existing data package
             "./tests/test_data/count_synthea_patient.parquet",
@@ -57,7 +57,7 @@ from tests.mock_utils import (
             f"/{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             True,
             200,
-            ITEM_COUNT + 3,
+            ITEM_COUNT + 2,
         ),
         (  # New version of existing data package
             "./tests/test_data/count_synthea_patient.parquet",
@@ -67,7 +67,7 @@ from tests.mock_utils import (
             f"/{EXISTING_STUDY}__{EXISTING_DATA_P}__{NEW_VERSION}/encounter.parquet",
             True,
             200,
-            ITEM_COUNT + 5,
+            ITEM_COUNT + 3,
         ),
         (  # Invalid parquet file
             "./tests/site_upload/test_powerset_merge.py",
@@ -87,7 +87,7 @@ from tests.mock_utils import (
             f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             False,
             200,
-            ITEM_COUNT + 4,
+            ITEM_COUNT + 2,
         ),
         (  # ensuring that a data package that is a substring does not get
             # merged by substr match
@@ -98,7 +98,7 @@ from tests.mock_utils import (
             f"{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}__{EXISTING_VERSION}/encount.parquet",
             False,
             200,
-            ITEM_COUNT + 4,
+            ITEM_COUNT + 2,
         ),
         (  # Empty file upload
             None,

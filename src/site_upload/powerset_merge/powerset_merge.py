@@ -8,7 +8,7 @@ import awswrangler
 import pandas
 from pandas.core.indexes.range import RangeIndex
 
-from shared import awswrangler_functions, decorators, enums, functions, pandas_functions, s3_manager
+from shared import decorators, enums, functions, pandas_functions, s3_manager
 
 log_level = os.environ.get("LAMBDA_LOG_LEVEL", "INFO")
 logger = logging.getLogger()
@@ -145,18 +145,6 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
                 f"{enums.BucketPath.LAST_VALID.value}/{subbucket_path}",
             )
 
-            ####################
-            # For now, we'll create a csv of the file we just put in last valid.
-            # This is used for uploading to the dashboard.
-            # TODO: remove as soon as we support either parquet upload or
-            # the API is supported by the dashboard
-            awswrangler_functions.generate_csv_from_parquet(
-                manager.s3_bucket_name,
-                enums.BucketPath.LAST_VALID.value,
-                subbucket_path,
-            )
-            ####################
-
             latest_site = site_specific_name.split("/", maxsplit=1)[0]
             manager.update_local_metadata(
                 enums.TransactionKeys.LAST_DATA_UPDATE.value, site=latest_site
@@ -206,13 +194,7 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
         meta_type=enums.JsonFilename.COLUMN_TYPES.value,
     )
 
-    # In this section, we are trying to accomplish two things:
-    #   - Prepare a csv that can be loaded manually into the dashboard (requiring no
-    #     quotes, which means removing commas from strings)
-    #   - Make a parquet file from the dataframe, which may mutate the dataframe
-    # So we're making a deep copy to isolate these two mutation paths from each other.
-    manager.write_parquet(df.copy(deep=True), is_new_data_package)
-    manager.write_csv(df)
+    manager.write_parquet(df, is_new_data_package)
 
 
 @decorators.generic_error_handler(msg="Error merging powersets")
