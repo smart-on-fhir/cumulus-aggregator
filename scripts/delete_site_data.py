@@ -7,7 +7,7 @@ from rich import console, progress, table
 from src.shared import enums
 
 site_artifacts = [enums.BucketPath.LAST_VALID.value]
-aggregates = [enums.BucketPath.AGGREGATE, enums.BucketPath.CSVAGGREGATE.value]
+aggregates = [enums.BucketPath.AGGREGATE.value]
 
 
 def get_subbucket_contents(client, bucket, prefix):

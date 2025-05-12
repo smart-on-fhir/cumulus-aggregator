@@ -25,6 +25,7 @@ def get_static_string_series(static_str: str, index: RangeIndex) -> pandas.Serie
     """Helper for the verbose way of defining a pandas string series"""
     return pandas.Series([static_str] * len(index)).astype("string")
 
+
 def expand_and_concat_powersets(
     df: pandas.DataFrame, file_path: str, site_name: str
 ) -> pandas.DataFrame:
@@ -120,7 +121,7 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
             continue
         latest_metadata = functions.parse_s3_key(latest_path)
         subbucket_path = (
-            f"{manager.study}/{manager.study}__{manager.data_package}/{latest_metadata.site}/" 
+            f"{manager.study}/{manager.study}__{manager.data_package}/{latest_metadata.site}/"
             f"{manager.study}__{manager.data_package}__{manager.version}"
         )
         archives = []
@@ -136,19 +137,17 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
                         f"{enums.BucketPath.LAST_VALID.value}/{subbucket_path}/{match_filename}"
                     )
                     archive_target = (
-                        f"{enums.BucketPath.ARCHIVE.value}/{subbucket_path}/{match_timestamped_filename}"
+                        f"{enums.BucketPath.ARCHIVE.value}/{subbucket_path}/"
+                        f"{match_timestamped_filename}"
                     )
-                    manager.move_file(
-                        last_target,
-                        archive_target
-                    )
-                    archives.append((archive_target,last_target))
+                    manager.move_file(last_target, archive_target)
+                    archives.append((archive_target, last_target))
             # otherwise, this is the first instance - after it's in the database,
             # we'll generate a new list of valid tables for the dashboard
             else:
                 is_new_data_package = True
             df = expand_and_concat_powersets(df, latest_path, manager.site)
-            filename=functions.get_s3_filename(latest_path)
+            filename = functions.get_s3_filename(latest_path)
             manager.move_file(
                 f"{enums.BucketPath.LATEST.value}/{subbucket_path}/{filename}",
                 f"{enums.BucketPath.LAST_VALID.value}/{subbucket_path}/{filename}",

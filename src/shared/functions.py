@@ -225,8 +225,8 @@ def get_s3_keys(
 
 
 def get_s3_filename(s3_path: str):
-    """ Given an s3 path/key, returns the filename"""    
-    return s3_path.split('/')[-1]
+    """Given an s3 path/key, returns the filename"""
+    return s3_path.split("/")[-1]
 
 
 def get_s3_key_from_path(s3_path: str):
@@ -280,11 +280,11 @@ class PackageMetadata:
 def parse_s3_key(key: str) -> PackageMetadata:
     """Handles extraction of package metadata from an s3 key"""
     try:
-        #did we get a full path instead?
+        # did we get a full path instead?
         key = get_s3_key_from_path(key)
         key = key.split("/")
         match key[0]:
-            case enums.BucketPath.AGGREGATE.value | enums.BucketPath.CSVAGGREGATE.value:
+            case enums.BucketPath.AGGREGATE.value:
                 package = PackageMetadata(
                     study=key[1],
                     site=None,
@@ -304,7 +304,7 @@ def parse_s3_key(key: str) -> PackageMetadata:
                     data_package=key[2].split("__")[1],
                     version=key[4],
                 )
-            case enums.BucketPath.CSVFLAT.value | enums.BucketPath.FLAT.value:
+            case enums.BucketPath.FLAT.value:
                 package = PackageMetadata(
                     study=key[1],
                     site=key[2],

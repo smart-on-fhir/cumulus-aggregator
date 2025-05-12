@@ -173,7 +173,7 @@ def test_powerset_merge_single_upload(
             f"{enums.BucketPath.LAST_VALID.value}{upload_path}",
         )
     if duplicates:
-        duplicate_path = upload_path.replace('.parquet','duplicate.parquet')
+        duplicate_path = upload_path.replace(".parquet", "duplicate.parquet")
         s3_client.upload_file(
             upload_file,
             TEST_BUCKET,
@@ -209,8 +209,6 @@ def test_powerset_merge_single_upload(
             if study in item["Key"] and status == 200:
                 agg_df = awswrangler.s3.read_parquet(f"s3://{TEST_BUCKET}/{item['Key']}")
                 assert (agg_df["site"].eq(site)).any()
-        elif item["Key"].endswith("aggregate.csv"):
-            assert item["Key"].startswith(enums.BucketPath.CSVAGGREGATE.value)
         elif item["Key"].endswith("transactions.json"):
             assert item["Key"].startswith(enums.BucketPath.META.value)
             metadata = functions.read_metadata(s3_client, TEST_BUCKET)
@@ -267,7 +265,6 @@ def test_powerset_merge_single_upload(
                 or item["Key"].startswith(enums.BucketPath.ADMIN.value)
                 or item["Key"].startswith(enums.BucketPath.CACHE.value)
                 or item["Key"].startswith(enums.BucketPath.FLAT.value)
-                or item["Key"].startswith(enums.BucketPath.CSVFLAT.value)
                 or item["Key"].endswith("study_periods.json")
             )
     if archives:

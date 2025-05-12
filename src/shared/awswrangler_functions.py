@@ -18,7 +18,7 @@ def get_s3_data_package_list(
     site: str | None = None,
 ):
     """Retrieves a list of data packages for a given S3 path post-upload processing"""
-    if bucket_root in [BucketPath.FLAT.value, BucketPath.CSVFLAT.value]:
+    if bucket_root == BucketPath.FLAT.value:
         return awswrangler.s3.list_objects(
             path=f"s3://{s3_bucket_name}/{bucket_root}/{study}/{site}/",
             suffix=extension,
