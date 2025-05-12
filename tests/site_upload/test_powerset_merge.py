@@ -27,7 +27,7 @@ from tests.mock_utils import (
 
 @freeze_time("2020-01-01")
 @pytest.mark.parametrize(
-    "upload_file,upload_path,event_key,archives,status,expected_contents",
+    "upload_file,upload_path,event_key,archives,duplicates,status,expected_contents",
     [
         (  # Adding a new data package to a site with uploads
             "./tests/test_data/count_synthea_patient.parquet",
@@ -35,6 +35,7 @@ from tests.mock_utils import (
             f"{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}/"
             f"{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            False,
             False,
             200,
             ITEM_COUNT + 2,
@@ -46,6 +47,7 @@ from tests.mock_utils import (
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}"
             f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             False,
+            False,
             200,
             ITEM_COUNT + 2,
         ),
@@ -56,8 +58,20 @@ from tests.mock_utils import (
             f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
             f"/{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             True,
+            False,
             200,
             ITEM_COUNT + 2,
+        ),
+        (  # Updating an existing data package w/ extra files
+            "./tests/test_data/count_synthea_patient.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
+            f"/{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            True,
+            True,
+            200,
+            ITEM_COUNT + 3,
         ),
         (  # New version of existing data package
             "./tests/test_data/count_synthea_patient.parquet",
@@ -66,6 +80,7 @@ from tests.mock_utils import (
             f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
             f"/{EXISTING_STUDY}__{EXISTING_DATA_P}__{NEW_VERSION}/encounter.parquet",
             True,
+            False,
             200,
             ITEM_COUNT + 3,
         ),
@@ -76,6 +91,7 @@ from tests.mock_utils import (
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
             f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/patient.parquet",
             False,
+            False,
             500,
             ITEM_COUNT + 1,
         ),
@@ -85,6 +101,7 @@ from tests.mock_utils import (
             f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
             f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            False,
             False,
             200,
             ITEM_COUNT + 2,
@@ -97,6 +114,7 @@ from tests.mock_utils import (
             f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/{EXISTING_SITE}/"
             f"{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}__{EXISTING_VERSION}/encount.parquet",
             False,
+            False,
             200,
             ITEM_COUNT + 2,
         ),
@@ -107,6 +125,7 @@ from tests.mock_utils import (
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
             f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
             False,
+            False,
             500,
             ITEM_COUNT + 1,
         ),
@@ -115,6 +134,7 @@ from tests.mock_utils import (
             None,
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
             f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            False,
             False,
             500,
             ITEM_COUNT,
@@ -126,6 +146,7 @@ def test_powerset_merge_single_upload(
     upload_path,
     event_key,
     archives,
+    duplicates,
     status,
     expected_contents,
     mock_bucket,
@@ -150,6 +171,13 @@ def test_powerset_merge_single_upload(
             upload_file,
             TEST_BUCKET,
             f"{enums.BucketPath.LAST_VALID.value}{upload_path}",
+        )
+    if duplicates:
+        duplicate_path = upload_path.replace('.parquet','duplicate.parquet')
+        s3_client.upload_file(
+            upload_file,
+            TEST_BUCKET,
+            f"{enums.BucketPath.LAST_VALID.value}{duplicate_path}",
         )
 
     event = {
@@ -273,7 +301,7 @@ def test_powerset_merge_join_study_data(
         TEST_BUCKET,
         f"{enums.BucketPath.LATEST.value}/{EXISTING_STUDY}/"
         f"{EXISTING_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}/"
-        f"{EXISTING_VERSION}/encounter.parquet",
+        f"{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
     )
 
     s3_client.upload_file(
@@ -281,7 +309,7 @@ def test_powerset_merge_join_study_data(
         TEST_BUCKET,
         f"{enums.BucketPath.LAST_VALID.value}/{EXISTING_STUDY}/"
         f"{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}/"
-        f"{EXISTING_VERSION}/encounter.parquet",
+        f"{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
     )
 
     if archives:
@@ -290,7 +318,7 @@ def test_powerset_merge_join_study_data(
             TEST_BUCKET,
             f"{enums.BucketPath.LAST_VALID.value}/{EXISTING_STUDY}/"
             f"{EXISTING_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}/"
-            f"{EXISTING_VERSION}/encounter.parquet",
+            f"{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
         )
 
     event = {

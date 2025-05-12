@@ -25,7 +25,6 @@ def get_static_string_series(static_str: str, index: RangeIndex) -> pandas.Serie
     """Helper for the verbose way of defining a pandas string series"""
     return pandas.Series([static_str] * len(index)).astype("string")
 
-
 def expand_and_concat_powersets(
     df: pandas.DataFrame, file_path: str, site_name: str
 ) -> pandas.DataFrame:
@@ -50,7 +49,6 @@ def expand_and_concat_powersets(
     df_copy = site_df.copy()
     site_df["site"] = get_static_string_series(None, site_df.index)
     df_copy["site"] = get_static_string_series(site_name, df_copy.index)
-
     # Did we change the schema without updating the version?
     if df.empty is False and set(site_df.columns) != set(df.columns):
         raise MergeError(
@@ -96,16 +94,18 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
     for last_valid_path in last_valid_file_list:
         if manager.version not in last_valid_path:
             continue
-        site_specific_name = functions.get_s3_site_filename_suffix(last_valid_path)
-        subbucket_path = f"{manager.study}/{manager.data_package}/{site_specific_name}"
-        last_valid_site = site_specific_name.split("/", maxsplit=1)[0]
+        last_valid_metadata = functions.parse_s3_key(last_valid_path)
+        subbucket_path = (
+            f"{manager.study}/{manager.data_package}/{last_valid_metadata.site}/"
+            f"{manager.study}__{manager.data_package}__{manager.version}"
+        )
         # If the latest uploads don't include this site, we'll use the last-valid
         # one instead
         try:
-            if not any(x.endswith(site_specific_name) for x in latest_file_list):
-                df = expand_and_concat_powersets(df, last_valid_path, last_valid_site)
+            if not any(subbucket_path in x for x in latest_file_list):
+                df = expand_and_concat_powersets(df, last_valid_path, last_valid_metadata.site)
                 manager.update_local_metadata(
-                    enums.TransactionKeys.LAST_AGGREGATION.value, site=last_valid_site
+                    enums.TransactionKeys.LAST_AGGREGATION.value, site=last_valid_metadata.site
                 )
         except MergeError as e:
             # This is expected to trigger if there's an issue in expand_and_concat_powersets;
@@ -118,39 +118,47 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
     for latest_path in latest_file_list:
         if manager.version not in latest_path:
             continue
-        site_specific_name = functions.get_s3_site_filename_suffix(latest_path)
+        latest_metadata = functions.parse_s3_key(latest_path)
         subbucket_path = (
-            f"{manager.study}/{manager.study}__{manager.data_package}" f"/{site_specific_name}"
+            f"{manager.study}/{manager.study}__{manager.data_package}/{latest_metadata.site}/" 
+            f"{manager.study}__{manager.data_package}__{manager.version}"
         )
-        date_str = datetime.datetime.now(datetime.UTC).isoformat()
-        timestamped_name = f".{date_str}.".join(site_specific_name.split("."))
-        timestamped_path = (
-            f"{manager.study}/{manager.study}__{manager.data_package}" f"/{timestamped_name}"
-        )
+        archives = []
         try:
             is_new_data_package = False
             # if we're going to replace a file in last_valid, archive the old data
-            if any(x.endswith(site_specific_name) for x in last_valid_file_list):
-                manager.copy_file(
-                    f"{enums.BucketPath.LAST_VALID.value}/{subbucket_path}",
-                    f"{enums.BucketPath.ARCHIVE.value}/{timestamped_path}",
-                )
+            if matches := filter(lambda x: subbucket_path in x, last_valid_file_list):
+                date_str = datetime.datetime.now(datetime.UTC).isoformat()
+                for match in matches:
+                    match_filename = functions.get_s3_filename(match)
+                    match_timestamped_filename = f".{date_str}.".join(match_filename.split("."))
+                    last_target = (
+                        f"{enums.BucketPath.LAST_VALID.value}/{subbucket_path}/{match_filename}"
+                    )
+                    archive_target = (
+                        f"{enums.BucketPath.ARCHIVE.value}/{subbucket_path}/{match_timestamped_filename}"
+                    )
+                    manager.move_file(
+                        last_target,
+                        archive_target
+                    )
+                    archives.append((archive_target,last_target))
             # otherwise, this is the first instance - after it's in the database,
             # we'll generate a new list of valid tables for the dashboard
             else:
                 is_new_data_package = True
             df = expand_and_concat_powersets(df, latest_path, manager.site)
+            filename=functions.get_s3_filename(latest_path)
             manager.move_file(
-                f"{enums.BucketPath.LATEST.value}/{subbucket_path}",
-                f"{enums.BucketPath.LAST_VALID.value}/{subbucket_path}",
+                f"{enums.BucketPath.LATEST.value}/{subbucket_path}/{filename}",
+                f"{enums.BucketPath.LAST_VALID.value}/{subbucket_path}/{filename}",
             )
 
-            latest_site = site_specific_name.split("/", maxsplit=1)[0]
             manager.update_local_metadata(
-                enums.TransactionKeys.LAST_DATA_UPDATE.value, site=latest_site
+                enums.TransactionKeys.LAST_DATA_UPDATE.value, site=latest_metadata.site
             )
             manager.update_local_metadata(
-                enums.TransactionKeys.LAST_AGGREGATION.value, site=latest_site
+                enums.TransactionKeys.LAST_AGGREGATION.value, site=latest_metadata.site
             )
         except Exception as e:
             manager.error_handler(
@@ -158,16 +166,19 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
                 subbucket_path,
                 e,
             )
+            # Undo any archiving we tried to do
+            for archive in archives:
+                manager.move_file(archive[0], archive[1])
             # if a new file fails, we want to replace it with the last valid
             # for purposes of aggregation
-            if any(x.endswith(site_specific_name) for x in last_valid_file_list):
-                df = expand_and_concat_powersets(
-                    df,
-                    f"s3://{manager.s3_bucket_name}/{enums.BucketPath.LAST_VALID.value}"
-                    f"/{subbucket_path}",
-                    manager.site,
-                )
-                manager.update_local_metadata(enums.TransactionKeys.LAST_AGGREGATION.value)
+            if matches := filter(lambda x: subbucket_path in x, last_valid_file_list):
+                for match in matches:
+                    df = expand_and_concat_powersets(
+                        df,
+                        match,
+                        manager.site,
+                    )
+                    manager.update_local_metadata(enums.TransactionKeys.LAST_AGGREGATION.value)
 
     if df.empty:
         raise OSError("File not found")
