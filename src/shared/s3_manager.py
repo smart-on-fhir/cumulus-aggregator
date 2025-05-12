@@ -1,11 +1,9 @@
-import csv
 import logging
 import os
 import traceback
 
 import awswrangler
 import boto3
-import numpy
 import pandas
 
 from shared import (
@@ -53,12 +51,7 @@ class S3Manager:
             f"{self.study}__{self.data_package}__{self.version}/"
             f"{self.study}__{self.data_package}__aggregate.parquet"
         )
-        self.csv_aggregate_path = (
-            f"s3://{self.s3_bucket_name}/{enums.BucketPath.CSVAGGREGATE.value}/"
-            f"{self.study}/{self.study}__{self.data_package}/"
-            f"{self.version}/"
-            f"{self.study}__{self.data_package}__aggregate.csv"
-        )
+
         # TODO: Taking out a folder layer to match the depth of non-site aggregates
         # Revisit when targeted crawling is implemented
         self.parquet_flat_key = (
@@ -66,12 +59,6 @@ class S3Manager:
             f"{self.study}/{self.site}/"  # {self.study}__{self.data_package}/"
             f"{self.study}__{self.data_package}__{self.site}__{self.version}/"
             f"{self.study}__{self.data_package}__{self.site}__flat.parquet"
-        )
-        self.csv_flat_key = (
-            f"{enums.BucketPath.CSVFLAT.value}/"
-            f"{self.study}/{self.site}/"  # {self.study}__{self.data_package}/"
-            f"{self.study}__{self.data_package}__{self.site}__{self.version}/"
-            f"{self.study}__{self.data_package}__{self.site}__flat.csv"
         )
 
     def error_handler(
@@ -143,25 +130,13 @@ class S3Manager:
             self.s3_client, self.s3_bucket_name, from_path_or_key, to_path_or_key
         )
 
-    # parquet/csv output creation
+    # parquet output creation
     def cache_api(self):
         """Sends an SNS cache event"""
         topic_sns_arn = os.environ.get("TOPIC_CACHE_API_ARN")
         self.sns_client.publish(
             TopicArn=topic_sns_arn, Message="data_packages", Subject="data_packages"
         )
-
-    def write_csv(self, df: pandas.DataFrame, path=None) -> None:
-        """writes dataframe as csv to s3
-
-        :param df: pandas dataframe
-        :param path: an S3 path to write to (default: aggregate csv path)"""
-        if path is None:
-            path = self.csv_aggregate_path
-
-        df = df.apply(lambda x: x.strip() if isinstance(x, str) else x).replace('""', numpy.nan)
-        df = df.replace(to_replace=r",", value="", regex=True)
-        awswrangler.s3.to_csv(df, path, index=False, quoting=csv.QUOTE_NONE)
 
     def write_parquet(self, df: pandas.DataFrame, is_new_data_package: bool, path=None) -> None:
         """Writes a dataframe as parquet to s3 and sends an SNS cache event if new

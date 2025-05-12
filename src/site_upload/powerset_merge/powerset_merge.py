@@ -8,7 +8,7 @@ import awswrangler
 import pandas
 from pandas.core.indexes.range import RangeIndex
 
-from shared import awswrangler_functions, decorators, enums, functions, pandas_functions, s3_manager
+from shared import decorators, enums, functions, pandas_functions, s3_manager
 
 log_level = os.environ.get("LAMBDA_LOG_LEVEL", "INFO")
 logger = logging.getLogger()
@@ -50,7 +50,6 @@ def expand_and_concat_powersets(
     df_copy = site_df.copy()
     site_df["site"] = get_static_string_series(None, site_df.index)
     df_copy["site"] = get_static_string_series(site_name, df_copy.index)
-
     # Did we change the schema without updating the version?
     if df.empty is False and set(site_df.columns) != set(df.columns):
         raise MergeError(
@@ -96,16 +95,18 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
     for last_valid_path in last_valid_file_list:
         if manager.version not in last_valid_path:
             continue
-        site_specific_name = functions.get_s3_site_filename_suffix(last_valid_path)
-        subbucket_path = f"{manager.study}/{manager.data_package}/{site_specific_name}"
-        last_valid_site = site_specific_name.split("/", maxsplit=1)[0]
+        last_valid_metadata = functions.parse_s3_key(last_valid_path)
+        subbucket_path = (
+            f"{manager.study}/{manager.data_package}/{last_valid_metadata.site}/"
+            f"{manager.study}__{manager.data_package}__{manager.version}"
+        )
         # If the latest uploads don't include this site, we'll use the last-valid
         # one instead
         try:
-            if not any(x.endswith(site_specific_name) for x in latest_file_list):
-                df = expand_and_concat_powersets(df, last_valid_path, last_valid_site)
+            if not any(subbucket_path in x for x in latest_file_list):
+                df = expand_and_concat_powersets(df, last_valid_path, last_valid_metadata.site)
                 manager.update_local_metadata(
-                    enums.TransactionKeys.LAST_AGGREGATION.value, site=last_valid_site
+                    enums.TransactionKeys.LAST_AGGREGATION.value, site=last_valid_metadata.site
                 )
         except MergeError as e:
             # This is expected to trigger if there's an issue in expand_and_concat_powersets;
@@ -118,51 +119,41 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
     for latest_path in latest_file_list:
         if manager.version not in latest_path:
             continue
-        site_specific_name = functions.get_s3_site_filename_suffix(latest_path)
+        latest_metadata = functions.parse_s3_key(latest_path)
         subbucket_path = (
-            f"{manager.study}/{manager.study}__{manager.data_package}" f"/{site_specific_name}"
+            f"{manager.study}/{manager.study}__{manager.data_package}/{latest_metadata.site}/"
+            f"{manager.study}__{manager.data_package}__{manager.version}"
         )
-        date_str = datetime.datetime.now(datetime.UTC).isoformat()
-        timestamped_name = f".{date_str}.".join(site_specific_name.split("."))
-        timestamped_path = (
-            f"{manager.study}/{manager.study}__{manager.data_package}" f"/{timestamped_name}"
-        )
+        archived_files = []
         try:
             is_new_data_package = False
             # if we're going to replace a file in last_valid, archive the old data
-            if any(x.endswith(site_specific_name) for x in last_valid_file_list):
-                manager.copy_file(
-                    f"{enums.BucketPath.LAST_VALID.value}/{subbucket_path}",
-                    f"{enums.BucketPath.ARCHIVE.value}/{timestamped_path}",
+            date_str = datetime.datetime.now(datetime.UTC).isoformat()
+            for match in filter(lambda x: subbucket_path in x, last_valid_file_list):
+                match_filename = functions.get_filename_from_s3_path(match)
+                match_timestamped_filename = f"{date_str}.{match_filename}"
+                archive_target = (
+                    f"{enums.BucketPath.ARCHIVE.value}/{subbucket_path}/"
+                    f"{match_timestamped_filename}"
                 )
+                manager.move_file(match, archive_target)
+                archived_files.append((archive_target, match))
             # otherwise, this is the first instance - after it's in the database,
             # we'll generate a new list of valid tables for the dashboard
             else:
                 is_new_data_package = True
             df = expand_and_concat_powersets(df, latest_path, manager.site)
+            filename = functions.get_filename_from_s3_path(latest_path)
             manager.move_file(
-                f"{enums.BucketPath.LATEST.value}/{subbucket_path}",
-                f"{enums.BucketPath.LAST_VALID.value}/{subbucket_path}",
+                f"{enums.BucketPath.LATEST.value}/{subbucket_path}/{filename}",
+                f"{enums.BucketPath.LAST_VALID.value}/{subbucket_path}/{filename}",
             )
 
-            ####################
-            # For now, we'll create a csv of the file we just put in last valid.
-            # This is used for uploading to the dashboard.
-            # TODO: remove as soon as we support either parquet upload or
-            # the API is supported by the dashboard
-            awswrangler_functions.generate_csv_from_parquet(
-                manager.s3_bucket_name,
-                enums.BucketPath.LAST_VALID.value,
-                subbucket_path,
-            )
-            ####################
-
-            latest_site = site_specific_name.split("/", maxsplit=1)[0]
             manager.update_local_metadata(
-                enums.TransactionKeys.LAST_DATA_UPDATE.value, site=latest_site
+                enums.TransactionKeys.LAST_DATA_UPDATE.value, site=latest_metadata.site
             )
             manager.update_local_metadata(
-                enums.TransactionKeys.LAST_AGGREGATION.value, site=latest_site
+                enums.TransactionKeys.LAST_AGGREGATION.value, site=latest_metadata.site
             )
         except Exception as e:
             manager.error_handler(
@@ -170,13 +161,15 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
                 subbucket_path,
                 e,
             )
+            # Undo any archiving we tried to do
+            for archive in archived_files:
+                manager.move_file(archive[0], archive[1])
             # if a new file fails, we want to replace it with the last valid
             # for purposes of aggregation
-            if any(x.endswith(site_specific_name) for x in last_valid_file_list):
+            for match in filter(lambda x: subbucket_path in x, last_valid_file_list):
                 df = expand_and_concat_powersets(
                     df,
-                    f"s3://{manager.s3_bucket_name}/{enums.BucketPath.LAST_VALID.value}"
-                    f"/{subbucket_path}",
+                    match,
                     manager.site,
                 )
                 manager.update_local_metadata(enums.TransactionKeys.LAST_AGGREGATION.value)
@@ -206,13 +199,7 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
         meta_type=enums.JsonFilename.COLUMN_TYPES.value,
     )
 
-    # In this section, we are trying to accomplish two things:
-    #   - Prepare a csv that can be loaded manually into the dashboard (requiring no
-    #     quotes, which means removing commas from strings)
-    #   - Make a parquet file from the dataframe, which may mutate the dataframe
-    # So we're making a deep copy to isolate these two mutation paths from each other.
-    manager.write_parquet(df.copy(deep=True), is_new_data_package)
-    manager.write_csv(df)
+    manager.write_parquet(df, is_new_data_package)
 
 
 @decorators.generic_error_handler(msg="Error merging powersets")

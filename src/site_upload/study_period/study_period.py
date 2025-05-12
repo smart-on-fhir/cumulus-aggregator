@@ -25,7 +25,7 @@ def update_study_period(s3_client, s3_bucket, site, study, data_package, version
         for path in paths:
             if latest_path != path:
                 s3_client.delete_object(Bucket=s3_bucket, Key=functions.get_s3_key_from_path(path))
-                paths.remove(path)
+        paths = [latest_path]
     df = awswrangler.s3.read_parquet(paths[0])
     study_meta = functions.read_metadata(
         s3_client, s3_bucket, meta_type=enums.JsonFilename.STUDY_PERIODS.value

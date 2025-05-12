@@ -10,8 +10,6 @@ class BucketPath(enum.Enum):
     AGGREGATE = "aggregates"
     ARCHIVE = "archive"
     CACHE = "cache"
-    CSVAGGREGATE = "csv_aggregates"
-    CSVFLAT = "csv_flat"
     ERROR = "error"
     FLAT = "flat"
     LAST_VALID = "last_valid"

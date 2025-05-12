@@ -3,7 +3,7 @@ import os
 
 import awswrangler
 
-from shared import awswrangler_functions, decorators, enums, functions, pandas_functions, s3_manager
+from shared import decorators, enums, functions, pandas_functions, s3_manager
 
 log_level = os.environ.get("LAMBDA_LOG_LEVEL", "INFO")
 logger = logging.getLogger()
@@ -24,12 +24,6 @@ def process_flat(manager: s3_manager.S3Manager):
     manager.move_file(
         manager.s3_key,
         manager.parquet_flat_key,
-    )
-    awswrangler_functions.generate_csv_from_parquet(
-        manager.s3_bucket_name,
-        manager.parquet_flat_key.split("/", 1)[0],
-        manager.parquet_flat_key.split("/", 1)[1],
-        f"s3://{manager.s3_bucket_name}/{manager.csv_flat_key}",
     )
     df = awswrangler.s3.read_parquet(f"s3://{manager.s3_bucket_name}/{manager.parquet_flat_key}")
     column_dict = pandas_functions.get_column_datatypes(df)

@@ -52,19 +52,10 @@ def test_init_manager(mock_bucket):
         manager.parquet_aggregate_path
         == "s3://cumulus-aggregator-site-counts-test/aggregates/study/study__encounter/study__encounter__099/study__encounter__aggregate.parquet"
     )
-    assert (
-        manager.csv_aggregate_path
-        == "s3://cumulus-aggregator-site-counts-test/csv_aggregates/study/study__encounter/099/study__encounter__aggregate.csv"
-    )
     assert manager.parquet_flat_key == (
         f"flat/study/{mock_utils.EXISTING_SITE}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}"
         f"__{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_VERSION}/"
         f"{mock_utils.EXISTING_STUDY}__encounter__{mock_utils.EXISTING_SITE}__flat.parquet"
-    )
-    assert manager.csv_flat_key == (
-        f"csv_flat/study/{mock_utils.EXISTING_SITE}/"
-        f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_VERSION}/"
-        f"{mock_utils.EXISTING_STUDY}__encounter__{mock_utils.EXISTING_SITE}__flat.csv"
     )
 
 
@@ -173,30 +164,6 @@ def test_cache_api(mock_client, mock_bucket):
     assert publish_args["TopicArn"] == mock_utils.TEST_CACHE_API_ARN
     assert publish_args["Message"] == "data_packages"
     assert publish_args["Subject"] == "data_packages"
-
-
-def test_write_csv(mock_bucket):
-    df = pandas.DataFrame(data={"foo": [1, 2], "bar": [11, 22]})
-    manager = s3_manager.S3Manager(
-        mock_sns_event(
-            mock_utils.EXISTING_SITE,
-            mock_utils.EXISTING_STUDY,
-            mock_utils.EXISTING_DATA_P,
-            mock_utils.EXISTING_VERSION,
-        )
-    )
-    manager.write_csv(df)
-    df2 = pandas.read_csv(
-        io.BytesIO(
-            manager.s3_client.get_object(
-                Bucket=manager.s3_bucket_name,
-                Key=(
-                    "csv_aggregates/study/study__encounter/099/" "study__encounter__aggregate.csv"
-                ),
-            )["Body"].read()
-        )
-    )
-    assert df.compare(df2).empty
 
 
 @mock.patch("src.shared.s3_manager.S3Manager.cache_api")

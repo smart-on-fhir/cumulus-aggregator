@@ -224,12 +224,9 @@ def get_s3_keys(
     return contents
 
 
-def get_s3_site_filename_suffix(s3_path: str):
-    """Extracts site/filename data from s3 path"""
-    # The expected s3 path for site data packages looks like:
-    #   s3://bucket_name/enum_value/site/study/data_package/file
-    # so this is returning data_package/file
-    return "/".join(s3_path.split("/")[-3:])
+def get_filename_from_s3_path(s3_path: str):
+    """Given an s3 path/key, returns the filename"""
+    return s3_path.split("/")[-1]
 
 
 def get_s3_key_from_path(s3_path: str):
@@ -283,9 +280,11 @@ class PackageMetadata:
 def parse_s3_key(key: str) -> PackageMetadata:
     """Handles extraction of package metadata from an s3 key"""
     try:
+        # did we get a full path instead?
+        key = get_s3_key_from_path(key)
         key = key.split("/")
         match key[0]:
-            case enums.BucketPath.AGGREGATE.value | enums.BucketPath.CSVAGGREGATE.value:
+            case enums.BucketPath.AGGREGATE.value:
                 package = PackageMetadata(
                     study=key[1],
                     site=None,
@@ -305,7 +304,7 @@ def parse_s3_key(key: str) -> PackageMetadata:
                     data_package=key[2].split("__")[1],
                     version=key[4],
                 )
-            case enums.BucketPath.CSVFLAT.value | enums.BucketPath.FLAT.value:
+            case enums.BucketPath.FLAT.value:
                 package = PackageMetadata(
                     study=key[1],
                     site=key[2],

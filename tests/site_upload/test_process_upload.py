@@ -94,11 +94,11 @@ from tests.mock_utils import (
             "./tests/test_data/cube_simple_example.parquet",
             (
                 f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}/"
-                f"{EXISTING_VERSION}/document_meta_date.parquet"
+                f"{EXISTING_VERSION}/document__meta_date.parquet"
             ),
             (
                 f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}/"
-                f"{EXISTING_VERSION}/document_meta_date.parquet"
+                f"{EXISTING_VERSION}/document__meta_date.parquet"
             ),
             200,
             ITEM_COUNT + 1,
@@ -152,8 +152,6 @@ def test_process_upload(
     for item in s3_res["Contents"]:
         if item["Key"].endswith("aggregate.parquet"):
             assert item["Key"].startswith(enums.BucketPath.AGGREGATE.value)
-        elif item["Key"].endswith("aggregate.csv"):
-            assert item["Key"].startswith(enums.BucketPath.CSVAGGREGATE.value)
         elif item["Key"].endswith("transactions.json"):
             assert item["Key"].startswith(enums.BucketPath.META.value)
             if upload_path is not None and "template" not in upload_path:
@@ -178,8 +176,8 @@ def test_process_upload(
                 or item["Key"].startswith(enums.BucketPath.ADMIN.value)
                 or item["Key"].startswith(enums.BucketPath.CACHE.value)
                 or item["Key"].startswith(enums.BucketPath.FLAT.value)
-                or item["Key"].startswith(enums.BucketPath.CSVFLAT.value)
                 or item["Key"].startswith(enums.BucketPath.ARCHIVE.value)
+                or item["Key"].startswith(enums.BucketPath.STUDY_META.value)
                 or item["Key"].endswith("study_periods.json")
                 or item["Key"].endswith("column_types.json")
             )
