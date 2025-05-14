@@ -145,7 +145,7 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
             df = expand_and_concat_powersets(df, latest_path, manager.site)
             filename = functions.get_filename_from_s3_path(latest_path)
             manager.move_file(
-                f"{enums.BucketPath.LATEST.value}/{subbucket_path}/{filename}",
+                functions.get_s3_key_from_path(latest_path),
                 f"{enums.BucketPath.LAST_VALID.value}/{subbucket_path}/{filename}",
             )
 
