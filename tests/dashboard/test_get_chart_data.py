@@ -52,6 +52,21 @@ def test_format_payload(query_params, filter_groups, expected_payload):
     assert payload == expected_payload
 
 
+def test_format_payload_date_coercion():
+    df = pandas.DataFrame(
+        {
+            "a": ["C", "D"],
+            "b": [
+                pandas.to_datetime("2020-01-01 00:00:00"),
+                pandas.to_datetime("2020-01-01 00:00:00"),
+            ],
+            "cnt": [20, 15],
+        }
+    )
+    payload = get_chart_data._format_payload(df, {"column": "a", "stratifier": "b"}, [], "cnt")
+    assert payload["data"] == [{"stratifier": "2020-01-01", "rows": [["C", 20], ["D", 15]]}]
+
+
 def test_get_data_cols(mock_bucket):
     table_id = f"{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}"
     res = get_chart_data._get_table_cols(table_id)
