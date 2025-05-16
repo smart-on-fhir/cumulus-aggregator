@@ -11,15 +11,13 @@ logger.setLevel(log_level)
 
 
 def process_flat(manager: s3_manager.S3Manager):
-    if awswrangler.s3.does_object_exist(
-        f"s3://{manager.s3_bucket_name}/{manager.parquet_flat_key}"
-    ):
-        manager.move_file(
-            manager.parquet_flat_key,
-            manager.parquet_flat_key.replace(
-                enums.BucketPath.FLAT.value, enums.BucketPath.ARCHIVE.value
-            ),
-        )
+    flat_path = manager.parquet_flat_key[:-1]
+    for key in manager.get_data_package_list(enums.BucketPath.FLAT.value):
+        if flat_path in key:
+            manager.move_file(
+                key,
+                key.replace(enums.BucketPath.FLAT.value, enums.BucketPath.ARCHIVE.value),
+            )
 
     manager.move_file(
         manager.s3_key,
