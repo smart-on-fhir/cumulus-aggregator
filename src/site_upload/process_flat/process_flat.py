@@ -11,9 +11,9 @@ logger.setLevel(log_level)
 
 
 def process_flat(manager: s3_manager.S3Manager):
-    flat_path = manager.parquet_flat_key[:-1]
+    flat_path = manager.parquet_flat_key.rsplit("/", 1)[0]
     for key in manager.get_data_package_list(enums.BucketPath.FLAT.value):
-        if flat_path in key:
+        if functions.get_s3_key_from_path(key).startswith(flat_path):
             manager.move_file(
                 key,
                 key.replace(enums.BucketPath.FLAT.value, enums.BucketPath.ARCHIVE.value),
