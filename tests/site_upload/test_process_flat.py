@@ -14,7 +14,10 @@ def test_process_flat(mock_cache, mock_bucket):
                 "Sns": {
                     "TopicArn": "arn",
                     "Message": (
-                        "latest/study/study__encounter/site/study__encounter__site__version/file.parquet"
+                        f"latest/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_STUDY}__"
+                        f"{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}/"
+                        f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__"
+                        f"{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_VERSION}/file.parquet"
                     ),
                 }
             }
@@ -34,7 +37,10 @@ def test_process_flat(mock_cache, mock_bucket):
         file["Key"] for file in s3_client.list_objects_v2(Bucket=mock_utils.TEST_BUCKET)["Contents"]
     ]
     assert (
-        "flat/study/site/study__encounter__site__version/" "study__encounter__site__flat.parquet"
+        f"flat/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_SITE}/"
+        f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_SITE}"
+        f"__{mock_utils.EXISTING_VERSION}/"
+        f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_SITE}__flat.parquet"
     ) in files
 
     mock_cache.reset_mock()
