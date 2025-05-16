@@ -32,9 +32,9 @@ from tests.mock_utils import (
         (  # Adding a new data package to a site with uploads
             "./tests/test_data/count_synthea_patient.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}/"
-            f"{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            f"{EXISTING_VERSION}/encounter.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}/"
-            f"{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            f"{EXISTING_VERSION}/encounter.parquet",
             False,
             False,
             200,
@@ -43,9 +43,9 @@ from tests.mock_utils import (
         (  # Adding a new data package to a site without uploads
             "./tests/test_data/count_synthea_patient.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}"
-            f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            f"/{EXISTING_VERSION}/encounter.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}"
-            f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            f"/{EXISTING_VERSION}/encounter.parquet",
             False,
             False,
             200,
@@ -54,9 +54,9 @@ from tests.mock_utils import (
         (  # Updating an existing data package
             "./tests/test_data/count_synthea_patient.parquet",
             f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            f"/{EXISTING_VERSION}/encounter.parquet",
             f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            f"/{EXISTING_VERSION}/encounter.parquet",
             True,
             False,
             200,
@@ -65,9 +65,9 @@ from tests.mock_utils import (
         (  # Updating an existing data package w/ extra files
             "./tests/test_data/count_synthea_patient.parquet",
             f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            f"/{EXISTING_VERSION}/encounter.parquet",
             f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            f"/{EXISTING_VERSION}/encounter.parquet",
             True,
             True,
             200,
@@ -76,9 +76,9 @@ from tests.mock_utils import (
         (  # New version of existing data package
             "./tests/test_data/count_synthea_patient.parquet",
             f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_STUDY}__{EXISTING_DATA_P}__{NEW_VERSION}/encounter.parquet",
+            f"/{NEW_VERSION}/encounter.parquet",
             f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_STUDY}__{EXISTING_DATA_P}__{NEW_VERSION}/encounter.parquet",
+            f"/{NEW_VERSION}/encounter.parquet",
             True,
             False,
             200,
@@ -87,9 +87,9 @@ from tests.mock_utils import (
         (  # Invalid parquet file
             "./tests/site_upload/test_powerset_merge.py",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/patient.parquet",
+            f"/{EXISTING_VERSION}/patient.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/patient.parquet",
+            f"/{EXISTING_VERSION}/patient.parquet",
             False,
             False,
             500,
@@ -98,9 +98,9 @@ from tests.mock_utils import (
         (  # Checks presence of commas in strings does not cause an error
             "./tests/test_data/cube_strings_with_commas.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            f"/{EXISTING_VERSION}/encounter.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            f"/{EXISTING_VERSION}/encounter.parquet",
             False,
             False,
             200,
@@ -110,9 +110,9 @@ from tests.mock_utils import (
             # merged by substr match
             "./tests/test_data/count_synthea_patient.parquet",
             f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/{EXISTING_SITE}/"
-            f"{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}__{EXISTING_VERSION}/encount.parquet",
+            f"{EXISTING_VERSION}/encount.parquet",
             f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/{EXISTING_SITE}/"
-            f"{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}__{EXISTING_VERSION}/encount.parquet",
+            f"{EXISTING_VERSION}/encount.parquet",
             False,
             False,
             200,
@@ -121,9 +121,9 @@ from tests.mock_utils import (
         (  # Empty file upload
             None,
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            f"/{EXISTING_VERSION}/encounter.parquet",
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            f"/{EXISTING_VERSION}/encounter.parquet",
             False,
             False,
             500,
@@ -133,7 +133,7 @@ from tests.mock_utils import (
             None,
             None,
             f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{NEW_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            f"/{EXISTING_VERSION}/encounter.parquet",
             False,
             False,
             500,
@@ -196,8 +196,7 @@ def test_powerset_merge_single_upload(
     study = event_list[1]
     data_package = event_list[2]
     site = event_list[3]
-    package_id = event_list[4]
-    version = package_id.split("__")[2]
+    version = event_list[4]
     res = powerset_merge.powerset_merge_handler(event, {})
     assert res["statusCode"] == status
     s3_res = s3_client.list_objects_v2(Bucket=TEST_BUCKET)

@@ -120,9 +120,17 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
         if manager.version not in latest_path:
             continue
         latest_metadata = functions.parse_s3_key(latest_path)
+
+        # Noting since this introduced a bug previously:
+        # the latest/last_data paths reflect the date format used by the upload script,
+        # which uses a bare version. This is different than the aggregates, which have
+        # a compound version that's really more of an ID.
+        # TODO: move path handling for the various subbuckets to a centralized location,
+        # this is a brittle pattern right now
+
         subbucket_path = (
             f"{manager.study}/{manager.study}__{manager.data_package}/{latest_metadata.site}/"
-            f"{manager.study}__{manager.data_package}__{manager.version}"
+            f"{manager.version}"
         )
         archived_files = []
         try:
