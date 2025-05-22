@@ -226,10 +226,15 @@ def _format_payload(
 
         data = []
 
-        # We're trying to smooth over a couple of representation level issues
-        # that are normally smoothed over by the pandas output tooling, as
-        # a byproduct of squashing data into a multiindex, which strips out
-        # some context. Notably we're trying to hit the following cases:
+        # We are combining two values into a pandas index. This means that we've got
+        # two different ways the data is represented:
+        # 1. in the dataframe itself, where pandas does some intelligent things
+        #   about how the data is represented (for example, truncating python
+        #   datetimes to dates if they are all have a timestamp of zero)
+        # 2. the string representation of the underlying numpy data type converted
+        #   to a string, which in this case is the full datetime representation
+        # So, we're going to adjust the values in the multiindex to match the
+        # values in the dataframe itself, fixing the following kinds of issues:
         # - dates getting encoded as timestamps
         # - numerics becoming objects, when we expect them to be string-like
         #   after adding `cumulus_none`
