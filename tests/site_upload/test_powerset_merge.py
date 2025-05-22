@@ -191,12 +191,13 @@ def test_powerset_merge_single_upload(
         ]
     }
     # This array looks like:
-    # ['', 'study', 'package', 'site', 'package_id','file']
+    # ['', 'study', 'study__package', 'site', 'version','file']
     event_list = event_key.split("/")
     study = event_list[1]
     data_package = event_list[2]
     site = event_list[3]
     version = event_list[4]
+    dp_id = f"{data_package}__{version}"
     res = powerset_merge.powerset_merge_handler(event, {})
     assert res["statusCode"] == status
     s3_res = s3_client.list_objects_v2(Bucket=TEST_BUCKET)
@@ -213,7 +214,7 @@ def test_powerset_merge_single_upload(
             metadata = functions.read_metadata(s3_client, TEST_BUCKET)
             if res["statusCode"] == 200:
                 assert (
-                    metadata[site][study][data_package.split("__")[1]][version]["last_aggregation"]
+                    metadata[site][study][data_package.split("__")[1]][dp_id]["last_aggregation"]
                     == datetime.now(UTC).isoformat()
                 )
 
@@ -229,7 +230,7 @@ def test_powerset_merge_single_upload(
             if upload_file is not None and study != NEW_STUDY:
                 # checking to see that merge powerset didn't touch last upload
                 assert (
-                    metadata[site][study][data_package.split("__")[1]][version]["last_upload"]
+                    metadata[site][study][data_package.split("__")[1]][dp_id]["last_upload"]
                     != datetime.now(UTC).isoformat()
                 )
         elif item["Key"].endswith("column_types.json"):
@@ -238,7 +239,7 @@ def test_powerset_merge_single_upload(
                 s3_client, TEST_BUCKET, meta_type=enums.JsonFilename.COLUMN_TYPES.value
             )
             if res["statusCode"] == 200:
-                last_update = metadata[study][data_package.split("__")[1]][version][
+                last_update = metadata[study][data_package.split("__")[1]][dp_id][
                     "last_data_update"
                 ]
                 assert last_update == datetime.now(UTC).isoformat()

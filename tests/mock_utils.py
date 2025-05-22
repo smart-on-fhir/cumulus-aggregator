@@ -17,8 +17,9 @@ NEW_STUDY = "new_study"
 EXISTING_STUDY = "study"
 OTHER_STUDY = "other_study"
 EXISTING_DATA_P = "encounter"
-EXISTING_FLAT_DATA_P = "c_encounter"
 NEW_DATA_P = "document"
+EXISTING_FLAT_DATA_P = "c_encounter"
+NEW_FLAT_DATA_P = "c_document"
 EXISTING_VERSION = "099"
 NEW_VERSION = "100"
 
@@ -128,13 +129,15 @@ def get_mock_column_types_metadata():
         EXISTING_STUDY: {
             EXISTING_DATA_P: {
                 f"{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}": {
-                    "column_types_format_version": "2",
+                    "column_types_format_version": "3",
                     "columns": {
-                        "cnt": "integer",
-                        "gender": "string",
-                        "age": "integer",
-                        "race_display": "string",
-                        "site": "string",
+                        "cnt": {
+                            "type": "integer",
+                        },
+                        "gender": {"type": "string", "distinct_values_count": 10},
+                        "age": {"type": "integer", "distinct_values_count": 10},
+                        "race_display": {"type": "string", "distinct_values_count": 10},
+                        "site": {"type": "string", "distinct_values_count": 10},
                     },
                     "last_data_update": "2023-02-24T15:08:07.771080+00:00",
                     "s3_path": (
@@ -145,41 +148,54 @@ def get_mock_column_types_metadata():
                     "total": 1000,
                     "id": f"{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}",
                 },
-                EXISTING_FLAT_DATA_P: {
-                    f"{EXISTING_STUDY}__{EXISTING_FLAT_DATA_P}__{EXISTING_VERSION}": {
-                        "column_types_format_version": "2",
-                        "columns": {
-                            "resource": "string",
-                            "subgroup": "string",
-                            "numerator": "integer",
-                            "denominator": "double",
-                            "percentage": "double",
+            },
+            f"{EXISTING_FLAT_DATA_P}__{EXISTING_SITE}": {
+                f"{EXISTING_STUDY}__{EXISTING_FLAT_DATA_P}__{EXISTING_SITE}__{EXISTING_VERSION}": {
+                    "column_types_format_version": "3",
+                    "columns": {
+                        "resource": {
+                            "type": "string",
                         },
-                        "last_data_update": "2023-02-24T15:08:07.771080+00:00",
-                        "s3_path": (
-                            f"aggregates/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_FLAT_DATA_P}/"
-                            f"{EXISTING_STUDY}__{EXISTING_FLAT_DATA_P}__{EXISTING_VERSION}/"
-                            f"{EXISTING_STUDY}__{EXISTING_FLAT_DATA_P}__flat.parquet"
-                        ),
-                        "site": EXISTING_SITE,
-                        "id": (
-                            f"{EXISTING_STUDY}__{EXISTING_FLAT_DATA_P}__"
-                            f"{EXISTING_VERSION}__{EXISTING_SITE}"
-                        ),
+                        "subgroup": {
+                            "type": "string",
+                        },
+                        "numerator": {
+                            "type": "integer",
+                        },
+                        "denominator": {
+                            "type": "double",
+                        },
+                        "percentage": {
+                            "type": "double",
+                        },
                     },
+                    "last_data_update": "2023-02-24T15:08:07.771080+00:00",
+                    "s3_path": (
+                        f"flat/{EXISTING_STUDY}/{EXISTING_SITE}/"
+                        f"{EXISTING_STUDY}__{EXISTING_FLAT_DATA_P}__{EXISTING_SITE}__{EXISTING_VERSION}/"
+                        f"{EXISTING_STUDY}__{EXISTING_FLAT_DATA_P}__flat.parquet"
+                    ),
+                    "site": EXISTING_SITE,
+                    "id": (
+                        f"{EXISTING_STUDY}__{EXISTING_FLAT_DATA_P}__"
+                        f"{EXISTING_VERSION}__{EXISTING_SITE}"
+                    ),
+                    "type": "flat",
                 },
-            }
+            },
         },
         OTHER_STUDY: {
             EXISTING_DATA_P: {
                 f"{OTHER_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}": {
-                    "column_types_format_version": "2",
+                    "column_types_format_version": "3",
                     "columns": {
-                        "cnt": "integer",
-                        "gender": "string",
-                        "age": "integer",
-                        "race_display": "string",
-                        "site": "string",
+                        "cnt": {
+                            "type": "integer",
+                        },
+                        "gender": {"type": "string", "distinct_values_count": 10},
+                        "age": {"type": "integer", "distinct_values_count": 10},
+                        "race_display": {"type": "string", "distinct_values_count": 10},
+                        "site": {"type": "string", "distinct_values_count": 10},
                     },
                     "last_data_update": "2023-02-24T15:08:07.771080+00:00",
                     "s3_path": (
@@ -190,7 +206,41 @@ def get_mock_column_types_metadata():
                     "total": 2000,
                     "id": f"{OTHER_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/",
                 }
-            }
+            },
+            f"{EXISTING_FLAT_DATA_P}__{EXISTING_SITE}": {
+                f"{OTHER_STUDY}__{EXISTING_FLAT_DATA_P}__{EXISTING_SITE}__{EXISTING_VERSION}": {
+                    "column_types_format_version": "3",
+                    "columns": {
+                        "resource": {
+                            "type": "string",
+                        },
+                        "subgroup": {
+                            "type": "string",
+                        },
+                        "numerator": {
+                            "type": "integer",
+                        },
+                        "denominator": {
+                            "type": "double",
+                        },
+                        "percentage": {
+                            "type": "double",
+                        },
+                    },
+                    "last_data_update": "2023-02-24T15:08:07.771080+00:00",
+                    "s3_path": (
+                        f"flat/{OTHER_STUDY}/{EXISTING_SITE}/"
+                        f"{OTHER_STUDY}__{EXISTING_FLAT_DATA_P}__{EXISTING_SITE}__{EXISTING_VERSION}/"
+                        f"{OTHER_STUDY}__{EXISTING_FLAT_DATA_P}__flat.parquet"
+                    ),
+                    "site": EXISTING_SITE,
+                    "id": (
+                        f"{OTHER_STUDY}__{EXISTING_FLAT_DATA_P}__"
+                        f"{EXISTING_VERSION}__{EXISTING_SITE}"
+                    ),
+                    "type": "flat",
+                },
+            },
         },
     }
 

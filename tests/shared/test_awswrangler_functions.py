@@ -11,7 +11,7 @@ AGG_PATH = (
 )
 FLAT_PATH = (
     "s3://cumulus-aggregator-site-counts-test/flat/study/princeton_plainsboro_teaching_hospital/"
-    "study__encounter__princeton_plainsboro_teaching_hospital__099/study__encounter__flat.parquet"
+    "study__c_encounter__princeton_plainsboro_teaching_hospital__099/study__c_encounter__flat.parquet"
 )
 STUDY_META_PATH = (
     "s3://cumulus-aggregator-site-counts-test/study_metadata/study/study__encounter/"
@@ -20,14 +20,23 @@ STUDY_META_PATH = (
 
 
 @pytest.mark.parametrize(
-    "root,extension,version,site,expects,raises",
+    "root,extension,version,site,dp,expects,raises",
     [
-        (enums.BucketPath.AGGREGATE.value, "parquet", None, None, [AGG_PATH], does_not_raise()),
+        (
+            enums.BucketPath.AGGREGATE.value,
+            "parquet",
+            None,
+            None,
+            mock_utils.EXISTING_DATA_P,
+            [AGG_PATH],
+            does_not_raise(),
+        ),
         (
             enums.BucketPath.AGGREGATE.value,
             "parquet",
             f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_VERSION}",
             None,
+            mock_utils.EXISTING_DATA_P,
             [AGG_PATH],
             does_not_raise(),
         ),
@@ -36,27 +45,46 @@ STUDY_META_PATH = (
             "parquet",
             "missing_version",
             None,
+            mock_utils.EXISTING_DATA_P,
             [],
             does_not_raise(),
         ),
-        (enums.BucketPath.FLAT.value, ".parquet", None, None, [FLAT_PATH], does_not_raise()),
+        (
+            enums.BucketPath.FLAT.value,
+            ".parquet",
+            None,
+            None,
+            mock_utils.EXISTING_FLAT_DATA_P,
+            [FLAT_PATH],
+            does_not_raise(),
+        ),
         (
             enums.BucketPath.FLAT.value,
             ".parquet",
             None,
             mock_utils.EXISTING_SITE,
+            mock_utils.EXISTING_FLAT_DATA_P,
             [FLAT_PATH],
             does_not_raise(),
         ),
-        (enums.BucketPath.FLAT.value, ".parquet", None, "missing_site", [], does_not_raise()),
+        (
+            enums.BucketPath.FLAT.value,
+            ".parquet",
+            None,
+            "missing_site",
+            mock_utils.EXISTING_DATA_P,
+            [],
+            does_not_raise(),
+        ),
         (
             enums.BucketPath.FLAT.value,
             ".parquet",
             (
-                f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__"
+                f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_FLAT_DATA_P}__"
                 f"{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_VERSION}"
             ),
             mock_utils.EXISTING_SITE,
+            mock_utils.EXISTING_FLAT_DATA_P,
             [FLAT_PATH],
             does_not_raise(),
         ),
@@ -65,28 +93,38 @@ STUDY_META_PATH = (
             ".parquet",
             "missing_version",
             mock_utils.EXISTING_SITE,
+            mock_utils.EXISTING_FLAT_DATA_P,
             [],
             does_not_raise(),
         ),
-        (enums.BucketPath.AGGREGATE.value, ".doc", None, None, [], does_not_raise()),
+        (
+            enums.BucketPath.AGGREGATE.value,
+            ".doc",
+            None,
+            None,
+            mock_utils.EXISTING_DATA_P,
+            [],
+            does_not_raise(),
+        ),
         (
             "athena",
             ".parquet",
             None,
             None,
+            mock_utils.EXISTING_DATA_P,
             [],
             # test path hotmapping for symlinks makes catching the narrow exception fussy
             pytest.raises(Exception),
         ),
     ],
 )
-def test_get_package_list(mock_bucket, root, extension, version, site, expects, raises):
+def test_get_package_list(mock_bucket, root, extension, version, site, dp, expects, raises):
     with raises:
         res = awswrangler_functions.get_s3_data_package_list(
             root,
             mock_utils.TEST_BUCKET,
             mock_utils.EXISTING_STUDY,
-            mock_utils.EXISTING_DATA_P,
+            dp,
             extension=extension,
             version=version,
             site=site,

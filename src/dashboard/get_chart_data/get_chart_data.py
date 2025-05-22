@@ -225,17 +225,23 @@ def _format_payload(
         payload["counts"] = counts.to_dict()[(count_col, "sum")]
 
         data = []
-        # When we start trying to create a multiindex dataframe here,
-        # timestamp values get propogated into that index with timestamps,
-        # so they don't line up with our date level columns. So we'll
-        # convert these columns to strings, assuming that for our use case,
-        # we'll never want timestamps.
 
-        # If this assumption proves false later, we could try to look for date
-        # signifiers in column names instead?
+        # We're trying to smooth over a couple of representation level issues
+        # that are normally smoothed over by the pandas output tooling, as
+        # a byproduct of squashing data into a multiindex, which strips out
+        # some context. Notably we're trying to hit the following cases:
+        # - dates getting encoded as timestamps
+        # - numerics becoming objects, when we expect them to be string-like
+        #   after adding `cumulus_none`
+        # - Booleans being converted to strings after adding `cumulus_none`
         for column in [query_params["column"], query_params["stratifier"]]:
             if pandas.api.types.is_datetime64_ns_dtype(df.dtypes[column]):
                 df[column] = df[column].dt.strftime("%Y-%m-%d")
+            elif pandas.api.types.is_object_dtype(
+                df.dtypes[column]
+            ) or pandas.api.types.is_bool_dtype(df.dtypes[column]):
+                df[column] = df[column].astype("string")
+
         stratifiers = df[query_params["stratifier"]].unique()
         df = df.groupby([query_params["stratifier"], query_params["column"]]).agg(
             {count_col: ["sum"]}

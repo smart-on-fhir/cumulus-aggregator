@@ -116,8 +116,8 @@ def update_metadata(
     """
     if extra_items is None:
         extra_items = {}
-    check_meta_type(meta_type)
 
+    check_meta_type(meta_type)
     match meta_type:
         case enums.JsonFilename.TRANSACTIONS.value:
             site_metadata = metadata.setdefault(site, {})
