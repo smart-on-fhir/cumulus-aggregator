@@ -32,7 +32,7 @@ def from_parquet_handler(event, context):
             extra_headers={
                 "Content-Type": "text/csv",
                 "Content-disposition": (
-                    f"attachment; filename={s3_path.split('/')[-1].replace('.parquet','.csv')}"
+                    f"attachment; filename={s3_path.split('/')[-1].replace('.parquet', '.csv')}"
                 ),
                 "Content-Length": len(payload.encode("UTF-8")),
             },

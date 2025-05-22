@@ -25,17 +25,15 @@ from tests.mock_utils import (
     [
         (  # Adding a new data package to a site with uploads
             "./tests/test_data/cube_simple_example.parquet",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/document.parquet",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/document.parquet",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}/{EXISTING_VERSION}/document.parquet",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}/{EXISTING_VERSION}/document.parquet",
             200,
             ITEM_COUNT + 1,
         ),
         (  # Adding a new data package to a site without uploads
             "./tests/test_data/cube_simple_example.parquet",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{NEW_SITE}" f"/{EXISTING_VERSION}/document.parquet",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{NEW_SITE}" f"/{EXISTING_VERSION}/document.parquet",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{NEW_SITE}/{EXISTING_VERSION}/document.parquet",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{NEW_SITE}/{EXISTING_VERSION}/document.parquet",
             200,
             ITEM_COUNT + 1,
         ),
@@ -50,10 +48,8 @@ from tests.mock_utils import (
         ),
         (  # New version of an existing data package
             "./tests/test_data/cube_simple_example.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{NEW_VERSION}/encounter.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{NEW_VERSION}/encounter.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}/{NEW_VERSION}/encounter.parquet",
+            f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}/{NEW_VERSION}/encounter.parquet",
             200,
             ITEM_COUNT + 1,
         ),
@@ -77,8 +73,8 @@ from tests.mock_utils import (
         ),
         (  # Non-parquet file
             "./tests/test_data/cube_simple_example.csv",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}" f"/{EXISTING_VERSION}/document.csv",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}" f"/{EXISTING_VERSION}/document.csv",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}/{EXISTING_VERSION}/document.csv",
+            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}/{EXISTING_VERSION}/document.csv",
             500,
             ITEM_COUNT + 1,
         ),
