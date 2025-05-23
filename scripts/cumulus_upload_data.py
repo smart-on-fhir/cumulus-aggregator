@@ -65,9 +65,7 @@ def upload_file(cli_args):
         http_response = requests.post(body["url"], data=body["fields"], files=files, timeout=60)
 
     # If successful, returns HTTP status code 204
-    print(
-        f"{cli_args['user']}_{object_name} upload HTTP status code: " f"{http_response.status_code}"
-    )
+    print(f"{cli_args['user']}_{object_name} upload HTTP status code: {http_response.status_code}")
 
 
 if __name__ == "__main__":
@@ -100,8 +98,7 @@ if __name__ == "__main__":
     if args["test"]:
         args_dict["user"] = os.environ.get("CUMULUS_TEST_UPLOAD_USER", "general")
         args_dict["file"] = (
-            f"{Path(__file__).resolve().parents[1]!s}"
-            f"/tests/test_data/count_synthea_patient.parquet"
+            f"{Path(__file__).resolve().parents[1]!s}/tests/test_data/count_synthea_patient.parquet"
         )
         args_dict["auth"] = os.environ.get("CUMULUS_TEST_UPLOAD_AUTH", "secretval")
         args_dict["study"] = "core"

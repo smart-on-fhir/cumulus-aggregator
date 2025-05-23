@@ -319,6 +319,7 @@ def test_write_parquet(mock_cache, mock_bucket):
 def test_update_local_metadata(
     mock_bucket, site, study, data_package, version, metadata_type, target, extras
 ):
+    dp_id = f"{study}__{data_package}__{version}"
     manager = s3_manager.S3Manager(mock_sns_event(site, study, data_package, version))
     if metadata_type == enums.JsonFilename.COLUMN_TYPES.value:
         metadata = manager.types_metadata
@@ -347,18 +348,18 @@ def test_update_local_metadata(
         assert original_transactions != manager.metadata
     if metadata_type == enums.JsonFilename.COLUMN_TYPES.value:
         assert study in metadata.keys()
-        assert version in metadata[study][data_package].keys()
+        assert dp_id in metadata[study][data_package].keys()
         for extra in extras:
-            assert extra in metadata[study][data_package][version].keys()
+            assert extra in metadata[study][data_package][dp_id].keys()
         if target == "columns":
-            assert metadata[study][data_package][version]["columns"] == mock_columns
+            assert metadata[study][data_package][dp_id]["columns"] == mock_columns
         else:
-            assert metadata[study][data_package][version]["columns"] != mock_columns
+            assert metadata[study][data_package][dp_id]["columns"] != mock_columns
     elif metadata_type == enums.JsonFilename.TRANSACTIONS.value:
         assert site in metadata.keys()
-        assert version in metadata[site][study][data_package].keys()
+        assert dp_id in metadata[site][study][data_package].keys()
         for extra in extras:
-            assert extra in metadata[site][study][data_package][version].keys()
+            assert extra in metadata[site][study][data_package][dp_id].keys()
 
 
 def test_write_local_metadata(mock_bucket):

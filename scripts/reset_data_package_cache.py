@@ -71,22 +71,14 @@ def get_s3_json_as_dict(bucket, key: str):
     return json.loads(bytes_buffer.getvalue().decode())
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="""Creates data package metadata for existing aggregates. """
-    )
-    parser.add_argument("-b", "--bucket", help="bucket name")
-    parser.add_argument("-d", "--db", help="database name")
-    args = parser.parse_args()
+def reset_data_package_cache(bucket, db):
     s3_client = boto3.client("s3")
-    update_column_type_metadata(args.bucket, s3_client)
+    update_column_type_metadata(bucket, s3_client)
     env_cache = dict(os.environ)
     try:
         # mock some env vars assumed to be set inside a lambda env
-        os.environ["BUCKET_NAME"] = args.bucket
-        cache_api.cache_api_data(
-            s3_client, args.bucket, args.db, enums.JsonFilename.DATA_PACKAGES.value
-        )
+        os.environ["BUCKET_NAME"] = bucket
+        cache_api.cache_api_data(s3_client, bucket, db, enums.JsonFilename.DATA_PACKAGES.value)
     except AttributeError as e:
         print(e)
         print("".join(traceback.format_exception(e)))
@@ -97,3 +89,13 @@ if __name__ == "__main__":
     finally:
         os.environ.clear()
         os.environ.update(env_cache)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="""Creates data package metadata for existing aggregates. """
+    )
+    parser.add_argument("-b", "--bucket", help="bucket name")
+    parser.add_argument("-d", "--db", help="database name")
+    args = parser.parse_args()
+    reset_data_package_cache(args.bucket, args.db)

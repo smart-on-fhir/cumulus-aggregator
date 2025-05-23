@@ -92,5 +92,5 @@ def queue_handler(event: dict, context):
             Subject=body["study_name"],
             MessageAttributes={"study": {"DataType": "Binary", "BinaryValue": file}},
         )
-    res = functions.http_response(200, f'Study {body["study_name"]} queued.')
+    res = functions.http_response(200, f"Study {body['study_name']} queued.")
     return res

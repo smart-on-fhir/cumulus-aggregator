@@ -27,7 +27,7 @@ def generic_error_handler(msg="Internal server error"):
                     )
                     tb = tb.tb_next
                 logging.error(
-                    "Error: %s, type: %s, event: %s, " "context: %s, file: %s, traceback: %s",
+                    "Error: %s, type: %s, event: %s, context: %s, file: %s, traceback: %s",
                     msg,
                     str(e),
                     args[0],

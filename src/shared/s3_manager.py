@@ -183,6 +183,10 @@ class S3Manager:
             or extra_items.get("type", "") == "flat"
         ):
             site = self.site
+        if extra_items.get("type", "") == "flat":
+            version = f"{self.study}__{self.data_package}__{self.site}__{self.version}"
+        else:
+            version = f"{self.study}__{self.data_package}__{self.version}"
         if metadata is None:
             metadata = self.metadata
         functions.update_metadata(
@@ -190,7 +194,7 @@ class S3Manager:
             site=site,
             study=self.study,
             data_package=self.data_package,
-            version=self.version,
+            version=version,
             target=key,
             value=value,
             meta_type=meta_type,

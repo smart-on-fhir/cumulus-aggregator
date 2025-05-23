@@ -25,7 +25,7 @@ def validate_github_url(config):
     if res.status_code != 200:
         raise ValueError(f"{config['url']} is not a valid git repository")
     if "tag" in config and config["tag"] is not None:
-        res = requests.get(config["url"] + f'/tree/{config["tag"]}', timeout=10)
+        res = requests.get(config["url"] + f"/tree/{config['tag']}", timeout=10)
         if res.status_code != 200:
             raise ValueError(f"{config['tag']} is not a valid tag")
 
@@ -51,5 +51,5 @@ def distribute_handler(event: dict, context):
     topic_sns_arn = os.environ.get("TOPIC_QUEUE_API_ARN")
     sns_client.publish(TopicArn=topic_sns_arn, Message=event["body"], Subject=body["study_name"])
     # TODO: should we create an ID/API for the dashboard to track request status?
-    res = functions.http_response(200, f'Preparing to queue {body["study_name"]}.')
+    res = functions.http_response(200, f"Preparing to queue {body['study_name']}.")
     return res

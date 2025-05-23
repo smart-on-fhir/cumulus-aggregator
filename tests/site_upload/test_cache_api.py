@@ -64,21 +64,20 @@ def test_cache_api_data(mock_bucket):
         {
             "study": "study",
             "name": "encounter",
-            "column_types_format_version": "2",
+            "column_types_format_version": "3",
             "columns": {
-                "cnt": "integer",
-                "gender": "string",
-                "age": "integer",
-                "race_display": "string",
-                "site": "string",
+                "cnt": {"type": "integer"},
+                "gender": {"type": "string", "distinct_values_count": 10},
+                "age": {"type": "integer", "distinct_values_count": 10},
+                "race_display": {"type": "string", "distinct_values_count": 10},
+                "site": {"type": "string", "distinct_values_count": 10},
             },
             "last_data_update": "2023-02-24T15:08:07.771080+00:00",
             "s3_path": (
-                "aggregates/study/study__encounter/study__encounter__099"
-                "/study__encounter__aggregate.parquet"
+                "aggregates/study/study__encounter/study__encounter__099/study__encounter__aggregate.parquet"
             ),
             "total": 1000,
-            "version": "099",
             "id": "study__encounter__099",
+            "version": "099",
         }
     ]

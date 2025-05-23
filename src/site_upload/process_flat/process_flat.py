@@ -38,7 +38,11 @@ def process_flat(manager: s3_manager.S3Manager):
         meta_type=enums.JsonFilename.COLUMN_TYPES.value,
         extra_items=extras,
     )
-    manager.update_local_metadata(enums.TransactionKeys.LAST_DATA_UPDATE.value, site=manager.site)
+    manager.update_local_metadata(
+        enums.TransactionKeys.LAST_DATA_UPDATE.value,
+        site=manager.site,
+        extra_items=extras,
+    )
     manager.update_local_metadata(
         enums.ColumnTypesKeys.LAST_DATA_UPDATE.value,
         value=column_dict,
