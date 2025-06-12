@@ -675,6 +675,47 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${DashboardGetFromParquetFunction}"
       RetentionInDays: !Ref RetentionTime
 
+  DashboardGetStaticFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggDashboardStatic-${DeployStage}-${NetworkName}'
+      CodeUri: ./src/dashboard/get_static
+      Handler: get_static.static_handler
+      Runtime: "python3.11"
+      LoggingConfig:
+        ApplicationLogLevel: !Ref LogLevel
+        LogFormat: !Ref LogFormat
+        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardStatic-${DeployStage}-${NetworkName}"
+      MemorySize: 128
+      Timeout: 100
+      Description: Retrieve data about the study period
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+      Events:
+        GetStaticiteAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /static/{path+}
+            Method: GET
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+        - Statement:
+          - Sid: DecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
+
+  DashboardGetStaticLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${DashboardGetStaticFunction}"
+      RetentionInDays: !Ref RetentionTime
+
   DashboardPostDistributeStudyFunction:
     Type: AWS::Serverless::Function
     Properties:
