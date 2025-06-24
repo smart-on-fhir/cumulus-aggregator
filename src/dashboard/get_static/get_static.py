@@ -19,6 +19,13 @@ def static_handler(event, context):
     else:
         res = functions.http_response(404, "No path supplied")
         return res
+    if q_params := event["queryStringParameters"]:
+        path += "?"
+        items = []
+        for k, v in sorted(q_params.items()):
+            items.append(f"{k}={v}")
+        items = "&".join(items)
+        path += items
     try:
         res = s3_client.get_object(Bucket=s3_bucket, Key=f"{enums.BucketPath.STATIC.value}/{path}")
 
