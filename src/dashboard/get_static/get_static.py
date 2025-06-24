@@ -19,11 +19,10 @@ def static_handler(event, context):
     else:
         res = functions.http_response(404, "No path supplied")
         return res
-    if event["queryStringParameters"]:
+    if q_params := event["queryStringParameters"]:
         path += "?"
-        q_params = event["queryStringParameters"]
         items = []
-        for k, v in q_params.items():
+        for k, v in sorted(q_params.items()):
             items.append(f"{k}={v}")
         items = "&".join(items)
         path += items

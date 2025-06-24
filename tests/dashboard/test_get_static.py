@@ -27,19 +27,19 @@ from tests.mock_utils import TEST_BUCKET
             {"path": "test"},
             {"a": "b"},
             200,
-            {"a": 1},
+            {"b": 2},
         ),
         (
             {"path": "test"},
             {"missing": "b"},
             404,
-            {"a": 1},
+            {"b": 2},
         ),
         (
             {"path": "test"},
             {"a": "missing"},
             404,
-            {"a": 1},
+            {"b": 2},
         ),
     ],
 )
@@ -47,7 +47,7 @@ def test_get_study_periods(mock_bucket, params, query_params, status, expected):
     client = boto3.client("s3", region_name="us-east-1")
     bucket = TEST_BUCKET
     client.put_object(Bucket=bucket, Key="static/test", Body=json.dumps({"a": 1}))
-    client.put_object(Bucket=bucket, Key="static/test?a=b", Body=json.dumps({"a": 1}))
+    client.put_object(Bucket=bucket, Key="static/test?a=b", Body=json.dumps({"b": 2}))
     event = {"pathParameters": params, "queryStringParameters": query_params}
     res = get_static.static_handler(event, {})
     assert res["statusCode"] == status
