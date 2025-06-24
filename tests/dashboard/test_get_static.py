@@ -8,26 +8,47 @@ from tests.mock_utils import TEST_BUCKET
 
 
 @pytest.mark.parametrize(
-    "params,status,expected",
+    "params,query_params,status,expected",
     [
-        (None, 404, None),
+        (None, None, 404, None),
         (
             {"path": "test"},
+            None,
             200,
             {"a": 1},
         ),
         (
             {"path": "missing"},
+            None,
             404,
             None,
         ),
+        (
+            {"path": "test"},
+            {"a": "b"},
+            200,
+            {"a": 1},
+        ),
+        (
+            {"path": "test"},
+            {"missing": "b"},
+            404,
+            {"a": 1},
+        ),
+        (
+            {"path": "test"},
+            {"a": "missing"},
+            404,
+            {"a": 1},
+        ),
     ],
 )
-def test_get_study_periods(mock_bucket, params, status, expected):
+def test_get_study_periods(mock_bucket, params, query_params, status, expected):
     client = boto3.client("s3", region_name="us-east-1")
     bucket = TEST_BUCKET
     client.put_object(Bucket=bucket, Key="static/test", Body=json.dumps({"a": 1}))
-    event = {"pathParameters": params}
+    client.put_object(Bucket=bucket, Key="static/test?a=b", Body=json.dumps({"a": 1}))
+    event = {"pathParameters": params, "queryStringParameters": query_params}
     res = get_static.static_handler(event, {})
     assert res["statusCode"] == status
     if status == 200:
