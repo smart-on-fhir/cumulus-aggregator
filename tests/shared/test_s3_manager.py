@@ -2,6 +2,7 @@ import copy
 import io
 from unittest import mock
 
+import botocore
 import freezegun
 import pandas
 import pytest
@@ -200,6 +201,24 @@ def test_write_parquet(mock_cache, mock_bucket):
         ),
     )
     assert mock_cache.called
+
+
+def test_presigned_error_handling(mock_bucket):
+    manager = s3_manager.S3Manager(
+        mock_sns_event(
+            mock_utils.EXISTING_SITE,
+            mock_utils.EXISTING_STUDY,
+            mock_utils.EXISTING_DATA_P,
+            mock_utils.EXISTING_VERSION,
+        )
+    )
+    mock_client = mock.MagicMock()
+    mock_client.generate_presigned_url.side_effect = botocore.exceptions.ClientError(
+        error_response={}, operation_name="op"
+    )
+    manager.s3_client = mock_client
+    res = manager.get_presigned_download_url("missing.parquet")
+    assert res is None
 
 
 @pytest.mark.parametrize(

@@ -354,7 +354,7 @@ def test_integration(
             }
             csv_res = get_from_parquet.from_parquet_handler(parquet_event, {})
             assert csv_res["statusCode"] == 302
-            url = json.loads(csv_res["body"])["location"]
+            url = csv_res["headers"]["location"]
             key = url.split("?")[0].replace(
                 "https://cumulus-aggregator-site-counts-test.s3.amazonaws.com/", ""
             )

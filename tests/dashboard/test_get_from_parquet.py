@@ -1,9 +1,11 @@
 import json
 import os
+from datetime import datetime
 from unittest import mock
 
 import boto3
 import pytest
+from freezegun import freeze_time
 
 from src.dashboard.get_from_parquet import get_from_parquet
 from tests.mock_utils import MOCK_ENV, TEST_BUCKET
@@ -22,10 +24,10 @@ S3_KEY = (
     "aggregates/study/study__encounter/study__encounter__099/study__encounter__aggregate.parquet"
 )
 S3_PATH = f"s3://{TEST_BUCKET}/{S3_KEY}"
-S3_TEMP_KEY = f"temp/{S3_KEY}"
 S3_TEMP_PATH = f"https://{TEST_BUCKET}.s3.amazonaws.com/"
 
 
+@freeze_time("2020-01-01")
 @pytest.mark.parametrize(
     "target,payload_type,code,length,first,last,schema",
     [
@@ -94,14 +96,16 @@ S3_TEMP_PATH = f"https://{TEST_BUCKET}.s3.amazonaws.com/"
 )
 @mock.patch.dict(os.environ, MOCK_ENV)
 def test_get_data_packages(mock_bucket, target, payload_type, code, length, first, last, schema):
+    s3_temp_key = f"temp/{datetime.utcnow().timestamp()}/{S3_KEY}"
+
     payload = mock_event(target, payload_type)
     res = get_from_parquet.from_parquet_handler(payload, {})
     assert (res["statusCode"]) == code
     if code == 302:
-        url = json.loads(res["body"])["location"]
+        url = res["headers"]["location"]
         assert url.startswith(S3_TEMP_PATH)
         s3_client = boto3.client("s3", region_name="us-east-1")
-        res = s3_client.get_object(Bucket=TEST_BUCKET, Key=S3_TEMP_KEY)
+        res = s3_client.get_object(Bucket=TEST_BUCKET, Key=s3_temp_key)
         file = res["Body"].read().decode("utf-8")
         if payload_type is None or payload_type == "json":
             file = json.loads(file)

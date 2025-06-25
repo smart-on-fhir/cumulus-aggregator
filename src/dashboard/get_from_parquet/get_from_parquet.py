@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import awswrangler
 import pyarrow
 
@@ -25,9 +27,10 @@ def from_parquet_handler(event, context):
 
     else:
         data = df.to_json(orient="table", index=False)
-    temp_path = f"{enums.BucketPath.TEMP.value}/{functions.get_s3_key_from_path(s3_path)}"
+    ts = datetime.utcnow().timestamp()
+    temp_path = f"{enums.BucketPath.TEMP.value}/{ts}/{functions.get_s3_key_from_path(s3_path)}"
     manager = s3_manager.S3Manager(event)
     manager.write_data_to_file(data=data, path=temp_path)
     url = manager.get_presigned_download_url(temp_path)
-    res = functions.http_response(302, {"location": url})
+    res = functions.http_response(302, None, extra_headers={"location": url})
     return res

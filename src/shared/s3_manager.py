@@ -29,7 +29,7 @@ class S3Manager:
 
     def __init__(self, event):
         self.s3_bucket_name = os.environ.get("BUCKET_NAME")
-        self.s3_client = boto3.client("s3", config=boto3.session.Config(signature_version="s3v4"))
+        self.s3_client = boto3.client("s3")
         self.sns_client = boto3.client("sns", region_name=self.s3_client.meta.region_name)
         # If the event is an SNS type event, we're in the aggregation pipeline and set up
         # some convenience values.
@@ -110,7 +110,7 @@ class S3Manager:
         :param path: The key or full S3 path
         """
         path = functions.get_s3_key_from_path(path)
-        data = str.encode(data, encoding="utf-8")
+        data = data.encode(encoding="utf-8")
         self.s3_client.put_object(Bucket=self.s3_bucket_name, Key=path, Body=data)
 
     def move_file(self, from_path: str, to_path: str) -> None:
@@ -132,7 +132,6 @@ class S3Manager:
         :returns: A url, or None if no object at the location
         """
         path = functions.get_s3_key_from_path(path)
-
         try:
             res = self.s3_client.generate_presigned_url(
                 "get_object",
@@ -140,8 +139,6 @@ class S3Manager:
                 ExpiresIn=expiration,
             )
             return res
-        # Exempting this from coverage because moto does not check for presence
-        # before trying to presign a URL
         except botocore.exceptions.ClientError as e:  # pragma: no cover
             logging.error(e)
             return None
