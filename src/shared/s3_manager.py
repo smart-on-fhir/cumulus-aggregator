@@ -140,7 +140,9 @@ class S3Manager:
                 ExpiresIn=expiration,
             )
             return res
-        except botocore.exceptions.ClientError as e:
+        # Exempting this from coverage because moto does not check for presence
+        # before trying to presign a URL
+        except botocore.exceptions.ClientError as e:  # pragma: no cover
             logging.error(e)
             return None
 
