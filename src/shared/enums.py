@@ -4,7 +4,7 @@ import enum
 
 
 class BucketPath(enum.Enum):
-    """stores root level buckets for managing data processing state"""
+    """stores root level subbuckets for managing data processing state"""
 
     ADMIN = "admin"
     AGGREGATE = "aggregates"
@@ -17,6 +17,7 @@ class BucketPath(enum.Enum):
     META = "metadata"
     STATIC = "static"
     STUDY_META = "study_metadata"
+    TEMP = "temp"
     UPLOAD = "site_upload"
 
 

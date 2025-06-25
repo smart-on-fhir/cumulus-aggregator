@@ -1,7 +1,7 @@
 import awswrangler
 import pyarrow
 
-from shared import decorators, functions
+from shared import decorators, enums, functions, s3_manager
 
 
 @decorators.generic_error_handler(msg="Error retrieving data from parquet")
@@ -17,28 +17,17 @@ def from_parquet_handler(event, context):
     if output_type := event["queryStringParameters"].get("type"):
         match output_type:
             case "csv":
-                payload = df.to_csv(index=False)
+                data = df.to_csv(index=False)
             case "tsv":
-                payload = df.to_csv(index=False, sep="|")
+                data = df.to_csv(index=False, sep="|")
             case "json":
-                return functions.http_response(
-                    200, df.to_json(orient="table", index=False), skip_convert=True
-                )
-        # TODO: this should be converted to a streamingresponse at some point
-        # https://github.com/awslabs/aws-lambda-web-adapter/tree/main/examples/fastapi-response-streaming
-        return functions.http_response(
-            200,
-            payload,
-            extra_headers={
-                "Content-Type": "text/csv",
-                "Content-disposition": (
-                    f"attachment; filename={s3_path.split('/')[-1].replace('.parquet', '.csv')}"
-                ),
-                "Content-Length": len(payload.encode("UTF-8")),
-            },
-            skip_convert=True,
-        )
+                data = df.to_json(orient="table", index=False)
+
     else:
-        return functions.http_response(
-            200, df.to_json(orient="table", index=False), skip_convert=True
-        )
+        data = df.to_json(orient="table", index=False)
+    temp_path = f"{enums.BucketPath.TEMP.value}/{functions.get_s3_key_from_path(s3_path)}"
+    manager = s3_manager.S3Manager(event)
+    manager.write_data_to_file(data=data, path=temp_path)
+    url = manager.get_presigned_download_url(temp_path)
+    res = functions.http_response(302, {"location": url})
+    return res
