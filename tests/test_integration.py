@@ -353,7 +353,14 @@ def test_integration(
                 "pathParameters": {},
             }
             csv_res = get_from_parquet.from_parquet_handler(parquet_event, {})
+            assert csv_res["statusCode"] == 302
+            url = csv_res["headers"]["location"]
+            key = url.split("?")[0].replace(
+                "https://cumulus-aggregator-site-counts-test.s3.amazonaws.com/", ""
+            )
+            res = s3_client.get_object(Bucket=mock_utils.TEST_BUCKET, Key=key)
+            file = res["Body"].read().decode("utf-8")
             with open(tmp_path / "flat.csv", "w") as f:
-                f.write(csv_res["body"])
+                f.write(file)
             csv_df = pandas.read_csv(tmp_path / "flat.csv")
             assert reference_df.compare(csv_df).empty

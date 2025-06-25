@@ -645,7 +645,7 @@ Resources:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
         LogGroup: !Sub "/aws/lambda/CumulusAggDashboardFromParquet-${DeployStage}-${NetworkName}"
-      MemorySize: 512
+      MemorySize: 2048
       Timeout: 100
       Description: Retrieve data from a parquet source
       Environment:
@@ -660,6 +660,8 @@ Resources:
             Method: GET
       Policies:
         - S3ReadPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+        - S3WritePolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
         - Statement:
           - Sid: DecryptPolicy
@@ -889,6 +891,14 @@ Resources:
                 Rules:
                   - Name: prefix
                     Value: 'site_upload/'
+      LifecycleConfiguration:
+        Rules:
+          - Id: TempfileCleanup
+            Prefix: temp
+            # This is applied at midnight UTC, so we keep things around for an extra day
+            # to prevent files being deleted during download
+            ExpirationInDays: 2
+            Status: Enabled
 
 ### Glue Resources
 

@@ -1,8 +1,11 @@
 import json
 import os
+from datetime import datetime
 from unittest import mock
 
+import boto3
 import pytest
+from freezegun import freeze_time
 
 from src.dashboard.get_from_parquet import get_from_parquet
 from tests.mock_utils import MOCK_ENV, TEST_BUCKET
@@ -17,9 +20,14 @@ def mock_event(target, payload_type):
     return payload
 
 
-S3_PATH = f"s3://{TEST_BUCKET}/aggregates/study/study__encounter/study__encounter__099/study__encounter__aggregate.parquet"
+S3_KEY = (
+    "aggregates/study/study__encounter/study__encounter__099/study__encounter__aggregate.parquet"
+)
+S3_PATH = f"s3://{TEST_BUCKET}/{S3_KEY}"
+S3_TEMP_PATH = f"https://{TEST_BUCKET}.s3.amazonaws.com/"
 
 
+@freeze_time("2020-01-01")
 @pytest.mark.parametrize(
     "target,payload_type,code,length,first,last,schema",
     [
@@ -27,7 +35,7 @@ S3_PATH = f"s3://{TEST_BUCKET}/aggregates/study/study__encounter/study__encounte
         (
             S3_PATH,
             None,
-            200,
+            302,
             506,
             {"cnt": 1103, "gender": None, "age": None, "race_display": None, "site": None},
             {
@@ -48,7 +56,7 @@ S3_PATH = f"s3://{TEST_BUCKET}/aggregates/study/study__encounter/study__encounte
         (
             S3_PATH,
             "json",
-            200,
+            302,
             506,
             {"cnt": 1103, "gender": None, "age": None, "race_display": None, "site": None},
             {
@@ -69,7 +77,7 @@ S3_PATH = f"s3://{TEST_BUCKET}/aggregates/study/study__encounter/study__encounte
         (
             S3_PATH,
             "csv",
-            200,
+            302,
             507,
             "cnt,gender,age,race_display,site",
             "10,,78,Not Hispanic or Latino,princeton_plainsboro_teaching_hospital",
@@ -78,7 +86,7 @@ S3_PATH = f"s3://{TEST_BUCKET}/aggregates/study/study__encounter/study__encounte
         (
             S3_PATH,
             "tsv",
-            200,
+            302,
             507,
             "cnt|gender|age|race_display|site",
             "10||78|Not Hispanic or Latino|princeton_plainsboro_teaching_hospital",
@@ -88,28 +96,29 @@ S3_PATH = f"s3://{TEST_BUCKET}/aggregates/study/study__encounter/study__encounte
 )
 @mock.patch.dict(os.environ, MOCK_ENV)
 def test_get_data_packages(mock_bucket, target, payload_type, code, length, first, last, schema):
+    s3_temp_key = f"temp/{datetime.utcnow().timestamp()}/{S3_KEY}"
+
     payload = mock_event(target, payload_type)
     res = get_from_parquet.from_parquet_handler(payload, {})
     assert (res["statusCode"]) == code
-    if code == 200:
+    if code == 302:
+        url = res["headers"]["location"]
+        assert url.startswith(S3_TEMP_PATH)
+        s3_client = boto3.client("s3", region_name="us-east-1")
+        res = s3_client.get_object(Bucket=TEST_BUCKET, Key=s3_temp_key)
+        file = res["Body"].read().decode("utf-8")
         if payload_type is None or payload_type == "json":
-            assert res["headers"] == {"Content-Type": "application/json"}
-            res = json.loads(res["body"])
-            assert res["schema"]["fields"] == [
+            file = json.loads(file)
+            assert file["schema"]["fields"] == [
                 {"name": "cnt", "type": "integer", "extDtype": "Int64"},
                 {"name": "gender", "type": "any", "extDtype": "string"},
                 {"name": "age", "type": "integer", "extDtype": "Int64"},
                 {"name": "race_display", "type": "any", "extDtype": "string"},
                 {"name": "site", "type": "any", "extDtype": "string"},
             ]
-            res = res["data"]
+            file = file["data"]
         else:
-            assert res["headers"] == {
-                "Content-Type": "text/csv",
-                "Content-disposition": "attachment; filename=study__encounter__aggregate.csv",
-                "Content-Length": len(res["body"].encode("utf-8")),
-            }
-            res = res["body"].split("\n")[:-1]
-        assert len(res) == length
-        assert res[0] == first
-        assert res[-1] == last
+            file = file.split("\n")[:-1]
+        assert len(file) == length
+        assert file[0] == first
+        assert file[-1] == last
