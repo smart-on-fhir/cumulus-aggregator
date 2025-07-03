@@ -32,6 +32,7 @@ def process_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> N
         if (
             s3_key.endswith(f".{enums.UploadTypes.META.value}.parquet")
             or "/discovery__" in s3_key
+            or "/catalog__" in s3_key
             or "__meta_" in s3_key
         ):
             new_key = f"{enums.BucketPath.STUDY_META.value}/{s3_key.split('/', 1)[-1]}"
