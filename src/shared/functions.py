@@ -298,12 +298,21 @@ def parse_s3_key(key: str) -> PackageMetadata:
                 | enums.BucketPath.LATEST.value
                 | enums.BucketPath.STUDY_META.value
             ):
-                package = PackageMetadata(
-                    study=key[1],
-                    site=key[3],
-                    data_package=key[2].split("__")[1],
-                    version=key[4],
-                )
+                try:
+                    package = PackageMetadata(
+                        study=key[1],
+                        site=key[3],
+                        data_package=key[2].split("__")[1],
+                        version=key[4],
+                    )
+                except IndexError:
+                    # do we have a flat package in latest? We'll check with the flat parsing rules
+                    package = PackageMetadata(
+                        study=key[1],
+                        site=key[2],
+                        data_package=key[3].split("__")[1],
+                        version=key[3].split("__")[3],
+                    )
             case enums.BucketPath.FLAT.value:
                 package = PackageMetadata(
                     study=key[1],
