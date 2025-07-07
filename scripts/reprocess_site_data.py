@@ -41,7 +41,7 @@ def reprocess_site_data(
             s3_key = path.split("/")
             if target == s3_key[1]:
                 if source == enums.BucketPath.FLAT.value:
-                    _, dp, path_version = s3_key[3].split("__")
+                    _, dp, _, path_version = s3_key[3].split("__")
                     tree[dp][s3_key[2]][path_version] = path
                 else:
                     tree[s3_key[2]][s3_key[3]][s3_key[4]] = path
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("-b", "--bucket", help="bucket name", required=True)
     parser.add_argument("-t", "--target", help="target study", required=True)
-    parser.add_argument("-s", "--site", help="site data to remove", required=True)
+    parser.add_argument("-s", "--site", help="site data to copy", required=True)
     parser.add_argument("-v", "--version", help="Study version", required=True)
     parser.add_argument(
         "--target-bucket", help="Specifies an alternate bucket to use as the copy target"

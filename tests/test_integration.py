@@ -30,9 +30,6 @@ from src.site_upload.process_flat import process_flat
 from src.site_upload.process_upload import process_upload
 from tests import mock_utils
 
-"""
-
-"""
 CURRENT_COL_TYPES_VERSION = "3"
 
 
@@ -137,10 +134,16 @@ def test_integration(
 ):
     s3_client = boto3.client("s3", region_name="us-east-1")
     sns_backend = sns_backends[DEFAULT_ACCOUNT_ID]["us-east-1"]
-    upload_key = (
-        f"site_upload/{study}/{study}__{data_package}/{site}/{version}"
-        f"/user__{site}__{study}.{upload_type}.parquet"
-    )
+    if upload_type == "flat":
+        upload_key = (
+            f"site_upload/{study}/{site}/{study}__{data_package}__{site}__{version}"
+            f"/user__{site}__{study}.{upload_type}.parquet"
+        )
+    else:
+        upload_key = (
+            f"site_upload/{study}/{study}__{data_package}/{site}/{version}"
+            f"/user__{site}__{study}.{upload_type}.parquet"
+        )
 
     # Expected tables based on the mock bucket configuration
     tables = [

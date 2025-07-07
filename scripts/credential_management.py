@@ -67,8 +67,6 @@ if __name__ == "__main__":
         default="cumulus-aggregator-site-counts",
         help="base bucket name",
     )
-    parser.add_argument("-a", "--account", help="aws account number")
-    parser.add_argument("-e", "--env", default="dev", help="Name of deploy environment")
     s3_modification = parser.add_mutually_exclusive_group(required=True)
     s3_modification.add_argument(
         "--create-auth",
@@ -85,15 +83,11 @@ if __name__ == "__main__":
     )
     s3_modification.add_argument("--delete-meta", help="Delete metadata. Expects: Site")
     args = parser.parse_args()
-    if args.env == "prod":
+    if "prod" in args.bucket:
         response = input("🚨🚨 Modifying production, are you sure? (y/N) 🚨🚨\n")
         if response.lower() != "y":
             sys.exit()
     s3_client = boto3.client("s3")
-    if args.account is not None:
-        bucket = f"{args.bucket}-{args.account}-{args.env}"
-    else:
-        bucket = f"{args.bucket}-{args.env}"
     if args.create_auth:
         id_str = create_auth(
             args.create_auth[0],
@@ -102,10 +96,10 @@ if __name__ == "__main__":
         )
         print(f"Add the following key/value to secrets manager: \n {id_str}")
     elif args.create_meta:
-        create_meta(s3_client, bucket, args.create_meta[0], args.create_meta[1])
+        create_meta(s3_client, args.bucket, args.create_meta[0], args.create_meta[1])
         print(f"{args.create_meta[0]} mapped to S3 folder {args.create_meta[1]}")
     elif args.delete_meta:
-        succeeded = delete_meta(s3_client, bucket, args.delete_meta)
+        succeeded = delete_meta(s3_client, args.bucket, args.delete_meta)
         if succeeded:
             print(f"Unmapped {args.delete_meta}")
         else:
