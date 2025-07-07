@@ -83,7 +83,7 @@ if __name__ == "__main__":
     )
     s3_modification.add_argument("--delete-meta", help="Delete metadata. Expects: Site")
     args = parser.parse_args()
-    if "prod" in args.bucket:
+    if "-prod-" in args.bucket:
         response = input("🚨🚨 Modifying production, are you sure? (y/N) 🚨🚨\n")
         if response.lower() != "y":
             sys.exit()
