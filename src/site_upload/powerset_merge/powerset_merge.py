@@ -95,10 +95,12 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
     for last_valid_path in last_valid_file_list:
         if manager.version not in last_valid_path:
             continue
+        # If the site data is being updated, don't use the last valid data
+        if manager.site in last_valid_path:
+            continue
         last_valid_metadata = functions.parse_s3_key(last_valid_path)
         subbucket_path = (
-            f"{manager.study}/{manager.data_package}/{last_valid_metadata.site}/"
-            f"{manager.study}__{manager.data_package}__{manager.version}"
+            f"{manager.study}/{manager.data_package}/{last_valid_metadata.site}/{manager.version}"
         )
         # If the latest uploads don't include this site, we'll use the last-valid
         # one instead
