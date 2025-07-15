@@ -248,9 +248,6 @@ def test_powerset_merge_single_upload(
             if study in item["Key"] and status == 200:
                 agg_df = awswrangler.s3.read_parquet(f"s3://{TEST_BUCKET}/{item['Key']}")
                 assert (agg_df["site"].eq(site)).any()
-                print(len(agg_df))
-                print(agg_df.iloc[0].to_list())
-                print(agg_df.iloc[-1].to_list())
                 assert expected_rows == len(agg_df)
                 assert first_row == agg_df.iloc[0].to_list()
                 assert last_row == agg_df.iloc[-1].to_list()
