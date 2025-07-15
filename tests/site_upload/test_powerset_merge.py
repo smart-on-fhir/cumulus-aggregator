@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 
 import awswrangler
 import boto3
+import pandas
 import pytest
 from freezegun import freeze_time
 from pandas import DataFrame, read_parquet
@@ -27,7 +28,7 @@ from tests.mock_utils import (
 
 @freeze_time("2020-01-01")
 @pytest.mark.parametrize(
-    "upload_file,upload_path,event_key,archives,duplicates,status,expected_contents",
+    "upload_file,upload_path,event_key,archives,duplicates,status,expected_contents,expected_rows,first_row,last_row",
     [
         (  # Adding a new data package to a site with uploads
             "./tests/test_data/count_synthea_patient.parquet",
@@ -39,6 +40,9 @@ from tests.mock_utils import (
             False,
             200,
             ITEM_COUNT + 2,
+            506,
+            [1103, pandas.NA, pandas.NA, pandas.NA, pandas.NA],
+            [10, pandas.NA, 78, "Not Hispanic or Latino", "princeton_plainsboro_teaching_hospital"],
         ),
         (  # Adding a new data package to a site without uploads
             "./tests/test_data/count_synthea_patient.parquet",
@@ -50,6 +54,9 @@ from tests.mock_utils import (
             False,
             200,
             ITEM_COUNT + 2,
+            506,
+            [1103, pandas.NA, pandas.NA, pandas.NA, pandas.NA],
+            [10, pandas.NA, 78, "Not Hispanic or Latino", "chicago_hope"],
         ),
         (  # Updating an existing data package
             "./tests/test_data/count_synthea_patient.parquet",
@@ -61,6 +68,9 @@ from tests.mock_utils import (
             False,
             200,
             ITEM_COUNT + 2,
+            506,
+            [1103, pandas.NA, pandas.NA, pandas.NA, pandas.NA],
+            [10, pandas.NA, 78, "Not Hispanic or Latino", "princeton_plainsboro_teaching_hospital"],
         ),
         (  # Updating an existing data package w/ extra files
             "./tests/test_data/count_synthea_patient.parquet",
@@ -72,6 +82,9 @@ from tests.mock_utils import (
             True,
             200,
             ITEM_COUNT + 3,
+            506,
+            [1103, pandas.NA, pandas.NA, pandas.NA, pandas.NA],
+            [10, pandas.NA, 78, "Not Hispanic or Latino", "princeton_plainsboro_teaching_hospital"],
         ),
         (  # New version of existing data package
             "./tests/test_data/count_synthea_patient.parquet",
@@ -83,6 +96,9 @@ from tests.mock_utils import (
             False,
             200,
             ITEM_COUNT + 3,
+            506,
+            [1103, pandas.NA, pandas.NA, pandas.NA, pandas.NA],
+            [10, pandas.NA, 78, "Not Hispanic or Latino", "princeton_plainsboro_teaching_hospital"],
         ),
         (  # Invalid parquet file
             "./tests/site_upload/test_powerset_merge.py",
@@ -94,6 +110,9 @@ from tests.mock_utils import (
             False,
             500,
             ITEM_COUNT + 1,
+            0,
+            [],
+            [],
         ),
         (  # Checks presence of commas in strings does not cause an error
             "./tests/test_data/cube_strings_with_commas.parquet",
@@ -105,6 +124,14 @@ from tests.mock_utils import (
             False,
             200,
             ITEM_COUNT + 2,
+            30,
+            [37990, pandas.NA, pandas.NA, pandas.NA],
+            [
+                27,
+                "female",
+                "American Indian, or Alaska Native",
+                "princeton_plainsboro_teaching_hospital",
+            ],
         ),
         (  # ensuring that a data package that is a substring does not get
             # merged by substr match
@@ -117,6 +144,9 @@ from tests.mock_utils import (
             False,
             200,
             ITEM_COUNT + 2,
+            506,
+            [1103, pandas.NA, pandas.NA, pandas.NA, pandas.NA],
+            [10, pandas.NA, 78, "Not Hispanic or Latino", "princeton_plainsboro_teaching_hospital"],
         ),
         (  # Empty file upload
             None,
@@ -128,6 +158,9 @@ from tests.mock_utils import (
             False,
             500,
             ITEM_COUNT + 1,
+            0,
+            [],
+            [],
         ),
         (  # Race condition - file deleted before job starts
             None,
@@ -138,6 +171,9 @@ from tests.mock_utils import (
             False,
             500,
             ITEM_COUNT,
+            0,
+            [],
+            [],
         ),
     ],
 )
@@ -151,6 +187,9 @@ def test_powerset_merge_single_upload(
     expected_contents,
     mock_bucket,
     mock_notification,
+    expected_rows,
+    first_row,
+    last_row,
 ):
     s3_client = boto3.client("s3", region_name="us-east-1")
     if upload_file is not None:
@@ -209,6 +248,12 @@ def test_powerset_merge_single_upload(
             if study in item["Key"] and status == 200:
                 agg_df = awswrangler.s3.read_parquet(f"s3://{TEST_BUCKET}/{item['Key']}")
                 assert (agg_df["site"].eq(site)).any()
+                print(len(agg_df))
+                print(agg_df.iloc[0].to_list())
+                print(agg_df.iloc[-1].to_list())
+                assert expected_rows == len(agg_df)
+                assert first_row == agg_df.iloc[0].to_list()
+                assert last_row == agg_df.iloc[-1].to_list()
         elif item["Key"].endswith("transactions.json"):
             assert item["Key"].startswith(enums.BucketPath.META.value)
             metadata = functions.read_metadata(s3_client, TEST_BUCKET)
@@ -341,7 +386,7 @@ def test_powerset_merge_join_study_data(
         elif item["Key"].startswith(f"{enums.BucketPath.AGGREGATE.value}/study"):
             agg_df = awswrangler.s3.read_parquet(f"s3://{TEST_BUCKET}/{item['Key']}")
             # if a file cant be merged and there's no fallback, we expect
-            # [<NA>, site_name], otherwise, [<NA>, site_name, uploading_site_name]
+            # [pandas.NA, site_name], otherwise, [pandas.NA, site_name, uploading_site_name]
             if errors != 0 and not archives:
                 assert len(agg_df["site"].unique() == 2)
             else:
