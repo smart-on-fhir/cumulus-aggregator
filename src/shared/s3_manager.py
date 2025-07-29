@@ -156,6 +156,7 @@ class S3Manager:
     # parquet output creation
     def cache_api(self):
         """Sends an SNS cache event"""
+        # Add an s3 key as an input to this function.
         topic_sns_arn = os.environ.get("TOPIC_CACHE_API_ARN")
         self.sns_client.publish(
             TopicArn=topic_sns_arn, Message="data_packages", Subject="data_packages"

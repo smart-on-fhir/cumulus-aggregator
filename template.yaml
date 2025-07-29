@@ -334,7 +334,7 @@ Resources:
         CacheAPISNSEvent:
           Type: SNS
           Properties:
-            Topic: !Ref SNSTopicCacheAPI
+            Topic: !Ref SNSTopicGlueCrawlComplete
       Policies:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
@@ -849,6 +849,14 @@ Resources:
         - Key: Name
           Value: !Sub 'SNSTopicQueueDistribution-${DeployStage}-${NetworkName}'
 
+  SNSTopicGlueCrawlComplete:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'SNSTopicGlueCrawlComplete-${DeployStage}-${NetworkName}'
+      Tags:
+        - Key: Name
+          Value: !Sub 'SNSTopicGlueCrawlComplete-${DeployStage}-${NetworkName}'
+
   SNSStudyPayload:
     Type: AWS::SNS::Topic
     Properties:
@@ -873,6 +881,15 @@ Resources:
             Resource: !Ref SNSStudyPayload
       Topics: 
         - !Ref SNSStudyPayload
+
+  SQSDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub 'SQSDeadLetterQueue-${DeployStage}-${NetworkName}'
+      Tags:
+        - Key: Name
+          Value: !Sub 'SQSDeadLetterQueue-${DeployStage}-${NetworkName}'
+
 
 ### S3 Buckets
 
@@ -942,6 +959,78 @@ Resources:
         ResultConfiguration:
           OutputLocation: !Sub "s3://${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}/athena/"
 
+### EventBridge Rules
+
+  EventBridgeBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Description: Hanldes events for Cumulus Aggregator
+      DeadLetterConfig:
+        Arn: !GetAtt SQSDeadLetterQueue.Arn
+      Name: !Sub "Cumulus-event-bus-${AWS::AccountId}-${DeployStage}-${NetworkName}"
+  EventBridgeGlueComplete:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: CumulusGlueComplete-dev-mhg
+      # TODO: a resource filter like this :should: work below:
+      #      "resources":[
+      #        "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:crawler/${GlueNameParameter}-crawler-${DeployStage}-${NetworkName}"
+      #      ]
+      # But there's either something about the resource format (or the crawler arn, which is not easily accessible
+      # for some reason) that is preventing this from picking the resource up. For now, we can filter at the lambda,
+      # but it would be nice to resolve this at some point.
+      EventPattern: 
+        Fn::Sub: >-
+          {
+            "source":["aws.glue"],
+            "detail-type":["Glue Crawler State Change"],
+            "detail":{"state":["Succeeded"]}
+          }
+      State: ENABLED
+      Description: !Sub 'Notifies listeners in ${DeployStage}-${NetworkName} that a glue crawl has finished'
+      Targets:
+        - Id: Id44899458-25ac-4677-97d1-b8086ebf1258
+          Arn: !GetAtt SNSTopicGlueCrawlComplete.TopicArn
+          RoleArn: !GetAtt EventBridgeRuleRole.Arn
+          DeadLetterConfig:
+            Arn:
+              !GetAtt SQSDeadLetterQueue.Arn
+          RetryPolicy:
+            MaximumRetryAttempts: 4
+            MaximumEventAgeInSeconds: 400
+
+  # EventBridgeGlueComplete:
+  #   Type: AWS::Events::Rule
+  #   Properties:
+  #     Description: !Sub 'Notifies listeners in ${DeployStage}-${NetworkName} that a glue crawl has finished'
+  #     State: ENABLED
+  #     Name: !Sub "CumulusGlueComplete-${DeployStage}-${NetworkName}"
+  #     #EventBusName: !GetAtt EventBridgeBus.Name
+  #     EventPattern:
+  #       source:
+  #         - "aws.glue"
+  #       detail:
+  #         state:
+  #           - SUCCEEDED
+  #       detail-type:
+  #         - "Glue Job State Change"
+  #         - "Glue Job Run Status"
+  #       resources:
+  #         - Fn::Join:
+  #           - ''
+  #           - - "arn:aws:glue:"
+  #             - !Ref AWS::Region
+  #             - ":"
+  #             - !Ref AWS::AccountId
+  #             - ":crawler/"
+  #             - !Ref GlueCrawler
+  #     Targets:
+  #       - Arn: !Ref SNSTopicGlueCrawlComplete
+  #         Id: !Sub "CrawlTarget-${DeployStage}-${NetworkName}"
+  #         RetryPolicy:
+  #           MaximumRetryAttempts: 4
+  #           MaximumEventAgeInSeconds: 400
+
 ### User login secrets
 
   UserSecrets:
@@ -968,6 +1057,33 @@ Resources:
                 - apigateway.amazonaws.com
             Action:
               - sts:AssumeRole
+
+  EventBridgeRuleRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action:
+              - sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceArn: !Sub "arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/CumulusGlueComplete-${DeployStage}-${NetworkName}"
+                aws:SouceAccount: !Ref AWS::AccountId
+      Policies:
+        - PolicyName: CacheAPIPolicy
+          PolicyDocument:
+              Version: 2012-10-17
+              Statement:
+                Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:CumulusAggCacheAPI-${DeployStage}-${NetworkName}"
 
   CrawlerRole:
     Type: AWS::IAM::Role

@@ -80,6 +80,8 @@ def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None
 def cache_api_handler(event, context):
     """manages event from SNS, executes queries and stashes cache in S#"""
     del context
+    print("Event recieved")
+    print(event)
     s3_bucket_name = os.environ.get("BUCKET_NAME")
     s3_client = boto3.client("s3")
     db = os.environ.get("GLUE_DB_NAME")
