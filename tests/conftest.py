@@ -30,7 +30,7 @@ from unittest import mock
 import boto3
 import duckdb
 import pytest
-from moto import mock_athena, mock_s3, mock_sns
+from moto import mock_athena, mock_s3, mock_sns, mock_sqs
 
 from scripts import credential_management
 from src.shared import enums, functions
@@ -149,6 +149,19 @@ def mock_notification():
     sns_client.create_topic(Name="test-payload")
     yield
     sns.stop()
+
+
+@pytest.fixture
+def mock_queue():
+    """Mocks for SQS queues.
+
+    Make sure the queue name matches the end of the ARN defined in mock_utils.py"""
+    sqs = mock_sqs()
+    sqs.start()
+    sqs_client = boto3.client("sqs", region_name="us-east-1")
+    sqs_client.create_queue(QueueName="test-lockfile-cleanup")
+    yield
+    sqs.stop()
 
 
 @pytest.fixture

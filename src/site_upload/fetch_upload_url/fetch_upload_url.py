@@ -7,11 +7,11 @@ import os
 import boto3
 import botocore.exceptions
 
-from shared import decorators, enums, functions
+from shared import enums, errors, functions, s3_manager
 
 
 def create_presigned_post(
-    bucket_name: str, object_name: str, fields=None, conditions=None, expiration=3600
+    bucket_name: str, object_name: str, lock_id: str, fields=None, conditions=None, expiration=3600
 ):
     """Generates a secure URL for upload without AWS credentials"""
     s3_client = boto3.client(
@@ -27,13 +27,13 @@ def create_presigned_post(
             Conditions=conditions,
             ExpiresIn=expiration,
         )
-        return functions.http_response(200, response_body)
+        return functions.http_response(200, response_body, extra_headers={"lock_id": lock_id})
     except botocore.exceptions.ClientError as e:
         logging.error(e)
         return functions.http_response(400, "Error occured presigning url")
 
 
-@decorators.generic_error_handler(msg="Error occured presigning url")
+# @decorators.generic_error_handler(msg="Error occured presigning url")
 def upload_url_handler(event, context):
     """Processes event from API Gateway"""
     del context
@@ -41,7 +41,7 @@ def upload_url_handler(event, context):
         metadata_db = functions.get_s3_json_as_dict(
             os.environ.get("BUCKET_NAME"), f"{enums.BucketPath.ADMIN.value}/metadata.json"
         )
-    except Excpetion:  # noqa: F821
+    except Exception:
         return functions.http_response(
             500, "Stack configuration error - check bucket name & metadata."
         )
@@ -59,9 +59,24 @@ def upload_url_handler(event, context):
         version = body["data_package_version"]
     else:
         version = "0"
-    res = create_presigned_post(
-        os.environ.get("BUCKET_NAME"),
-        f"{enums.BucketPath.UPLOAD.value}/{body['study']}/{body['data_package']}/"
-        f"{metadata_db[user]['path']}/{int(version):03d}/{body['filename']}",
-    )
-    return res
+    try:
+        manager = s3_manager.S3Manager(
+            event,
+            site=metadata_db[user]["path"],
+            study=body["study"],
+            data_package=body["data_package"],
+            version=version,
+        )
+        lock_id = manager.request_or_validate_lock(event.get("headers", {}).get("lock_id"))
+        res = create_presigned_post(
+            os.environ.get("BUCKET_NAME"),
+            f"{enums.BucketPath.UPLOAD.value}/{body['study']}/{body['data_package']}/"
+            f"{metadata_db[user]['path']}/{int(version):03d}/{body['filename']}",
+            lock_id,
+        )
+        return res
+    except errors.AggregatorStudyProcessingError:
+        return functions.http_response(  # test
+            401,
+            f"Currently processing a previous upload of {body['study']}. Please try again later.",
+        )

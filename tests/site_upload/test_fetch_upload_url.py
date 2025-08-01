@@ -37,7 +37,7 @@ from tests.mock_utils import (
         ({}, 400),
     ],
 )
-def test_fetch_upload_url(body, status, mock_bucket):
+def test_fetch_upload_url(body, status, mock_bucket, mock_queue):
     context = {
         "authorizer": {
             "principalId": "ppth",
@@ -69,7 +69,7 @@ def test_create_presigned_post_error(mock_client):
     mock_client.return_value.generate_presigned_post.side_effect = botocore.exceptions.ClientError(
         error_response={}, operation_name="op"
     )
-    res = fetch_upload_url.create_presigned_post("bucket", "obj")
+    res = fetch_upload_url.create_presigned_post("bucket", "obj", "lock")
     assert res["statusCode"] == 400
 
 

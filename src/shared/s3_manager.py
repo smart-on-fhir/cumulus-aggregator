@@ -1,6 +1,9 @@
+import datetime
+import json
 import logging
 import os
 import traceback
+import uuid
 
 import awswrangler
 import boto3
@@ -10,6 +13,7 @@ import pandas
 from shared import (
     awswrangler_functions,
     enums,
+    errors,
     functions,
 )
 
@@ -19,7 +23,7 @@ logger.setLevel(log_level)
 
 
 class S3Manager:
-    """Class for managing S3 paramaters/access from data in an AWS SNS event.
+    """Class for managing S3 paramaters/access from AWS events, or manual definition.
 
     This is generally intended as a one stop shop for the data processing phase
     of the aggregator pipeline, providing commmon file paths/sns event parsing helpers/
@@ -27,13 +31,20 @@ class S3Manager:
     raw awswrangler/shared functions to try and make those processes simpler.
     """
 
-    def __init__(self, event):
+    def __init__(
+        self,
+        event: dict,
+        study: str | None = None,
+        site: str | None = None,
+        data_package: str | None = None,
+        version: str | None = None,
+    ):
         self.s3_bucket_name = os.environ.get("BUCKET_NAME")
         self.s3_client = boto3.client("s3")
         self.sns_client = boto3.client("sns", region_name=self.s3_client.meta.region_name)
         # If the event is an SNS type event, we're in the aggregation pipeline and set up
         # some convenience values.
-        if "Records" in event:
+        if "Records" in event and "Sns" in event["Records"][0].keys():
             self.event_source = event["Records"][0]["Sns"]["TopicArn"]
             self.s3_key = event["Records"][0]["Sns"]["Message"]
             dp_meta = functions.parse_s3_key(self.s3_key)
@@ -63,6 +74,18 @@ class S3Manager:
                 f"{self.study}/{self.site}/"  # {self.study}__{self.data_package}/"
                 f"{self.study}__{self.data_package}__{self.site}__{self.version}/"
                 f"{self.study}__{self.data_package}__{self.site}__flat.parquet"
+            )
+        if study:
+            self.study = study
+        if site:
+            self.site = site
+        if data_package:
+            self.data_package = data_package
+        if version:
+            self.version = version
+        if site and study:
+            self.lockfile = (
+                f"{enums.BucketPath.META.value}/lockfiles/{self.site}__{self.study}.json"
             )
 
     def error_handler(
@@ -123,6 +146,16 @@ class S3Manager:
         from_path = functions.get_s3_key_from_path(from_path)
         to_path = functions.get_s3_key_from_path(to_path)
         functions.move_s3_file(self.s3_client, self.s3_bucket_name, from_path, to_path)
+
+    def delete_file(self, path: str) -> None:
+        """Moves file from one location to another in s3
+
+        :param from_path: the data source S3 path or key
+        :param to_path: the data destination S3 path or key
+
+        """
+        path = functions.get_s3_key_from_path(path)
+        functions.delete_s3_file(self.s3_client, self.s3_bucket_name, path)
 
     def get_presigned_download_url(self, path: str, expiration=3600) -> dict | None:
         """Generates a secure URL for upload without AWS credentials
@@ -238,3 +271,29 @@ class S3Manager:
             metadata=metadata,
             meta_type=meta_type,
         )
+
+    # Lockfile management
+    def request_or_validate_lock(self, lock_id: str | None = None):
+        try:
+            lock = functions.get_s3_json_as_dict(bucket=self.s3_bucket_name, key=self.lockfile)
+            if lock_id != lock["id"]:
+                raise errors.AggregatorStudyProcessingError
+
+        except botocore.exceptions.ClientError:
+            # if the lockfile doesn't exist, we'll make one
+            lock_id = str(uuid.uuid4())
+            lock = {"id": lock_id, "uploaded_at": datetime.datetime.now(datetime.UTC)}
+            self.s3_client.put_object(
+                Bucket=self.s3_bucket_name,
+                Key=self.lockfile,
+                Body=json.dumps(lock, default=str, indent=2),
+            )
+            sqs_client = boto3.client("sqs")
+            sqs_client.send_message(
+                QueueUrl=os.environ.get("QUEUE_LOCKFILE_CLEANUP"),
+                MessageBody=json.dumps({"site": self.site, "study": self.study}),
+            )
+        return lock_id
+
+    def delete_lockfile(self):
+        self.delete_file(self.lockfile)

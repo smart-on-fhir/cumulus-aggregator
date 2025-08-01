@@ -52,6 +52,9 @@ Parameters:
     Type: CommaDelimitedList
   NetworkName:
     Type: String
+  LockfileDelay:
+    Type: Number
+    Default: 600
 
 Resources:
 
@@ -103,6 +106,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'CumulusAggFetchUploadUrl-${DeployStage}-${NetworkName}'
+      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
       CodeUri: ./src/site_upload/fetch_upload_url
       Handler: fetch_upload_url.upload_url_handler
       Runtime: "python3.11"
@@ -117,6 +121,7 @@ Resources:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
           REGION: !Ref "AWS::Region"
+          QUEUE_LOCKFILE_CLEANUP: !GetAtt SQSLockfileCleanup.QueueUrl
       Events:
         SiteUploadAPI:
           Type: Api
@@ -134,6 +139,12 @@ Resources:
               - kms:Decrypt
             Resource:
               - !ImportValue cumulus-kms-KMSKeyArn
+        - Statement:
+          - Sid: QueuePolicy
+            Action:
+              - sqs:SendMessage
+            Effect: Allow
+            Resource: !GetAtt SQSLockfileCleanup.Arn
 
   FetchUploadUrlLogGroup:
     Type: AWS::Logs::LogGroup
@@ -153,7 +164,7 @@ Resources:
         LogFormat: !Ref LogFormat
         LogGroup: !Sub "/aws/lambda/CumulusAggProcessUpload-${DeployStage}-${NetworkName}"
       MemorySize: 128
-      Timeout: 800
+      Timeout: 100
       Description: Handles initial relocation of upload data
       Environment:
         Variables:
@@ -161,6 +172,7 @@ Resources:
           TOPIC_PROCESS_COUNTS_ARN: !Ref SNSTopicProcessCounts
           TOPIC_PROCESS_FLAT_ARN: !Ref SNSTopicProcessFlat
           TOPIC_PROCESS_STUDY_META_ARN: !Ref SNSTopicProcessStudyMeta
+
       Policies:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
@@ -361,6 +373,56 @@ Resources:
               - kms:Decrypt
             Resource:
               - !ImportValue cumulus-kms-KMSKeyArn
+
+  CacheAPILogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${CacheAPIFunction}"
+      RetentionInDays: !Ref RetentionTime
+
+  LockfileCleanupFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggLockfileCleanup-${DeployStage}-${NetworkName}'
+      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
+      CodeUri: ./src/site_upload/lockfile_cleanup
+      Handler: lockfile_cleanup.lockfile_cleanup_handler
+      Runtime: "python3.11"
+      LoggingConfig:
+        ApplicationLogLevel: !Ref LogLevel
+        LogFormat: !Ref LogFormat
+        LogGroup: !Sub "/aws/lambda/CumulusAggLockfileCleanup-${DeployStage}-${NetworkName}"
+      MemorySize: 512
+      Timeout: 30
+      Description: Cleans dangling lockfiles if not removed elsewhere
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+      Events:
+        LockfileCleanupSQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt SQSLockfileCleanup.Arn
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+        - Statement:
+          - Sid: KMSDecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
+        - Statement:
+          - Sid: QueuePolicy
+            Action:
+              - sqs:ChangeMessageVisibility
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+              - sqs:GetQueueUrl
+              - sqs:ReceiveMessage
+            Effect: Allow
+            Resource: !GetAtt SQSLockfileCleanup.Arn
 
   CacheAPILogGroup:
     Type: AWS::Logs::LogGroup
@@ -873,6 +935,19 @@ Resources:
             Resource: !Ref SNSStudyPayload
       Topics: 
         - !Ref SNSStudyPayload
+
+
+  SQSLockfileCleanup:
+    Type: AWS::SQS::Queue
+    Properties:
+      DelaySeconds: !Ref LockfileDelay
+
+  SQSLockfileEventSource:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt SQSLockfileCleanup.Arn
+      FunctionName:
+        !Ref LockfileCleanupFunction
 
 ### S3 Buckets
 

@@ -1,5 +1,6 @@
 import copy
 import io
+import os
 from unittest import mock
 
 import botocore
@@ -7,7 +8,7 @@ import freezegun
 import pandas
 import pytest
 
-from src.shared import enums, s3_manager
+from src.shared import enums, functions, s3_manager
 from tests import mock_utils
 
 
@@ -28,6 +29,10 @@ def mock_sns_event(site, study, data_package, version):
 
 
 def test_init_manager(mock_bucket):
+    expected_lockfile = (
+        f"{enums.BucketPath.META.value}/lockfiles/"
+        f"{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_STUDY}.json"
+    )
     manager = s3_manager.S3Manager(
         mock_sns_event(
             mock_utils.EXISTING_SITE,
@@ -57,6 +62,19 @@ def test_init_manager(mock_bucket):
         f"flat/study/{mock_utils.EXISTING_SITE}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}"
         f"__{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_VERSION}/"
         f"{mock_utils.EXISTING_STUDY}__encounter__{mock_utils.EXISTING_SITE}__flat.parquet"
+    )
+    assert manager.parquet_flat_key == (
+        f"flat/study/{mock_utils.EXISTING_SITE}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}"
+        f"__{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_VERSION}/"
+        f"{mock_utils.EXISTING_STUDY}__encounter__{mock_utils.EXISTING_SITE}__flat.parquet"
+    )
+    assert manager.lockfile == expected_lockfile
+    manager = s3_manager.S3Manager(
+        {},
+        site=mock_utils.EXISTING_SITE,
+        study=mock_utils.EXISTING_STUDY,
+        data_package=mock_utils.EXISTING_DATA_P,
+        version=mock_utils.EXISTING_VERSION,
     )
 
 
@@ -396,3 +414,69 @@ def test_write_local_metadata(mock_bucket):
         Bucket=manager.s3_bucket_name, Key="metadata/transactions.json"
     )["Body"].read()
     assert metadata == b'{\n  "foo": "bar"\n}'
+
+
+@mock.patch.dict(os.environ, mock_utils.MOCK_ENV)
+def test_validate_lock(mock_bucket, mock_queue):
+    manager = s3_manager.S3Manager(
+        mock_sns_event(
+            mock_utils.EXISTING_SITE,
+            mock_utils.EXISTING_STUDY,
+            mock_utils.EXISTING_DATA_P,
+            mock_utils.EXISTING_VERSION,
+        )
+    )
+    assert (
+        "Contents"
+        not in manager.s3_client.list_objects_v2(
+            Bucket=manager.s3_bucket_name, Prefix=f"{enums.BucketPath.META.value}/lockfiles/"
+        ).keys()
+    )
+    lock = manager.request_or_validate_lock()
+    lockfile = functions.get_s3_json_as_dict(
+        manager.s3_bucket_name,
+        (
+            f"{enums.BucketPath.META.value}/lockfiles/"
+            f"{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_STUDY}.json"
+        ),
+    )
+    assert lock == lockfile["id"]
+    lock = manager.request_or_validate_lock(lock)
+    assert lock == lockfile["id"]
+    with pytest.raises(s3_manager.errors.AggregatorStudyProcessingError):
+        manager.request_or_validate_lock()
+    with pytest.raises(s3_manager.errors.AggregatorStudyProcessingError):
+        manager.request_or_validate_lock("invalid lock string")
+
+
+def test_delete_lockfile(mock_bucket):
+    manager = s3_manager.S3Manager(
+        mock_sns_event(
+            mock_utils.EXISTING_SITE,
+            mock_utils.EXISTING_STUDY,
+            mock_utils.EXISTING_DATA_P,
+            mock_utils.EXISTING_VERSION,
+        )
+    )
+    manager.write_data_to_file(
+        path=(
+            f"{enums.BucketPath.META.value}/lockfiles/"
+            f"{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_STUDY}.json"
+        ),
+        data="foo",
+    )
+    assert (
+        len(
+            manager.s3_client.list_objects_v2(
+                Bucket=manager.s3_bucket_name, Prefix=f"{enums.BucketPath.META.value}/lockfiles/"
+            )["Contents"]
+        )
+        == 1
+    )
+    manager.delete_lockfile()
+    assert (
+        "Contents"
+        not in manager.s3_client.list_objects_v2(
+            Bucket=manager.s3_bucket_name, Prefix=f"{enums.BucketPath.META.value}/lockfiles/"
+        ).keys()
+    )
