@@ -1,7 +1,7 @@
-FROM public.ecr.aws/lambda/python:3.11
-
+FROM public.ecr.aws/lambda/python:3.11 
 RUN yum update git -y
 RUN yum install git -y
+RUN yum groupinstall "Development Tools" -y
 
 WORKDIR ${LAMBDA_TASK_ROOT}
 COPY dashboard/queue_distribute/requirements.txt .
