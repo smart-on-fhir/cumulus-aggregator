@@ -52,7 +52,7 @@ Parameters:
     Type: CommaDelimitedList
   NetworkName:
     Type: String
-  LockfileDelay:
+  TransactionDelay:
     Type: Number
     Default: 600
 
@@ -121,7 +121,7 @@ Resources:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
           REGION: !Ref "AWS::Region"
-          QUEUE_LOCKFILE_CLEANUP: !GetAtt SQSLockfileCleanup.QueueUrl
+          QUEUE_TRANSACTION_CLEANUP: !GetAtt SQSTransactionCleanup.QueueUrl
       Events:
         SiteUploadAPI:
           Type: Api
@@ -144,7 +144,7 @@ Resources:
             Action:
               - sqs:SendMessage
             Effect: Allow
-            Resource: !GetAtt SQSLockfileCleanup.Arn
+            Resource: !GetAtt SQSTransactionCleanup.Arn
 
   FetchUploadUrlLogGroup:
     Type: AWS::Logs::LogGroup
@@ -380,29 +380,29 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${CacheAPIFunction}"
       RetentionInDays: !Ref RetentionTime
 
-  LockfileCleanupFunction:
+  TransactionCleanupFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'CumulusAggLockfileCleanup-${DeployStage}-${NetworkName}'
+      FunctionName: !Sub 'CumulusAggTransactionCleanup-${DeployStage}-${NetworkName}'
       Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
-      CodeUri: ./src/site_upload/lockfile_cleanup
-      Handler: lockfile_cleanup.lockfile_cleanup_handler
+      CodeUri: ./src/site_upload/transaction_cleanup
+      Handler: transaction_cleanup.transaction_cleanup_handler
       Runtime: "python3.11"
       LoggingConfig:
         ApplicationLogLevel: !Ref LogLevel
         LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggLockfileCleanup-${DeployStage}-${NetworkName}"
+        LogGroup: !Sub "/aws/lambda/CumulusAggTransactionCleanup-${DeployStage}-${NetworkName}"
       MemorySize: 512
       Timeout: 30
-      Description: Cleans dangling lockfiles if not removed elsewhere
+      Description: Cleans dangling Transactions if not removed elsewhere
       Environment:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
       Events:
-        LockfileCleanupSQSEvent:
+        TransactionCleanupSQSEvent:
           Type: SQS
           Properties:
-            Queue: !GetAtt SQSLockfileCleanup.Arn
+            Queue: !GetAtt SQSTransactionCleanup.Arn
       Policies:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
@@ -422,7 +422,7 @@ Resources:
               - sqs:GetQueueUrl
               - sqs:ReceiveMessage
             Effect: Allow
-            Resource: !GetAtt SQSLockfileCleanup.Arn
+            Resource: !GetAtt SQSTransactionCleanup.Arn
 
   CacheAPILogGroup:
     Type: AWS::Logs::LogGroup
@@ -937,17 +937,17 @@ Resources:
         - !Ref SNSStudyPayload
 
 
-  SQSLockfileCleanup:
+  SQSTransactionCleanup:
     Type: AWS::SQS::Queue
     Properties:
-      DelaySeconds: !Ref LockfileDelay
+      DelaySeconds: !Ref TransactionDelay
 
-  SQSLockfileEventSource:
+  SQSTransactionEventSource:
     Type: AWS::Lambda::EventSourceMapping
     Properties:
-      EventSourceArn: !GetAtt SQSLockfileCleanup.Arn
+      EventSourceArn: !GetAtt SQSTransactionCleanup.Arn
       FunctionName:
-        !Ref LockfileCleanupFunction
+        !Ref TransactionCleanupFunction
 
 ### S3 Buckets
 

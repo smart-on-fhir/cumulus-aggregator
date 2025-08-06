@@ -29,8 +29,8 @@ def mock_sns_event(site, study, data_package, version):
 
 
 def test_init_manager(mock_bucket):
-    expected_lockfile = (
-        f"{enums.BucketPath.META.value}/lockfiles/"
+    expected_transaction = (
+        f"{enums.BucketPath.META.value}/transactions/"
         f"{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_STUDY}.json"
     )
     manager = s3_manager.S3Manager(
@@ -54,6 +54,10 @@ def test_init_manager(mock_bucket):
     assert manager.version == mock_utils.EXISTING_VERSION
     assert manager.metadata == mock_utils.get_mock_metadata()
     assert manager.types_metadata == mock_utils.get_mock_column_types_metadata()
+    assert manager.transaction == (
+        f"{enums.BucketPath.META.value}/transactions/"
+        f"{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_STUDY}.json"
+    )
     assert (
         manager.parquet_aggregate_path
         == "s3://cumulus-aggregator-site-counts-test/aggregates/study/study__encounter/study__encounter__099/study__encounter__aggregate.parquet"
@@ -68,13 +72,21 @@ def test_init_manager(mock_bucket):
         f"__{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_VERSION}/"
         f"{mock_utils.EXISTING_STUDY}__encounter__{mock_utils.EXISTING_SITE}__flat.parquet"
     )
-    assert manager.lockfile == expected_lockfile
+    assert manager.transaction == expected_transaction
     manager = s3_manager.S3Manager(
         {},
         site=mock_utils.EXISTING_SITE,
         study=mock_utils.EXISTING_STUDY,
         data_package=mock_utils.EXISTING_DATA_P,
         version=mock_utils.EXISTING_VERSION,
+    )
+    assert manager.study == mock_utils.EXISTING_STUDY
+    assert manager.data_package == mock_utils.EXISTING_DATA_P
+    assert manager.site == mock_utils.EXISTING_SITE
+    assert manager.version == mock_utils.EXISTING_VERSION
+    assert manager.transaction == (
+        f"{enums.BucketPath.META.value}/transactions/"
+        f"{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_STUDY}.json"
     )
 
 
@@ -417,7 +429,7 @@ def test_write_local_metadata(mock_bucket):
 
 
 @mock.patch.dict(os.environ, mock_utils.MOCK_ENV)
-def test_validate_lock(mock_bucket, mock_queue):
+def test_validate_transaction(mock_bucket, mock_queue):
     manager = s3_manager.S3Manager(
         mock_sns_event(
             mock_utils.EXISTING_SITE,
@@ -429,27 +441,27 @@ def test_validate_lock(mock_bucket, mock_queue):
     assert (
         "Contents"
         not in manager.s3_client.list_objects_v2(
-            Bucket=manager.s3_bucket_name, Prefix=f"{enums.BucketPath.META.value}/lockfiles/"
+            Bucket=manager.s3_bucket_name, Prefix=f"{enums.BucketPath.META.value}/transactions/"
         ).keys()
     )
-    lock = manager.request_or_validate_lock()
-    lockfile = functions.get_s3_json_as_dict(
+    transaction = manager.request_or_validate_transaction()
+    transaction = functions.get_s3_json_as_dict(
         manager.s3_bucket_name,
         (
-            f"{enums.BucketPath.META.value}/lockfiles/"
+            f"{enums.BucketPath.META.value}/transactions/"
             f"{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_STUDY}.json"
         ),
     )
-    assert lock == lockfile["id"]
-    lock = manager.request_or_validate_lock(lock)
-    assert lock == lockfile["id"]
+    assert transaction == transaction
+    transaction = manager.request_or_validate_transaction(transaction["id"])
+    assert transaction == transaction
     with pytest.raises(s3_manager.errors.AggregatorStudyProcessingError):
-        manager.request_or_validate_lock()
+        manager.request_or_validate_transaction()
     with pytest.raises(s3_manager.errors.AggregatorStudyProcessingError):
-        manager.request_or_validate_lock("invalid lock string")
+        manager.request_or_validate_transaction("invalid transaction string")
 
 
-def test_delete_lockfile(mock_bucket):
+def test_delete_transaction(mock_bucket):
     manager = s3_manager.S3Manager(
         mock_sns_event(
             mock_utils.EXISTING_SITE,
@@ -460,7 +472,7 @@ def test_delete_lockfile(mock_bucket):
     )
     manager.write_data_to_file(
         path=(
-            f"{enums.BucketPath.META.value}/lockfiles/"
+            f"{enums.BucketPath.META.value}/transactions/"
             f"{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_STUDY}.json"
         ),
         data="foo",
@@ -468,15 +480,15 @@ def test_delete_lockfile(mock_bucket):
     assert (
         len(
             manager.s3_client.list_objects_v2(
-                Bucket=manager.s3_bucket_name, Prefix=f"{enums.BucketPath.META.value}/lockfiles/"
+                Bucket=manager.s3_bucket_name, Prefix=f"{enums.BucketPath.META.value}/transactions/"
             )["Contents"]
         )
         == 1
     )
-    manager.delete_lockfile()
+    manager.delete_transaction()
     assert (
         "Contents"
         not in manager.s3_client.list_objects_v2(
-            Bucket=manager.s3_bucket_name, Prefix=f"{enums.BucketPath.META.value}/lockfiles/"
+            Bucket=manager.s3_bucket_name, Prefix=f"{enums.BucketPath.META.value}/transactions/"
         ).keys()
     )

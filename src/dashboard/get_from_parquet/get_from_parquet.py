@@ -3,10 +3,10 @@ from datetime import datetime
 import awswrangler
 import pyarrow
 
-from shared import decorators, enums, functions, s3_manager
+from shared import enums, functions, s3_manager
 
 
-@decorators.generic_error_handler(msg="Error retrieving data from parquet")
+# @decorators.generic_error_handler(msg="Error retrieving data from parquet")
 def from_parquet_handler(event, context):
     """manages event and returns parquet file as json dict"""
     del context

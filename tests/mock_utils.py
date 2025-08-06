@@ -7,7 +7,9 @@ TEST_PROCESS_COUNTS_ARN = "arn:aws:sns:us-east-1:123456789012:test-counts"
 TEST_PROCESS_FLAT_ARN = "arn:aws:sns:us-east-1:123456789012:test-flat"
 TEST_PROCESS_STUDY_META_ARN = "arn:aws:sns:us-east-1:123456789012:test-meta"
 TEST_CACHE_API_ARN = "arn:aws:sns:us-east-1:123456789012:test-cache"
-TEST_LOCKFILE_CLEANUP_URL = "https://sqs.us-east-1.amazonaws.com/123456789012/test-lockfile-cleanup"
+TEST_TRANSACTION_CLEANUP_URL = (
+    "https://sqs.us-east-1.amazonaws.com/123456789012/test-transaction-cleanup"
+)
 ITEM_COUNT = 11
 DATA_PACKAGE_COUNT = 3
 
@@ -34,7 +36,7 @@ MOCK_ENV = {
     "TOPIC_PROCESS_FLAT_ARN": TEST_PROCESS_FLAT_ARN,
     "TOPIC_PROCESS_STUDY_META_ARN": TEST_PROCESS_STUDY_META_ARN,
     "TOPIC_CACHE_API_ARN": TEST_CACHE_API_ARN,
-    "QUEUE_LOCKFILE_CLEANUP": TEST_LOCKFILE_CLEANUP_URL,
+    "QUEUE_TRANSACTION_CLEANUP": TEST_TRANSACTION_CLEANUP_URL,
 }
 
 

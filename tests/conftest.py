@@ -159,7 +159,7 @@ def mock_queue():
     sqs = mock_sqs()
     sqs.start()
     sqs_client = boto3.client("sqs", region_name="us-east-1")
-    sqs_client.create_queue(QueueName="test-lockfile-cleanup")
+    sqs_client.create_queue(QueueName="test-transaction-cleanup")
     yield
     sqs.stop()
 
