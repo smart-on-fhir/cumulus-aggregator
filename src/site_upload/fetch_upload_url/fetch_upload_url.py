@@ -88,6 +88,6 @@ def upload_url_handler(event, context):
         return res
     except errors.AggregatorStudyProcessingError:
         return functions.http_response(  # test
-            401,
+            412,
             f"Currently processing a previous upload of {body['study']}. Please try again later.",
         )

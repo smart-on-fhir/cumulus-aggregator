@@ -49,7 +49,7 @@ class S3Manager:
         self.transaction = None
         # If the event is an SNS type event, we're in the aggregation pipeline and set up
         # some convenience values.
-        if "Records" in event and "Sns" in event["Records"][0].keys():
+        if "Records" in event and "Sns" in event["Records"][0]:
             self.event_source = event["Records"][0]["Sns"]["TopicArn"]
             self.s3_key = event["Records"][0]["Sns"]["Message"]
             dp_meta = functions.parse_s3_key(self.s3_key)
@@ -286,6 +286,9 @@ class S3Manager:
                 raise errors.AggregatorStudyProcessingError
 
         except botocore.exceptions.ClientError:
+            if transaction_id is not None:
+                # are we requesting a transaction that no longer exists for some reason?
+                raise errors.AggregatorStudyProcessingError
             # if the transaction doesn't exist, we'll make one
             transaction_id = str(uuid.uuid4())
             transaction = {"id": transaction_id, "uploaded_at": datetime.datetime.now(datetime.UTC)}
