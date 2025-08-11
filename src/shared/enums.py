@@ -19,6 +19,7 @@ class BucketPath(enum.Enum):
     STUDY_META = "study_metadata"
     TEMP = "temp"
     UPLOAD = "site_upload"
+    UPLOAD_STAGING = "upload_staging"
 
 
 class ColumnTypesKeys(enum.Enum):

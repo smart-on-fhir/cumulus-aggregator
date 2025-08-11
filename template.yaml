@@ -152,6 +152,40 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${FetchUploadUrlFunction}"
       RetentionInDays: !Ref RetentionTime
 
+  UnzipUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggUnzipUpload-${DeployStage}-${NetworkName}'
+      CodeUri: ./src/site_upload/unzip_upload
+      Handler: unzip_upload.unzip_upload_handler
+      Runtime: "python3.11"
+      LoggingConfig:
+        ApplicationLogLevel: !Ref LogLevel
+        LogFormat: !Ref LogFormat
+        LogGroup: !Sub "/aws/lambda/CumulusAggUnzipUpload-${DeployStage}-${NetworkName}"
+      MemorySize: 4096
+      Timeout: 120
+      Description: Unpacks data from uploaded zipfile
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+        - Statement:
+          - Sid: KMSDecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
+
+  UnzipUploadLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${UnzipUploadFunction}"
+      RetentionInDays: !Ref RetentionTime
+
   ProcessUploadFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -860,6 +894,16 @@ Resources:
 
 ### Lambda permissions
 
+  UnzipUploadFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref UnzipUploadFunction
+      Principal: s3.amazonaws.com
+      #This can't be a !Ref due to circular refs
+      SourceArn: !Sub 'arn:aws:s3:::${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+      SourceAccount: !Ref AWS::AccountId
+
   ProcessUploadFunctionPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -966,6 +1010,13 @@ Resources:
                 Rules:
                   - Name: prefix
                     Value: 'site_upload/'
+          - Event: s3:ObjectCreated:*
+            Function: !GetAtt UnzipUploadFunction.Arn
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: 'upload_staging/'
       LifecycleConfiguration:
         Rules:
           - Id: TempfileCleanup

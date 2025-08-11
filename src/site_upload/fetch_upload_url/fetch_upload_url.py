@@ -56,7 +56,7 @@ def upload_url_handler(event, context):
         )
     user = event["requestContext"]["authorizer"]["principalId"]
     body = json.loads(event["body"])
-    for key in ["study", "data_package", "filename"]:
+    for key in ["study", "filename"]:
         if key not in body.keys() or body[key] is None:
             return functions.http_response(  # test
                 400,
@@ -73,7 +73,7 @@ def upload_url_handler(event, context):
             event,
             site=metadata_db[user]["path"],
             study=body["study"],
-            data_package=body["data_package"],
+            data_package=None,
             version=version,
         )
         transaction_id = manager.request_or_validate_transaction(
@@ -81,7 +81,7 @@ def upload_url_handler(event, context):
         )
         res = create_presigned_post(
             os.environ.get("BUCKET_NAME"),
-            f"{enums.BucketPath.UPLOAD.value}/{body['study']}/{body['data_package']}/"
+            f"{enums.BucketPath.UPLOAD_STAGING.value}/{body['study']}/"
             f"{metadata_db[user]['path']}/{int(version):03d}/{body['filename']}",
             transaction_id,
         )
