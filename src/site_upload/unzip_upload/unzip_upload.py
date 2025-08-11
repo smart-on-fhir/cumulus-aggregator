@@ -21,29 +21,29 @@ def unzip_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> Non
     archive = zipfile.ZipFile(buffer)
     files = archive.namelist()
     files.remove("manifest.toml")
-    meta_files = [x for x in files if "__meta_" in x]
-    files = list(set(files) - set(meta_files) - set(["manifest.toml"]))
     # The manifest will be used as a signal that the extract has finished,
     # so we'll extract it last in all cases.
     # TODO: decide on extract location for manifests
-    for file_list in [meta_files, files, ["manifest.toml"]]:
+    for file_list in [files, ["manifest.toml"]]:
         for file in file_list:
             target_folder = (
                 functions.get_folder_from_s3_path(s3_key)
-                .replace(f"{enums.BucketPath.STAGING.value}/", f"{enums.BucketPath.UPLOAD.value}/")
+                .replace(
+                    f"{enums.BucketPath.UPLOAD_STAGING.value}/", f"{enums.BucketPath.UPLOAD.value}/"
+                )
                 .replace(f"/{metadata.study}/", f"/{metadata.study}/{file.split('.')[0]}/")
             )
             s3_client.upload_fileobj(
                 archive.open(file), Bucket=s3_bucket_name, Key=f"{target_folder}/{file}"
             )
     archive_key = s3_key.replace(
-        f"{enums.BucketPath.STAGING.value}/", f"{enums.BucketPath.ARCHIVE.value}/"
+        f"{enums.BucketPath.UPLOAD_STAGING.value}/", f"{enums.BucketPath.ARCHIVE.value}/"
     )
     functions.move_s3_file(
         s3_client=s3_client,
         s3_bucket_name=s3_bucket_name,
         old_key=s3_key,
-        new_key=f"{archive_key}.{datetime.datetime.now(datetime.UTC)}",
+        new_key=f"{archive_key}.{datetime.datetime.now(datetime.UTC).isoformat()}",
     )
 
 

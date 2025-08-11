@@ -15,11 +15,11 @@ class BucketPath(enum.Enum):
     LAST_VALID = "last_valid"
     LATEST = "latest"
     META = "metadata"
-    STAGING = "upload_staging"
     STATIC = "static"
     STUDY_META = "study_metadata"
     TEMP = "temp"
     UPLOAD = "site_upload"
+    UPLOAD_STAGING = "upload_staging"
 
 
 class ColumnTypesKeys(enum.Enum):

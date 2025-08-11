@@ -43,13 +43,13 @@ def test_unzip_upload(
         s3_client.upload_file(
             upload_file,
             TEST_BUCKET,
-            f"{enums.BucketPath.STAGING.value}{upload_path}",
+            f"{enums.BucketPath.UPLOAD_STAGING.value}{upload_path}",
         )
     event = {
         "Records": [
             {
                 "awsRegion": "us-east-1",
-                "s3": {"object": {"key": f"{enums.BucketPath.STAGING.value}{upload_path}"}},
+                "s3": {"object": {"key": f"{enums.BucketPath.UPLOAD_STAGING.value}{upload_path}"}},
             }
         ]
     }
@@ -63,5 +63,5 @@ def test_unzip_upload(
         assert any(file["Key"].endswith(expected) for expected in expected_contents)
     s3_res = s3_client.list_objects_v2(Bucket=TEST_BUCKET, Prefix=enums.BucketPath.ARCHIVE.value)
     assert s3_res["Contents"][0]["Key"] == (
-        f"{enums.BucketPath.ARCHIVE.value}{upload_path}.2020-01-01 00:00:00+00:00"
+        f"{enums.BucketPath.ARCHIVE.value}{upload_path}.2020-01-01T00:00:00+00:00"
     )

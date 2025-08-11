@@ -81,7 +81,7 @@ def upload_url_handler(event, context):
         )
         res = create_presigned_post(
             os.environ.get("BUCKET_NAME"),
-            f"{enums.BucketPath.STAGING.value}/{body['study']}/"
+            f"{enums.BucketPath.UPLOAD_STAGING.value}/{body['study']}/"
             f"{metadata_db[user]['path']}/{int(version):03d}/{body['filename']}",
             transaction_id,
         )

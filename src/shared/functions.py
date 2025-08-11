@@ -338,7 +338,7 @@ def parse_s3_key(key: str) -> PackageMetadata:
                     data_package=key[2],
                     version=key[4],
                 )
-            case enums.BucketPath.STAGING.value:
+            case enums.BucketPath.UPLOAD_STAGING.value:
                 package = PackageMetadata(
                     study=key[1],
                     site=key[2],
