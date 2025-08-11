@@ -52,12 +52,12 @@ def test_fetch_upload_url(body, status, mock_bucket, mock_queue):
         res_body = json.loads(response["body"])
         if "data_package_version" not in body.keys():
             assert res_body["fields"]["key"] == (
-                f"{enums.BucketPath.UPLOAD.value}/{body['study']}/{body['data_package']}/"
+                f"{enums.BucketPath.STAGING.value}/{body['study']}/"
                 f"{EXISTING_SITE}/000/encounter.parquet"
             )
         else:
             assert res_body["fields"]["key"] == (
-                f"{enums.BucketPath.UPLOAD.value}/{body['study']}/{body['data_package']}/"
+                f"{enums.BucketPath.STAGING.value}/{body['study']}/"
                 f"{EXISTING_SITE}/{body['data_package_version']}/encounter.parquet"
             )
 

@@ -15,6 +15,7 @@ class BucketPath(enum.Enum):
     LAST_VALID = "last_valid"
     LATEST = "latest"
     META = "metadata"
+    STAGING = "upload_staging"
     STATIC = "static"
     STUDY_META = "study_metadata"
     TEMP = "temp"

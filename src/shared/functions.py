@@ -234,6 +234,12 @@ def get_filename_from_s3_path(s3_path: str):
     return s3_path.split("/")[-1]
 
 
+def get_folder_from_s3_path(s3_path: str):
+    """Given an s3 path/key,returns the folder path"""
+    s3_path = get_s3_key_from_path(s3_path)
+    return s3_path.rsplit("/", 1)[0]
+
+
 def get_s3_key_from_path(s3_path: str):
     """returns a valid S3 key given an S3 path (or given a key, returns the key)"""
     if s3_path.startswith("s3"):
@@ -278,7 +284,7 @@ def get_latest_data_package_version(bucket, prefix):
 class PackageMetadata:
     study: str
     site: str | None
-    data_package: str
+    data_package: str | None
     version: str
 
 
@@ -331,6 +337,13 @@ def parse_s3_key(key: str) -> PackageMetadata:
                     site=key[3],
                     data_package=key[2],
                     version=key[4],
+                )
+            case enums.BucketPath.STAGING.value:
+                package = PackageMetadata(
+                    study=key[1],
+                    site=key[2],
+                    data_package=None,
+                    version=key[3],
                 )
             case _:
                 raise errors.AggregatorS3Error(f" {key[0]} does not correspond to a data package")
