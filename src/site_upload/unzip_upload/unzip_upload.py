@@ -8,7 +8,7 @@ from io import BytesIO
 
 import boto3
 
-from shared import decorators, enums, functions
+from shared import enums, functions
 
 log_level = os.environ.get("LAMBDA_LOG_LEVEL", "INFO")
 logger = logging.getLogger()
@@ -21,9 +21,11 @@ def unzip_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> Non
     archive = zipfile.ZipFile(buffer)
     files = archive.namelist()
     files.remove("manifest.toml")
+
     # The manifest will be used as a signal that the extract has finished,
     # so we'll extract it last in all cases.
     # TODO: decide on extract location for manifests
+    new_keys = []
     for file_list in [files, ["manifest.toml"]]:
         for file in file_list:
             target_folder = (
@@ -36,6 +38,7 @@ def unzip_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> Non
             s3_client.upload_fileobj(
                 archive.open(file), Bucket=s3_bucket_name, Key=f"{target_folder}/{file}"
             )
+            new_keys.append(f"{target_folder}/{file}")
     archive_key = s3_key.replace(
         f"{enums.BucketPath.UPLOAD_STAGING.value}/", f"{enums.BucketPath.ARCHIVE.value}/"
     )
@@ -45,9 +48,13 @@ def unzip_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> Non
         old_key=s3_key,
         new_key=f"{archive_key}.{datetime.datetime.now(datetime.UTC).isoformat()}",
     )
+    topic_sns_arn = os.environ.get("TOPIC_PROCESS_UPLOADS_ARN")
+    sns_subject = "Process file unzip event"
+    for key in new_keys:
+        sns_client.publish(TopicArn=topic_sns_arn, Message=key, Subject=sns_subject)
 
 
-@decorators.generic_error_handler(msg="Error processing file upload")
+# @decorators.generic_error_handler(msg="Error processing file upload")
 def unzip_upload_handler(event, context):
     """manages event from S3, triggers file processing and merge"""
     del context

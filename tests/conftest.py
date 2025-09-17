@@ -80,7 +80,7 @@ def _init_mock_data(s3_client, bucket, study, data_package, version):
 
 @pytest.fixture(scope="session", autouse=True)
 def mock_env():
-    with mock.patch.dict(os.environ, mock_utils.MOCK_ENV):
+    with mock.patch.dict(os.environ, mock_utils.MOCK_ENV, clear=True):
         yield
 
 
@@ -114,22 +114,17 @@ def mock_bucket():
     credential_management.create_meta(s3_client, bucket, "elsewhere", "st_elsewhere")
     credential_management.create_meta(s3_client, bucket, "hope", "chicago_hope")
 
-    metadata = mock_utils.get_mock_metadata()
-    functions.write_metadata(s3_client=s3_client, s3_bucket_name=bucket, metadata=metadata)
-    study_metadata = mock_utils.get_mock_study_metadata()
-    functions.write_metadata(
-        s3_client=s3_client,
-        s3_bucket_name=bucket,
-        metadata=study_metadata,
-        meta_type=enums.JsonFilename.STUDY_PERIODS.value,
-    )
-    column_types_metadata = mock_utils.get_mock_column_types_metadata()
-    functions.write_metadata(
-        s3_client=s3_client,
-        s3_bucket_name=bucket,
-        metadata=column_types_metadata,
-        meta_type=enums.JsonFilename.COLUMN_TYPES.value,
-    )
+    for meta_type, source in [
+        [enums.JsonFilename.TRANSACTIONS.value, mock_utils.get_mock_metadata()],
+        [enums.JsonFilename.STUDY_PERIODS.value, mock_utils.get_mock_study_metadata()],
+        [enums.JsonFilename.COLUMN_TYPES.value, mock_utils.get_mock_column_types_metadata()],
+    ]:
+        functions.put_s3_file(
+            s3_client=s3_client,
+            s3_bucket_name=bucket,
+            key=f"{enums.BucketPath.META.value}/{meta_type}.json",
+            payload=source,
+        )
     yield
     s3.stop()
 
@@ -147,6 +142,7 @@ def mock_notification():
     sns_client.create_topic(Name="test-meta")
     sns_client.create_topic(Name="test-cache")
     sns_client.create_topic(Name="test-payload")
+    sns_client.create_topic(Name="test-uploads")
     yield
     sns.stop()
 
@@ -160,6 +156,7 @@ def mock_queue():
     sqs.start()
     sqs_client = boto3.client("sqs", region_name="us-east-1")
     sqs_client.create_queue(QueueName="test-transaction-cleanup")
+    sqs_client.create_queue(QueueName="test-metadata-update")
     yield
     sqs.stop()
 

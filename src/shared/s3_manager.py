@@ -33,7 +33,7 @@ class S3Manager:
 
     def __init__(
         self,
-        event: dict,
+        event: dict | None = None,
         study: str | None = None,
         site: str | None = None,
         data_package: str | None = None,
@@ -42,6 +42,7 @@ class S3Manager:
         self.s3_bucket_name = os.environ.get("BUCKET_NAME")
         self.s3_client = boto3.client("s3")
         self.sns_client = boto3.client("sns", region_name=self.s3_client.meta.region_name)
+        self.sqs_client = boto3.client("sqs", region_name=self.s3_client.meta.region_name)
         self.site = None
         self.study = None
         self.data_package = None
@@ -49,7 +50,7 @@ class S3Manager:
         self.transaction = None
         # If the event is an SNS type event, we're in the aggregation pipeline and set up
         # some convenience values.
-        if "Records" in event and "Sns" in event["Records"][0]:
+        if event is not None and "Records" in event and "Sns" in event["Records"][0]:
             self.event_source = event["Records"][0]["Sns"]["TopicArn"]
             self.s3_key = event["Records"][0]["Sns"]["Message"]
             dp_meta = functions.parse_s3_key(self.s3_key)
@@ -65,6 +66,11 @@ class S3Manager:
                 self.s3_bucket_name,
                 meta_type=enums.JsonFilename.COLUMN_TYPES.value,
             )
+            # These two dictionaries should be shadow copies of the metadata dicts,
+            # containing only the changes made in the lambda lifecycle.
+            self.metadata_delta = {}
+            self.types_metadata_delta = {}
+
             self.parquet_aggregate_path = (
                 f"s3://{self.s3_bucket_name}/{enums.BucketPath.AGGREGATE.value}/"
                 f"{self.study}/{self.study}__{self.data_package}/"
@@ -113,6 +119,19 @@ class S3Manager:
         self.update_local_metadata(enums.TransactionKeys.LAST_ERROR.value)
 
     # S3 Filesystem operations
+    def put_file(self, path: str, payload: str | dict) -> None:
+        """Writes the variable in payload to s3.
+
+        :param path: the path of the requested file
+        :param payload: the variable to write to the file in S3
+        """
+        path = functions.get_s3_key_from_path(path)
+        if isinstance(payload, dict):
+            payload = json.dumps(payload)
+        functions.put_s3_file(
+            s3_client=self.s3_client, s3_bucket_name=self.s3_bucket_name, key=path, payload=payload
+        )
+
     def copy_file(self, from_path: str, to_path: str) -> None:
         """Copies a file from one location to another in S3.
 
@@ -160,6 +179,10 @@ class S3Manager:
         """
         path = functions.get_s3_key_from_path(path)
         functions.delete_s3_file(self.s3_client, self.s3_bucket_name, path)
+
+    def get_last_modified_timestamp(self, path: str):
+        path = functions.get_s3_key_from_path(path)
+        return self.s3_client.head_object(Bucket=self.s3_bucket_name, Key=path)["LastModified"]
 
     def get_presigned_download_url(self, path: str, expiration=3600) -> dict | None:
         """Generates a secure URL for upload without AWS credentials
@@ -217,7 +240,6 @@ class S3Manager:
         *,
         site=None,
         value=None,
-        metadata: dict | None = None,
         meta_type: str | None = enums.JsonFilename.TRANSACTIONS.value,
         extra_items: dict | None = None,
     ):
@@ -247,30 +269,41 @@ class S3Manager:
             version = f"{self.study}__{self.data_package}__{self.site}__{self.version}"
         else:
             version = f"{self.study}__{self.data_package}__{self.version}"
-        if metadata is None:
-            metadata = self.metadata
-        functions.update_metadata(
-            metadata=metadata,
-            site=site,
-            study=self.study,
-            data_package=self.data_package,
-            version=version,
-            target=key,
-            value=value,
-            meta_type=meta_type,
-            extra_items=extra_items,
-        )
+        match meta_type:
+            case enums.JsonFilename.TRANSACTIONS.value:
+                metadata = self.metadata
+                meta_delta = self.metadata_delta
+            case enums.JsonFilename.COLUMN_TYPES.value:
+                metadata = self.types_metadata
+                meta_delta = self.types_metadata_delta
+        for meta_dict in (metadata, meta_delta):
+            functions.update_metadata(
+                metadata=meta_dict,
+                site=site,
+                study=self.study,
+                data_package=self.data_package,
+                version=version,
+                target=key,
+                value=value,
+                meta_type=meta_type,
+                extra_items=extra_items,
+            )
 
-    def write_local_metadata(self, metadata: dict | None = None, meta_type: str | None = None):
+    def write_local_metadata(self, meta_type: str | None = None):
         """Writes a cache of the local metadata back to S3
 
         :param metadata: the specific dictionary to write. Default: transactions
         :param meta_type: The enum representing the name of the metadata type. Default: Transactions
         """
-        metadata = metadata or self.metadata
         meta_type = meta_type or enums.JsonFilename.TRANSACTIONS.value
+        match meta_type:
+            case enums.JsonFilename.TRANSACTIONS.value:
+                metadata = self.metadata_delta
+            case enums.JsonFilename.COLUMN_TYPES.value:
+                metadata = self.types_metadata_delta
+
         functions.write_metadata(
-            s3_client=self.s3_client,
+            sqs_client=self.sqs_client,
             s3_bucket_name=self.s3_bucket_name,
             metadata=metadata,
             meta_type=meta_type,

@@ -6,7 +6,7 @@ import os
 import awswrangler
 import boto3
 
-from shared import decorators, enums, functions
+from src.shared import decorators, enums, functions
 
 
 def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None:

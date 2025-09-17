@@ -1,5 +1,9 @@
 """Storage for state variables/methods shared by test modules"""
 
+import datetime
+
+from src.shared import enums, functions
+
 TEST_BUCKET = "cumulus-aggregator-site-counts-test"
 TEST_WORKGROUP = "cumulus-aggregator-test-wg"
 TEST_GLUE_DB = "cumulus-aggregator-test-db"
@@ -7,9 +11,11 @@ TEST_PROCESS_COUNTS_ARN = "arn:aws:sns:us-east-1:123456789012:test-counts"
 TEST_PROCESS_FLAT_ARN = "arn:aws:sns:us-east-1:123456789012:test-flat"
 TEST_PROCESS_STUDY_META_ARN = "arn:aws:sns:us-east-1:123456789012:test-meta"
 TEST_CACHE_API_ARN = "arn:aws:sns:us-east-1:123456789012:test-cache"
+TEST_PROCESS_UPLOADS_ARN = "arn:aws:sns:us-east-1:123456789012:test-uploads"
 TEST_TRANSACTION_CLEANUP_URL = (
     "https://sqs.us-east-1.amazonaws.com/123456789012/test-transaction-cleanup"
 )
+TEST_METADATA_UPDATE_URL = "https://sqs.us-east-1.amazonaws.com/123456789012/test-metadata-update"
 ITEM_COUNT = 11
 DATA_PACKAGE_COUNT = 3
 
@@ -36,7 +42,9 @@ MOCK_ENV = {
     "TOPIC_PROCESS_FLAT_ARN": TEST_PROCESS_FLAT_ARN,
     "TOPIC_PROCESS_STUDY_META_ARN": TEST_PROCESS_STUDY_META_ARN,
     "TOPIC_CACHE_API_ARN": TEST_CACHE_API_ARN,
+    "TOPIC_PROCESS_UPLOADS_ARN": TEST_PROCESS_UPLOADS_ARN,
     "QUEUE_TRANSACTION_CLEANUP": TEST_TRANSACTION_CLEANUP_URL,
+    "QUEUE_METADATA_UPDATE": TEST_METADATA_UPDATE_URL,
 }
 
 
@@ -266,3 +274,20 @@ def get_mock_data_packages_cache():
 
 def get_mock_env():
     return MOCK_ENV
+
+
+def get_mock_transaction(uploaded_at: str | None = None, transaction_id: str | None = None):
+    if uploaded_at is None:
+        uploaded_at = datetime.datetime.now(datetime.UTC).isoformat()
+    if transaction_id is None:
+        transaction_id = "12345678-90ab-cdef-1234-567890abcdef"
+    return {"id": transaction_id, "uploaded_at": uploaded_at}
+
+
+def put_mock_transaction(s3_client, site: str, study: str, transaction: dict):
+    functions.put_s3_file(
+        s3_client=s3_client,
+        s3_bucket_name=TEST_BUCKET,
+        key=f"{enums.BucketPath.META.value}/transactions/{site}__{study}.json",
+        payload=transaction,
+    )

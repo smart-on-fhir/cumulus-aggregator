@@ -194,21 +194,19 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
     manager.update_local_metadata(
         enums.ColumnTypesKeys.COLUMNS.value,
         value=column_dict,
-        metadata=manager.types_metadata,
         meta_type=enums.JsonFilename.COLUMN_TYPES.value,
         extra_items={"total": int(df["cnt"][0]), "s3_path": manager.parquet_aggregate_path},
     )
     manager.update_local_metadata(
         enums.ColumnTypesKeys.LAST_DATA_UPDATE.value,
         value=column_dict,
-        metadata=manager.types_metadata,
         meta_type=enums.JsonFilename.COLUMN_TYPES.value,
     )
     manager.write_local_metadata(
-        metadata=manager.types_metadata,
         meta_type=enums.JsonFilename.COLUMN_TYPES.value,
     )
 
+    # write out the aggregate and send a notification to the metadata queue
     manager.write_parquet(df, is_new_data_package)
 
 

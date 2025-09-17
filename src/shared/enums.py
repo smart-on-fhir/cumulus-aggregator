@@ -60,12 +60,13 @@ class TransactionKeys(enum.Enum):
     DELETED = "deleted"
 
 
-class UploadTypes(enum.Enum):
+class UploadTypes(enum.StrEnum):
     """stores names of different expected upload formats"""
 
     # archive is not expected to be uploaded, but is one of the generated file types
     # in the library
     ARCHIVE = "archive"
+    ANNOTATED_CUBE = "annotated_cube"
     CUBE = "cube"
     FLAT = "flat"
     META = "meta"

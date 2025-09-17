@@ -169,6 +169,8 @@ Resources:
       Environment:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+          TOPIC_PROCESS_UPLOADS_ARN: !Ref SNSTopicProcessUploads
+          QUEUE_METADATA_UPDATE: !Ref SQSMedataUpdate
       Policies:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
@@ -179,7 +181,14 @@ Resources:
               - kms:Decrypt
             Resource:
               - !ImportValue cumulus-kms-KMSKeyArn
-
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt SNSTopicProcessUploads.TopicName
+        - Statement:
+          - Sid: QueuePolicy
+            Action:
+              - sqs:SendMessage
+            Effect: Allow
+            Resource: !GetAtt SQSMetadataUpdate.Arn
   UnzipUploadLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -206,15 +215,21 @@ Resources:
           TOPIC_PROCESS_COUNTS_ARN: !Ref SNSTopicProcessCounts
           TOPIC_PROCESS_FLAT_ARN: !Ref SNSTopicProcessFlat
           TOPIC_PROCESS_STUDY_META_ARN: !Ref SNSTopicProcessStudyMeta
+          QUEUE_METADATA_UPDATE: !Ref SQSMedataUpdate
+      Events:
+        ProcessUploadSNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref SNSTopicProcessProcessUploads
 
       Policies:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
-        - SNSPublishMessagePolicy:
+        - SNSPublishCountsMessagePolicy:
             TopicName: !GetAtt SNSTopicProcessCounts.TopicName
-        - SNSPublishMessagePolicy:
+        - SNSPublishFlatMessagePolicy:
            TopicName: !GetAtt SNSTopicProcessFlat.TopicName
-        - SNSPublishMessagePolicy:
+        - SNSPublishMetaMessagePolicy:
             TopicName: !GetAtt SNSTopicProcessStudyMeta.TopicName
         - Statement:
           - Sid: KMSDecryptPolicy
@@ -223,6 +238,12 @@ Resources:
               - kms:Decrypt
             Resource:
               - !ImportValue cumulus-kms-KMSKeyArn
+        - Statement:
+          - Sid: QueuePolicy
+            Action:
+              - sqs:SendMessage
+            Effect: Allow
+            Resource: !GetAtt SQSMetadataUpdate.Arn
 
   ProcessUploadLogGroup:
     Type: AWS::Logs::LogGroup
@@ -249,6 +270,7 @@ Resources:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
           TOPIC_CACHE_API_ARN: !Ref SNSTopicCacheAPI
+          QUEUE_METADATA_UPDATE: !Ref SQSMedataUpdate
       Events:
         ProcessCountsUploadSNSEvent:
           Type: SNS
@@ -266,6 +288,12 @@ Resources:
               - kms:Decrypt
             Resource:
               - !ImportValue cumulus-kms-KMSKeyArn
+        - Statement:
+          - Sid: QueuePolicy
+            Action:
+              - sqs:SendMessage
+            Effect: Allow
+            Resource: !GetAtt SQSMetadataUpdate.Arn
 
   PowersetMergeLogGroup:
     Type: AWS::Logs::LogGroup
@@ -292,6 +320,7 @@ Resources:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
           TOPIC_CACHE_API_ARN: !Ref SNSTopicCacheAPI
+          QUEUE_METADATA_UPDATE: !Ref SQSMedataUpdate
       Events:
         ProcessFlatUploadSNSEvent:
          Type: SNS
@@ -309,6 +338,12 @@ Resources:
               - kms:Decrypt
             Resource:
               - !ImportValue cumulus-kms-KMSKeyArn
+        - Statement:
+          - Sid: QueuePolicy
+            Action:
+              - sqs:SendMessage
+            Effect: Allow
+            Resource: !GetAtt SQSMetadataUpdate.Arn
 
   ProcessFlatLogGroup:
     Type: AWS::Logs::LogGroup
@@ -334,6 +369,7 @@ Resources:
       Environment:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+          QUEUE_METADATA_UPDATE: !Ref SQSMedataUpdate
       Events:
         ProcessUploadSNSEvent:
           Type: SNS
@@ -349,6 +385,12 @@ Resources:
               - kms:Decrypt
             Resource:
               - !ImportValue cumulus-kms-KMSKeyArn
+        - Statement:
+          - Sid: QueuePolicy
+            Action:
+              - sqs:SendMessage
+            Effect: Allow
+            Resource: !GetAtt SQSMetadataUpdate.Arn
 
   StudyPeriodLogGroup:
     Type: AWS::Logs::LogGroup
@@ -915,6 +957,14 @@ Resources:
       SourceAccount: !Ref AWS::AccountId
 
 ### SNS topics
+  SNSTopicProcessUploads:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'CumulusProcessUploads-${DeployStage}-${NetworkName}'
+      Tags:
+        - Key: Name
+          Value: !Sub 'CumulusProcessUploads-${DeployStage}-${NetworkName}'
+
   SNSTopicProcessCounts:
     Type: AWS::SNS::Topic
     Properties:
@@ -993,6 +1043,11 @@ Resources:
       FunctionName:
         !Ref TransactionCleanupFunction
 
+  SQSMedataUpdate:
+    Type: AWS::SQS::Queue
+    Properties:
+      FifoQueue: True
+
 ### S3 Buckets
 
   AggregatorBucket:
@@ -1002,14 +1057,6 @@ Resources:
     Properties:
       BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
       NotificationConfiguration:
-        LambdaConfigurations:
-          - Event: s3:ObjectCreated:*
-            Function: !GetAtt ProcessUploadFunction.Arn
-            Filter:
-              S3Key:
-                Rules:
-                  - Name: prefix
-                    Value: 'site_upload/'
           - Event: s3:ObjectCreated:*
             Function: !GetAtt UnzipUploadFunction.Arn
             Filter:

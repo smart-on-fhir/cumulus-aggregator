@@ -5,6 +5,7 @@ import dataclasses
 import io
 import json
 import logging
+import os
 from datetime import UTC, datetime
 
 import boto3
@@ -165,18 +166,22 @@ def _update_or_clone_template(meta_dict: dict, version, template: str):
 
 def write_metadata(
     *,
-    s3_client,
+    sqs_client,
     s3_bucket_name: str,
     metadata: dict,
     meta_type: str = enums.JsonFilename.TRANSACTIONS.value,
 ) -> None:
-    """Writes transaction info from ∏a dictionary to an s3 bucket metadata location"""
+    """Queues transaction deltas to be written to an S3 bucket"""
     check_meta_type(meta_type)
-
-    s3_client.put_object(
-        Bucket=s3_bucket_name,
-        Key=f"{enums.BucketPath.META.value}/{meta_type}.json",
-        Body=json.dumps(metadata, default=str, indent=2),
+    sqs_client.send_message(
+        QueueUrl=os.environ.get("QUEUE_METADATA_UPDATE"),
+        MessageBody=json.dumps(
+            {
+                "s3_bucket_name": s3_bucket_name,
+                "key": f"{enums.BucketPath.META.value}/{meta_type}.json",
+                "updates": json.dumps(metadata, default=str, indent=2),
+            }
+        ),
     )
 
 
@@ -185,6 +190,14 @@ def write_metadata(
 
 class S3UploadError(Exception):
     pass
+
+
+def put_s3_file(s3_client, s3_bucket_name: str, key: str, payload: str | dict) -> None:
+    """Puts the object in payload into S3 at the specified key"""
+    if isinstance(payload, dict):
+        payload = json.dumps(payload, default=str, indent=2)
+    payload = payload.encode("UTF-8")
+    s3_client.upload_fileobj(Bucket=s3_bucket_name, Key=key, Fileobj=io.BytesIO(payload))
 
 
 def delete_s3_file(s3_client, s3_bucket_name: str, key: str) -> None:

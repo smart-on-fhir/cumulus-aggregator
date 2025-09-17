@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime
 
 import boto3
@@ -6,17 +7,7 @@ from freezegun import freeze_time
 
 from src.shared import enums, functions
 from src.site_upload.process_upload import process_upload
-from tests.mock_utils import (
-    EXISTING_DATA_P,
-    EXISTING_SITE,
-    EXISTING_STUDY,
-    EXISTING_VERSION,
-    ITEM_COUNT,
-    NEW_DATA_P,
-    NEW_SITE,
-    NEW_VERSION,
-    TEST_BUCKET,
-)
+from tests import mock_utils
 
 
 @freeze_time("2020-01-01")
@@ -25,92 +16,92 @@ from tests.mock_utils import (
     [
         (  # Adding a new data package to a site with uploads
             "./tests/test_data/cube_simple_example.parquet",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}/{EXISTING_VERSION}/document.parquet",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}/{EXISTING_VERSION}/document.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.NEW_DATA_P}/{mock_utils.EXISTING_SITE}/{mock_utils.EXISTING_VERSION}/document.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.NEW_DATA_P}/{mock_utils.EXISTING_SITE}/{mock_utils.EXISTING_VERSION}/document.parquet",
             200,
-            ITEM_COUNT + 1,
+            mock_utils.ITEM_COUNT + 1,
         ),
         (  # Adding a new data package to a site without uploads
             "./tests/test_data/cube_simple_example.parquet",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{NEW_SITE}/{EXISTING_VERSION}/document.parquet",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{NEW_SITE}/{EXISTING_VERSION}/document.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.NEW_DATA_P}/{mock_utils.NEW_SITE}/{mock_utils.EXISTING_VERSION}/document.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.NEW_DATA_P}/{mock_utils.NEW_SITE}/{mock_utils.EXISTING_VERSION}/document.parquet",
             200,
-            ITEM_COUNT + 1,
+            mock_utils.ITEM_COUNT + 1,
         ),
         (  # Updating an existing data package
             "./tests/test_data/cube_simple_example.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/encounter.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/encounter.parquet",
             200,
-            ITEM_COUNT + 1,
+            mock_utils.ITEM_COUNT + 1,
         ),
         (  # New version of an existing data package
             "./tests/test_data/cube_simple_example.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}/{NEW_VERSION}/encounter.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}/{NEW_VERSION}/encounter.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}/{mock_utils.NEW_VERSION}/encounter.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}/{mock_utils.NEW_VERSION}/encounter.parquet",
             200,
-            ITEM_COUNT + 1,
+            mock_utils.ITEM_COUNT + 1,
         ),
         (  # Upload of a flat file
             "./tests/test_data/cube_simple_example.parquet",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/document.flat.parquet",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/document.flat.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.NEW_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/document.flat.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.NEW_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/document.flat.parquet",
             200,
-            ITEM_COUNT + 1,
+            mock_utils.ITEM_COUNT + 1,
         ),
         (  # Upload of an archive file (which should be deleted)
             "./tests/test_data/cube_simple_example.parquet",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/document.archive.parquet",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/document.archive.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.NEW_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/document.archive.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.NEW_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/document.archive.parquet",
             200,
-            ITEM_COUNT,
+            mock_utils.ITEM_COUNT,
         ),
         (  # Non-parquet file
             "./tests/test_data/cube_simple_example.csv",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}/{EXISTING_VERSION}/document.csv",
-            f"/{EXISTING_STUDY}/{NEW_DATA_P}/{EXISTING_SITE}/{EXISTING_VERSION}/document.csv",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.NEW_DATA_P}/{mock_utils.EXISTING_SITE}/{mock_utils.EXISTING_VERSION}/document.csv",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.NEW_DATA_P}/{mock_utils.EXISTING_SITE}/{mock_utils.EXISTING_VERSION}/document.csv",
             500,
-            ITEM_COUNT + 1,
+            mock_utils.ITEM_COUNT + 1,
         ),
         (  # S3 event dispatched when file is not present
             None,
             None,
-            f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/missing.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/missing.parquet",
             500,
-            ITEM_COUNT,
+            mock_utils.ITEM_COUNT,
         ),
         (  # Adding metadata data package
             "./tests/test_data/cube_simple_example.parquet",
             (
-                f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}/"
-                f"{EXISTING_VERSION}/document__meta_date.parquet"
+                f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}/"
+                f"{mock_utils.EXISTING_VERSION}/document__meta_date.parquet"
             ),
             (
-                f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}/"
-                f"{EXISTING_VERSION}/document__meta_date.parquet"
+                f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}/"
+                f"{mock_utils.EXISTING_VERSION}/document__meta_date.parquet"
             ),
             200,
-            ITEM_COUNT + 1,
+            mock_utils.ITEM_COUNT + 1,
         ),
         (  # Adding discovery data package
             "./tests/test_data/cube_simple_example.parquet",
             (
-                f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}/"
-                f"{EXISTING_VERSION}/discovery__file.parquet"
+                f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}/"
+                f"{mock_utils.EXISTING_VERSION}/discovery__file.parquet"
             ),
             (
-                f"/{EXISTING_STUDY}/{EXISTING_DATA_P}/{EXISTING_SITE}/"
-                f"{EXISTING_VERSION}/discovery__file.parquet"
+                f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}/"
+                f"{mock_utils.EXISTING_VERSION}/discovery__file.parquet"
             ),
             200,
-            ITEM_COUNT + 1,
+            mock_utils.ITEM_COUNT + 1,
         ),
     ],
 )
@@ -122,12 +113,14 @@ def test_process_upload(
     expected_contents,
     mock_bucket,
     mock_notification,
+    mock_queue,
 ):
     s3_client = boto3.client("s3", region_name="us-east-1")
+    sqs_client = boto3.client("sqs", region_name="us-east-1")
     if upload_file is not None:
         s3_client.upload_file(
             upload_file,
-            TEST_BUCKET,
+            mock_utils.TEST_BUCKET,
             f"{enums.BucketPath.UPLOAD.value}{upload_path}",
         )
     event = {
@@ -141,27 +134,13 @@ def test_process_upload(
 
     res = process_upload.process_upload_handler(event, {})
     assert res["statusCode"] == status
-    s3_res = s3_client.list_objects_v2(Bucket=TEST_BUCKET)
+    s3_res = s3_client.list_objects_v2(Bucket=mock_utils.TEST_BUCKET)
     assert len(s3_res["Contents"]) == expected_contents
     if event_key.endswith(".archive.parquet"):
         return
     for item in s3_res["Contents"]:
         if item["Key"].endswith("aggregate.parquet"):
             assert item["Key"].startswith(enums.BucketPath.AGGREGATE.value)
-        elif item["Key"].endswith("transactions.json"):
-            assert item["Key"].startswith(enums.BucketPath.META.value)
-            if upload_path is not None and "template" not in upload_path:
-                metadata = functions.read_metadata(s3_client, TEST_BUCKET)
-                if upload_file is not None and upload_path is not None:
-                    path_params = upload_path.split("/")
-                    study = path_params[1]
-                    data_package = path_params[2]
-                    site = path_params[3]
-                    version = path_params[4]
-                    assert (
-                        metadata[site][study][data_package][version]["last_upload"]
-                        == datetime.now(UTC).isoformat()
-                    )
         elif item["Key"].startswith(enums.BucketPath.STUDY_META.value):
             assert any(x in item["Key"] for x in ["_meta_", "/discovery__"])
         else:
@@ -174,6 +153,20 @@ def test_process_upload(
                 or item["Key"].startswith(enums.BucketPath.FLAT.value)
                 or item["Key"].startswith(enums.BucketPath.ARCHIVE.value)
                 or item["Key"].startswith(enums.BucketPath.STUDY_META.value)
-                or item["Key"].endswith("study_periods.json")
-                or item["Key"].endswith("column_types.json")
+                or item["Key"].startswith(enums.BucketPath.META.value)
             )
+    if res["statusCode"] == 200:
+        sqs_res = sqs_client.receive_message(
+            QueueUrl=mock_utils.TEST_METADATA_UPDATE_URL, MaxNumberOfMessages=10
+        )
+        assert len(sqs_res["Messages"]) == 1
+        message = json.loads(sqs_res["Messages"][0]["Body"])
+        assert message["key"] == "metadata/transactions.json"
+        update = json.loads(message["updates"])
+        dp_meta = functions.parse_s3_key(f"{enums.BucketPath.UPLOAD.value}{upload_path}")
+        assert (
+            update[dp_meta.site][dp_meta.study][dp_meta.data_package][dp_meta.version][
+                "last_upload"
+            ]
+            == datetime.now(UTC).isoformat()
+        )
