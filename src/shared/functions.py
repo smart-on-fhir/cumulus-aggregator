@@ -182,6 +182,7 @@ def write_metadata(
                 "updates": json.dumps(metadata, default=str, indent=2),
             }
         ),
+        MessageGroupId="cumulus",
     )
 
 
@@ -260,9 +261,10 @@ def get_s3_key_from_path(s3_path: str):
     return s3_path
 
 
-def get_s3_json_as_dict(bucket, key: str):
+def get_s3_json_as_dict(bucket, key: str, s3_client=None):
     """reads a json object as dict (typically metadata in this case)"""
-    s3_client = boto3.client("s3")
+    if s3_client is None:
+        s3_client = boto3.client("s3")
     bytes_buffer = io.BytesIO()
     s3_client.download_fileobj(
         Bucket=bucket,

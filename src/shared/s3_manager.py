@@ -127,7 +127,7 @@ class S3Manager:
         """
         path = functions.get_s3_key_from_path(path)
         if isinstance(payload, dict):
-            payload = json.dumps(payload)
+            payload = json.dumps(payload, indent=2)
         functions.put_s3_file(
             s3_client=self.s3_client, s3_bucket_name=self.s3_bucket_name, key=path, payload=payload
         )
@@ -337,6 +337,13 @@ class S3Manager:
                 IfNoneMatch="*",
             )
         return transaction_id
+
+    def get_transaction(self):
+        return json.loads(
+            self.s3_client.get_object(Bucket=self.s3_bucket_name, Key=self.transaction)[
+                "Body"
+            ].read()
+        )
 
     def delete_transaction(self):
         self.delete_file(self.transaction)

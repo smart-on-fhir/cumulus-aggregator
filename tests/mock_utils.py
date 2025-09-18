@@ -1,6 +1,8 @@
 """Storage for state variables/methods shared by test modules"""
 
+import calendar
 import datetime
+import json
 
 from src.shared import enums, functions
 
@@ -15,7 +17,9 @@ TEST_PROCESS_UPLOADS_ARN = "arn:aws:sns:us-east-1:123456789012:test-uploads"
 TEST_TRANSACTION_CLEANUP_URL = (
     "https://sqs.us-east-1.amazonaws.com/123456789012/test-transaction-cleanup"
 )
+TEST_TRANSACTION_CLEANUP_ARN = "arn:aws:sqs:us-east-1:123456789012:test-metadata-update"
 TEST_METADATA_UPDATE_URL = "https://sqs.us-east-1.amazonaws.com/123456789012/test-metadata-update"
+TEST_METADATA_UPDATE_ARN = "arn:aws:sqs:us-east-1:123456789012:test-metadata-update"
 ITEM_COUNT = 11
 DATA_PACKAGE_COUNT = 3
 
@@ -291,3 +295,43 @@ def put_mock_transaction(s3_client, site: str, study: str, transaction: dict):
         key=f"{enums.BucketPath.META.value}/transactions/{site}__{study}.json",
         payload=transaction,
     )
+
+
+def get_mock_sqs_event_record(
+    body: dict, timestamp: datetime.datetime, source: str = TEST_METADATA_UPDATE_ARN
+):
+    """Generates an event record for mocking an SQS message
+
+    Note: when using this, one or more records should be appended to the
+    Records key in a dict like this:
+
+    { 'Records':[mock_event_1, mock_event_2...]}
+
+    A FIFO queue will generate blocks of no more than 10 messages at a time
+    """
+    return {
+        "messageId": "01234567-89ab-cdef-0123-4656789abcdef",
+        "receiptHandle": "ABCDEFGHIJKLMNOPQR123457890...",
+        "body": json.dumps(body),
+        "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": calendar.timegm(timestamp.timetuple()),
+            "SenderId": "ABCDEFGHIJKLMNOPQR",
+            "ApproximateFirstReceiveTimestamp": calendar.timegm(timestamp.timetuple()),
+        },
+        # note: this is included as an example - we won't be using it in all likelihood,
+        # but if this changes, we'll need to allow a way for a user to pass in
+        # attribute values
+        "messageAttributes": {
+            "myAttribute": {
+                "stringValue": "myValue",
+                "stringListValues": [],
+                "binaryListValues": [],
+                "dataType": "String",
+            }
+        },
+        "md5OfBody": "0123456789abcdef012345678",
+        "eventSource": "aws:sqs",
+        "eventSourceARN": source,
+        "awsRegion": "us-east-1",
+    }
