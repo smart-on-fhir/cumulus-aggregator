@@ -34,10 +34,11 @@ def unzip_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> Non
         enums.UploadTypes.ANNOTATED_CUBE,
     ]:
         transaction[f"{upload_type}"] = [file for file in files if f".{upload_type}." in file]
+        transaction["version"] = metadata.version
     manager.put_file(path=manager.transaction, payload=transaction)
 
-    # The manifest will be used as a signal that the extract has finished,
-    # so we'll extract it last in all cases.
+    # The manifest may be used in future cases to handle metadata, so we'll
+    # extract it last in all cases
     # TODO: decide on extract location for manifests
     new_keys = []
     for file_list in [files, ["manifest.toml"]]:

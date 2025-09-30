@@ -69,7 +69,7 @@ from tests import mock_utils
             500,
             mock_utils.ITEM_COUNT + 1,
         ),
-        (  # S3 event dispatched when file is not present
+        (  # Sns event dispatched when file is not present
             None,
             None,
             f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}"
@@ -127,7 +127,7 @@ def test_process_upload(
         "Records": [
             {
                 "awsRegion": "us-east-1",
-                "s3": {"object": {"key": f"{enums.BucketPath.UPLOAD.value}{event_key}"}},
+                "Sns": {"Message": f"{enums.BucketPath.UPLOAD.value}{event_key}"},
             }
         ]
     }
@@ -164,9 +164,10 @@ def test_process_upload(
         assert message["key"] == "metadata/transactions.json"
         update = json.loads(message["updates"])
         dp_meta = functions.parse_s3_key(f"{enums.BucketPath.UPLOAD.value}{upload_path}")
+        print(update[dp_meta.site][dp_meta.study][dp_meta.data_package].keys())
         assert (
-            update[dp_meta.site][dp_meta.study][dp_meta.data_package][dp_meta.version][
-                "last_upload"
-            ]
+            update[dp_meta.site][dp_meta.study][dp_meta.data_package][
+                f"{dp_meta.data_package}__{dp_meta.version}"
+            ]["last_upload"]
             == datetime.now(UTC).isoformat()
         )

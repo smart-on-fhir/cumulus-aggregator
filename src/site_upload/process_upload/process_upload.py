@@ -52,12 +52,11 @@ def process_upload(s3_client, sns_client, sqs_client, s3_bucket_name: str, s3_ke
             topic_sns_arn = os.environ.get("TOPIC_PROCESS_COUNTS_ARN")
             sns_subject = "Process counts upload event"
         functions.move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
-        print(f"{data_package}__{version}")
         metadata = functions.update_metadata(
             metadata={},
             site=site,
             study=study,
-            data_package=data_package.split("__")[1],
+            data_package=data_package,
             version=f"{data_package}__{version}",
             target=enums.TransactionKeys.LAST_UPLOAD.value,
             dt=last_uploaded_date,

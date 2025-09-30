@@ -270,7 +270,7 @@ Resources:
       Environment:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
-          TOPIC_CACHE_API_ARN: !Ref SNSTopicCacheAPI
+          TOPIC_COMPLETENESS_ARN: !Ref SNSTopicCheckCompleteness
           QUEUE_METADATA_UPDATE: !Ref SQSMetadataUpdate
       Events:
         ProcessCountsUploadSNSEvent:
@@ -281,7 +281,7 @@ Resources:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
         - SNSPublishMessagePolicy:
-            TopicName: !GetAtt SNSTopicCacheAPI.TopicName
+            TopicName: !GetAtt SNSTopicCheckCompleteness.TopicName
         - Statement:
           - Sid: KMSDecryptPolicy
             Effect: Allow
@@ -320,7 +320,7 @@ Resources:
       Environment:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
-          TOPIC_CACHE_API_ARN: !Ref SNSTopicCacheAPI
+          TOPIC_COMPLETENESS_ARN: !Ref SNSTopicCheckCompleteness
           QUEUE_METADATA_UPDATE: !Ref SQSMetadataUpdate
       Events:
         ProcessFlatUploadSNSEvent:
@@ -331,7 +331,7 @@ Resources:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
         - SNSPublishMessagePolicy:
-            TopicName: !GetAtt SNSTopicCacheAPI.TopicName
+            TopicName: !GetAtt SNSTopicCheckCompleteness.TopicName
         - Statement:
           - Sid: KMSDecryptPolicy
             Effect: Allow
@@ -447,6 +447,76 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${ProcessMetadataFunction}"
+      RetentionInDays: !Ref RetentionTime
+
+  CheckCompletenessFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggCheckCompleteness-${DeployStage}-${NetworkName}'
+      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
+      CodeUri: ./src/site_upload/check_if_complete
+      Handler: check_if_complete.check_if_complete_handler
+      Runtime: "python3.11"
+      LoggingConfig:
+        ApplicationLogLevel: !Ref LogLevel
+        LogFormat: !Ref LogFormat
+        LogGroup: !Sub "/aws/lambda/CumulusAggCheckCompleteness-${DeployStage}-${NetworkName}"
+      MemorySize: 512
+      Timeout: 800
+      Description: Caches selected database queries to S3
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+          GLUE_DB_NAME: !Sub '${GlueNameParameter}-${DeployStage}-${NetworkName}'
+          TOPIC_CACHE_API_ARN: !Ref SNSTopicCacheAPI
+          GLUE_CRAWLER_NAME: !Ref GlueCrawler
+          WORKGROUP_NAME: !Sub '${AthenaWorkgroupNameParameter}-${DeployStage}-${NetworkName}'
+      Events:
+        CheckCompletenessSNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref SNSTopicCheckCompleteness
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt SNSTopicCacheAPI.TopicName
+        - Statement:
+          - Sid: GluePermissionsPolicy
+            Effect: Allow
+            Action:
+              - glue:*Table*
+              - glue:*Partition*
+            Resource:
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueNameParameter}-${DeployStage}-${NetworkName}'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueNameParameter}-${DeployStage}-${NetworkName}/*'
+        - Statement:
+          - Sid: AthenaExecuteQueryPermissionsPolicy
+            Effect: Allow
+            Action:
+              - athena:*
+            Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}-${NetworkName}'
+
+        - Statement:
+          - Sid: CrawlPermissionsPolicy
+            Effect: Allow
+            Action:
+              - glue:*
+            Resource:
+              - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:crawler/${GlueCrawler}"
+        - Statement:
+          - Sid: KMSDecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
+
+  CheckCompletenessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${CheckCompletenessFunction}"
       RetentionInDays: !Ref RetentionTime
 
 
@@ -1008,6 +1078,14 @@ Resources:
       SourceArn: !Sub 'arn:aws:s3:::${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
       SourceAccount: !Ref AWS::AccountId
 
+  EventInvokeCachePermission: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: !Ref CacheAPIFunction
+      Action: "lambda:InvokeFunction"
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt GlueCrawlCompleteRule.Arn
+
 ### SNS topics
   SNSTopicProcessUploads:
     Type: AWS::SNS::Topic
@@ -1040,6 +1118,14 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub 'CumulusProcessStudyMeta-${DeployStage}-${NetworkName}'
+
+  SNSTopicCheckCompleteness:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'SNSTopicCheckCompleteness-${DeployStage}-${NetworkName}'
+      Tags:
+        - Key: Name
+          Value: !Sub 'SNSTopicCheckCompleteness-${DeployStage}-${NetworkName}'
 
   SNSTopicCacheAPI:
     Type: AWS::SNS::Topic
@@ -1082,6 +1168,7 @@ Resources:
       Topics: 
         - !Ref SNSStudyPayload
 
+# SQS Queues
 
   SQSTransactionCleanup:
     Type: AWS::SQS::Queue
@@ -1107,6 +1194,28 @@ Resources:
       EventSourceArn: !GetAtt SQSMetadataUpdate.Arn
       FunctionName:
         !Ref ProcessMetadataFunction
+
+# EventBridge rules
+
+  GlueCrawlCompleteRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub "CumulusPostCrawlCache-${DeployStage}-${NetworkName}"
+      EventPattern: 
+        source:
+          - "aws.glue"
+        detail-type:
+          - "Glue Crawler State Change"
+        detail:
+          crawlerName:
+            - !Ref GlueCrawler
+          state:
+              - "Succeeded"
+      Targets: 
+        - Arn: !GetAtt CacheAPIFunction.Arn
+          Id: CacheFunction
+
+
 
 ### S3 Buckets
 

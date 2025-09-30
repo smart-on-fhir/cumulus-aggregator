@@ -88,7 +88,6 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
 
     logger.info(f"Proccessing data package at {manager.s3_key}")
     # initializing this early in case an empty file causes us to never set it
-    is_new_data_package = False
     df = pandas.DataFrame()
     latest_file_list = manager.get_data_package_list(enums.BucketPath.LATEST.value)
     last_valid_file_list = manager.get_data_package_list(enums.BucketPath.LAST_VALID.value)
@@ -136,7 +135,6 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
         )
         archived_files = []
         try:
-            is_new_data_package = False
             # if we're going to replace a file in last_valid, archive the old data
             date_str = datetime.datetime.now(datetime.UTC).isoformat()
             for match in filter(lambda x: subbucket_path in x, last_valid_file_list):
@@ -150,8 +148,6 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
                 archived_files.append((archive_target, match))
             # otherwise, this is the first instance - after it's in the database,
             # we'll generate a new list of valid tables for the dashboard
-            else:
-                is_new_data_package = True
             df = expand_and_concat_powersets(df, latest_path, manager.site)
             filename = functions.get_filename_from_s3_path(latest_path)
             manager.move_file(
@@ -207,7 +203,7 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
     )
 
     # write out the aggregate and send a notification to the metadata queue
-    manager.write_parquet(df, is_new_data_package)
+    manager.write_parquet(df)
 
 
 @decorators.generic_error_handler(msg="Error merging powersets")

@@ -6,7 +6,7 @@ import os
 import awswrangler
 import boto3
 
-from src.shared import decorators, enums, functions
+from shared import decorators, enums, functions
 
 
 def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None:
@@ -83,7 +83,11 @@ def cache_api_handler(event, context):
     s3_bucket_name = os.environ.get("BUCKET_NAME")
     s3_client = boto3.client("s3")
     db = os.environ.get("GLUE_DB_NAME")
-    target = event["Records"][0]["Sns"]["Subject"]
+    if "Records" in event:
+        target = event["Records"][0]["Sns"]["Subject"]
+    elif "detail-type" in event and event["detail-type"] == "Glue Crawler State Change":
+        target = enums.JsonFilename.DATA_PACKAGES.value
+    else:  # pragma: no cover
+        return functions.http_response(500, "Unexpected event source")
     cache_api_data(s3_client, s3_bucket_name, db, target)
-    res = functions.http_response(200, "Study period update successful")
-    return res
+    return functions.http_response(200, "Study period update successful")

@@ -216,12 +216,14 @@ class S3Manager:
     # parquet output creation
     def cache_api(self):
         """Sends an SNS cache event"""
-        topic_sns_arn = os.environ.get("TOPIC_CACHE_API_ARN")
+        topic_sns_arn = os.environ.get("TOPIC_COMPLETENESS_ARN")
         self.sns_client.publish(
-            TopicArn=topic_sns_arn, Message="data_packages", Subject="data_packages"
+            TopicArn=topic_sns_arn,
+            Message=json.dumps({"site": self.site, "study": self.study}),
+            Subject="check_completeness",
         )
 
-    def write_parquet(self, df: pandas.DataFrame, is_new_data_package: bool, path=None) -> None:
+    def write_parquet(self, df: pandas.DataFrame, path=None) -> None:
         """Writes a dataframe as parquet to s3 and sends an SNS cache event if new
 
         :param df: pandas dataframe
@@ -230,8 +232,7 @@ class S3Manager:
         if path is None:
             path = self.parquet_aggregate_path
         awswrangler.s3.to_parquet(df, path, index=False)
-        if is_new_data_package:
-            self.cache_api()
+        self.cache_api()
 
     # metadata
     def update_local_metadata(

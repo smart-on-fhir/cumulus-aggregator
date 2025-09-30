@@ -29,8 +29,8 @@ from unittest import mock
 
 import boto3
 import duckdb
+import moto
 import pytest
-from moto import mock_athena, mock_s3, mock_sns, mock_sqs
 
 from scripts import credential_management
 from src.shared import enums, functions
@@ -87,7 +87,7 @@ def mock_env():
 @pytest.fixture
 def mock_bucket():
     """Mock for testing S3 usage. Should reset before each individual test."""
-    s3 = mock_s3()
+    s3 = moto.mock_aws()
     s3.start()
     s3_client = boto3.client("s3", region_name="us-east-1")
 
@@ -134,7 +134,7 @@ def mock_notification():
     """Mocks for SNS topics.
 
     Make sure the topic name matches the end of the ARN defined in mock_utils.py"""
-    sns = mock_sns()
+    sns = moto.mock_aws()
     sns.start()
     sns_client = boto3.client("sns", region_name="us-east-1")
     sns_client.create_topic(Name="test-counts")
@@ -143,6 +143,7 @@ def mock_notification():
     sns_client.create_topic(Name="test-cache")
     sns_client.create_topic(Name="test-payload")
     sns_client.create_topic(Name="test-uploads")
+    sns_client.create_topic(Name="test-completeness")
     yield
     sns.stop()
 
@@ -152,13 +153,27 @@ def mock_queue():
     """Mocks for SQS queues.
 
     Make sure the queue name matches the end of the ARN defined in mock_utils.py"""
-    sqs = mock_sqs()
+    sqs = moto.mock_aws()
     sqs.start()
     sqs_client = boto3.client("sqs", region_name="us-east-1")
     sqs_client.create_queue(QueueName="test-transaction-cleanup")
     sqs_client.create_queue(QueueName="test-metadata-update")
     yield
     sqs.stop()
+
+
+@pytest.fixture
+def mock_glue():
+    glue = moto.mock_aws()
+    glue.start()
+    glue_client = boto3.client("glue", region_name="us-east-1")
+    glue_client.create_crawler(
+        Name=mock_utils.TEST_GLUE_CRAWLER,
+        Role="mock_role",
+        Targets={"S3Targets": [{"Path": "s3://mock_path"}]},
+    )
+    yield glue_client
+    glue.stop()
 
 
 @pytest.fixture
@@ -172,7 +187,7 @@ def mock_athena_db():
     adress mocking out the aws workgroup response (though setting the workgroup
     to primary helped a bit since it has default permissions).
     """
-    athena = mock_athena()
+    athena = moto.mock_aws()
     athena.start()
     athena_client = boto3.client("athena", region_name="us-east-1")
     athena_client.start_query_execution(

@@ -39,9 +39,7 @@ build-backend = "flit_core.buildapi"
 test = [
     "coverage >=7.3.1",
     "freezegun",
-    # TODO: Version 5 has broken the way we import mocks from Moto. Consider investigating an
-    # overhaul/upgrade in the future. This is the last 4.x release.
-    "moto[s3,athena,sns,sqs] == 4.2.9",
+    "moto[s3,athena,sns,sqs] >5, <6",
     "pytest",
     "pytest-cov",
     "pytest-mock",

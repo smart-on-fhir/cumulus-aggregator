@@ -9,15 +9,17 @@ from src.shared import enums, functions
 TEST_BUCKET = "cumulus-aggregator-site-counts-test"
 TEST_WORKGROUP = "cumulus-aggregator-test-wg"
 TEST_GLUE_DB = "cumulus-aggregator-test-db"
+TEST_GLUE_CRAWLER = "cumulus-aggregator-test-crawler"
 TEST_PROCESS_COUNTS_ARN = "arn:aws:sns:us-east-1:123456789012:test-counts"
 TEST_PROCESS_FLAT_ARN = "arn:aws:sns:us-east-1:123456789012:test-flat"
 TEST_PROCESS_STUDY_META_ARN = "arn:aws:sns:us-east-1:123456789012:test-meta"
+TEST_COMPLETENESS_ARN = "arn:aws:sns:us-east-1:123456789012:test-completeness"
 TEST_CACHE_API_ARN = "arn:aws:sns:us-east-1:123456789012:test-cache"
 TEST_PROCESS_UPLOADS_ARN = "arn:aws:sns:us-east-1:123456789012:test-uploads"
 TEST_TRANSACTION_CLEANUP_URL = (
     "https://sqs.us-east-1.amazonaws.com/123456789012/test-transaction-cleanup"
 )
-TEST_TRANSACTION_CLEANUP_ARN = "arn:aws:sqs:us-east-1:123456789012:test-metadata-update"
+TEST_TRANSACTION_CLEANUP_ARN = "arn:aws:sqs:us-east-1:123456789012:transaction-cleanup"
 TEST_METADATA_UPDATE_URL = "https://sqs.us-east-1.amazonaws.com/123456789012/test-metadata-update"
 TEST_METADATA_UPDATE_ARN = "arn:aws:sqs:us-east-1:123456789012:test-metadata-update"
 ITEM_COUNT = 11
@@ -41,11 +43,13 @@ NEW_VERSION = "100"
 MOCK_ENV = {
     "BUCKET_NAME": TEST_BUCKET,
     "GLUE_DB_NAME": TEST_GLUE_DB,
+    "GLUE_CRAWLER_NAME": TEST_GLUE_CRAWLER,
     "WORKGROUP_NAME": TEST_WORKGROUP,
     "TOPIC_PROCESS_COUNTS_ARN": TEST_PROCESS_COUNTS_ARN,
     "TOPIC_PROCESS_FLAT_ARN": TEST_PROCESS_FLAT_ARN,
     "TOPIC_PROCESS_STUDY_META_ARN": TEST_PROCESS_STUDY_META_ARN,
     "TOPIC_CACHE_API_ARN": TEST_CACHE_API_ARN,
+    "TOPIC_COMPLETENESS_ARN": TEST_COMPLETENESS_ARN,
     "TOPIC_PROCESS_UPLOADS_ARN": TEST_PROCESS_UPLOADS_ARN,
     "QUEUE_TRANSACTION_CLEANUP": TEST_TRANSACTION_CLEANUP_URL,
     "QUEUE_METADATA_UPDATE": TEST_METADATA_UPDATE_URL,

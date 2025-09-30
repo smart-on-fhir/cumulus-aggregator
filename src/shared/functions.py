@@ -57,6 +57,10 @@ def http_response(
         )
     if extra_headers:
         headers.update(extra_headers)
+    if status >= 200 and status < 300:
+        logging.info(body)
+    else:
+        logging.error(body)
     return {
         "isBase64Encoded": False,
         "statusCode": status,

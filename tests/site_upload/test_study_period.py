@@ -149,7 +149,6 @@ def test_process_upload(
         message = json.loads(sqs_res["Messages"][0]["Body"])
         assert message["key"] == "metadata/study_periods.json"
         update = json.loads(message["updates"])
-        print(update)
         dp_meta = functions.parse_s3_key(f"{enums.BucketPath.STUDY_META.value}{event_key}")
         assert (
             update[dp_meta.site][dp_meta.study][dp_meta.version]["earliest_date"]
