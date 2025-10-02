@@ -44,8 +44,20 @@ def http_response(
     allow_cors: bool = False,
     extra_headers: dict | None = None,
     skip_convert: bool = False,
+    alt_log: str | None = None,
 ) -> dict:
-    """Generates the payload AWS lambda expects as a return value"""
+    """Generates the payload AWS lambda expects as a return value
+
+    :param status: the HTTP status code
+    :param body: the message to return in the HTTP body
+    :allow_cors: if True, appends CORS allow headers
+    :extra_headers: A dictionary of additional headers to append to the response
+    :skip_convert: if False, attempts to dump the body from a json object to a string,
+        otherwise leaves the body as is
+    :alt_log: if true, writes the contents of alt_log to cloudwatch logs, otherwise
+        writes the contents of the body.
+
+    """
     headers = {"Content-Type": "application/json"}
     if allow_cors:
         headers.update(
@@ -58,7 +70,10 @@ def http_response(
     if extra_headers:
         headers.update(extra_headers)
     if status >= 200 and status < 300:
-        logging.info(body)
+        if alt_log:
+            logging.info(alt_log)
+        else:
+            logging.info(body)
     else:
         logging.error(body)
     return {
@@ -311,15 +326,15 @@ def parse_s3_key(key: str) -> PackageMetadata:
     """Handles extraction of package metadata from an s3 key"""
     try:
         # did we get a full path instead?
-        key = get_s3_key_from_path(key)
-        key = key.split("/")
-        match key[0]:
+        key_parts = get_s3_key_from_path(key)
+        key_parts = key_parts.split("/")
+        match key_parts[0]:
             case enums.BucketPath.AGGREGATE.value:
                 package = PackageMetadata(
-                    study=key[1],
+                    study=key_parts[1],
                     site=None,
-                    data_package=key[2].split("__")[1],
-                    version=key[3],
+                    data_package=key_parts[2].split("__")[1],
+                    version=key_parts[3],
                 )
             case (
                 enums.BucketPath.ARCHIVE.value
@@ -330,42 +345,42 @@ def parse_s3_key(key: str) -> PackageMetadata:
             ):
                 try:
                     package = PackageMetadata(
-                        study=key[1],
-                        site=key[3],
-                        data_package=key[2].split("__")[1],
-                        version=key[4],
+                        study=key_parts[1],
+                        site=key_parts[3],
+                        data_package=key_parts[2].split("__")[1],
+                        version=key_parts[4],
                     )
                 except IndexError:
                     # do we have a flat package in latest? We'll check with the flat parsing rules
                     package = PackageMetadata(
-                        study=key[1],
-                        site=key[2],
-                        data_package=key[3].split("__")[1],
-                        version=key[3].split("__")[3],
+                        study=key_parts[1],
+                        site=key_parts[2],
+                        data_package=key_parts[3].split("__")[1],
+                        version=key_parts[3].split("__")[3],
                     )
             case enums.BucketPath.FLAT.value:
                 package = PackageMetadata(
-                    study=key[1],
-                    site=key[2],
-                    data_package=key[3].split("__")[1],
-                    version=key[3].split("__")[3],
+                    study=key_parts[1],
+                    site=key_parts[2],
+                    data_package=key_parts[3].split("__")[1],
+                    version=key_parts[3].split("__")[3],
                 )
             case enums.BucketPath.UPLOAD.value:
                 package = PackageMetadata(
-                    study=key[1],
-                    site=key[3],
-                    data_package=key[2],
-                    version=key[4],
+                    study=key_parts[1],
+                    site=key_parts[3],
+                    data_package=key_parts[2],
+                    version=key_parts[4],
                 )
             case enums.BucketPath.UPLOAD_STAGING.value:
                 package = PackageMetadata(
-                    study=key[1],
-                    site=key[2],
+                    study=key_parts[1],
+                    site=key_parts[2],
                     data_package=None,
-                    version=key[3],
+                    version=key_parts[3],
                 )
             case _:
-                raise errors.AggregatorS3Error(f" {key[0]} does not correspond to a data package")
+                raise errors.AggregatorS3Error(f" {key} does not correspond to a data package")
         if "__" in package.version:
             package.version = package.version.split("__")[-1]
         return package

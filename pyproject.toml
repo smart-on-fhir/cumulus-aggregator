@@ -45,6 +45,7 @@ test = [
     "pytest-mock",
     "pytest-subprocess",
     "responses",
+    "toml"
 ]
 dev = [
     "duckdb",

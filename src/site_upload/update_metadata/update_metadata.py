@@ -38,7 +38,8 @@ def process_event_queue(records):
     sources = {}
     metadata = {}
     for record in records:
-        message = json.loads(record["body"])
+        # Frustratingly, AWS and moto generate different cases for this key
+        message = json.loads(record["body"] if "body" in record.keys() else record["Body"])
         if not any(x == message["key"] for x in sources.keys()):
             sources[message["key"]] = []
         updates = json.loads(message["updates"])

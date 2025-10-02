@@ -193,7 +193,6 @@ def test_cache_api(mock_client, mock_bucket):
     )
     manager.cache_api()
     publish_args = mock_client.mock_calls[-1][2]
-    print(publish_args)
     assert publish_args["TopicArn"] == mock_utils.TEST_COMPLETENESS_ARN
     assert publish_args["Message"] == json.dumps(
         {"site": mock_utils.EXISTING_SITE, "study": mock_utils.EXISTING_STUDY}
@@ -412,7 +411,6 @@ def test_write_local_metadata(mock_bucket, mock_env, mock_queue):
     manager.metadata_delta = {"foo": "bar"}
     manager.write_local_metadata()
     sqs_client = boto3.client("sqs", region_name="us-east-1")
-    print(mock_utils.TEST_METADATA_UPDATE_URL)
     res = sqs_client.receive_message(
         QueueUrl=mock_utils.TEST_METADATA_UPDATE_URL, MaxNumberOfMessages=10
     )

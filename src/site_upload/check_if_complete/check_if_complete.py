@@ -8,7 +8,7 @@ import awswrangler
 import boto3
 import botocore
 
-from shared import enums, functions
+from shared import decorators, enums, functions
 
 logger = logging.getLogger()
 logger.setLevel("INFO")
@@ -95,7 +95,7 @@ def cleanup_transaction(message) -> bool:
     return True
 
 
-# @decorators.generic_error_handler(msg="Error processing metadata events")
+@decorators.generic_error_handler(msg="Error processing metadata events")
 def check_if_complete_handler(event, context):
     del context
     message = json.loads(event["Records"][0]["Sns"]["Message"])

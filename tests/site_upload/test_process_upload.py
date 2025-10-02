@@ -164,7 +164,6 @@ def test_process_upload(
         assert message["key"] == "metadata/transactions.json"
         update = json.loads(message["updates"])
         dp_meta = functions.parse_s3_key(f"{enums.BucketPath.UPLOAD.value}{upload_path}")
-        print(update[dp_meta.site][dp_meta.study][dp_meta.data_package].keys())
         assert (
             update[dp_meta.site][dp_meta.study][dp_meta.data_package][
                 f"{dp_meta.data_package}__{dp_meta.version}"

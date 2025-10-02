@@ -31,5 +31,9 @@ def data_packages_handler(event, context):
         else:
             status = 404
             payload = None
-    res = functions.http_response(status, payload, allow_cors=True)
+    if status == 200:
+        alt_log = "List of data packages retrieved"
+    else:
+        alt_log = None
+    res = functions.http_response(status, payload, allow_cors=True, alt_log=alt_log)
     return res

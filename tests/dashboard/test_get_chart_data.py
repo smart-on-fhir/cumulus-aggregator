@@ -234,7 +234,7 @@ def test_query_results(mock_db, mock_bucket, query_params, filter_groups, expect
         'CREATE TABLE "cumulus-aggregator-test-db"."test__cube__001" AS SELECT * FROM '
         'read_parquet("./tests/test_data/mock_cube_col_types.parquet")'
     )
-    query, count_col = get_chart_data._build_query(
+    query, _ = get_chart_data._build_query(
         query_params, filter_groups, {"data_package_id": "test__cube__001"}
     )
     res = mock_db.execute(query).fetchall()
@@ -250,7 +250,7 @@ def test_query_results(mock_db, mock_bucket, query_params, filter_groups, expect
     "src.dashboard.get_chart_data.get_chart_data._get_table_cols", mock_get_table_cols_results
 )
 def test_cast_filter(mock_db, mock_bucket):
-    query, count_col = get_chart_data._build_query(
+    query, _ = get_chart_data._build_query(
         {"column": "nato"}, ["bool:isTrue"], {"data_package_id": "test__cube__001"}
     )
     assert """CAST("nato" AS VARCHAR) != 'cumulus__none'""" in query

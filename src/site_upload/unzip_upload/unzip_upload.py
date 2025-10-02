@@ -8,7 +8,7 @@ from io import BytesIO
 
 import boto3
 
-from shared import enums, functions, s3_manager
+from shared import decorators, enums, functions, s3_manager
 
 log_level = os.environ.get("LAMBDA_LOG_LEVEL", "INFO")
 logger = logging.getLogger()
@@ -43,12 +43,19 @@ def unzip_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> Non
     new_keys = []
     for file_list in [files, ["manifest.toml"]]:
         for file in file_list:
+            data_package = file.split(".")[0]
             target_folder = (
                 functions.get_folder_from_s3_path(s3_key)
                 .replace(
                     f"{enums.BucketPath.UPLOAD_STAGING.value}/", f"{enums.BucketPath.UPLOAD.value}/"
                 )
-                .replace(f"/{metadata.study}/", f"/{metadata.study}/{file.split('.')[0]}/")
+                .replace(
+                    f"/{metadata.study}/", f"/{metadata.study}/{metadata.study}__{data_package}/"
+                )
+                .replace(
+                    f"/{metadata.version}/",
+                    f"/{metadata.study}__{data_package}__{metadata.version}",
+                )
             )
             s3_client.upload_fileobj(
                 archive.open(file), Bucket=s3_bucket_name, Key=f"{target_folder}/{file}"
@@ -69,7 +76,7 @@ def unzip_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> Non
         sns_client.publish(TopicArn=topic_sns_arn, Message=key, Subject=sns_subject)
 
 
-# @decorators.generic_error_handler(msg="Error processing file upload")
+@decorators.generic_error_handler(msg="Error processing file upload")
 def unzip_upload_handler(event, context):
     """manages event from S3, triggers file processing and merge"""
     del context

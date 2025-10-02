@@ -68,7 +68,6 @@ def process_upload(s3_client, sns_client, sqs_client, s3_bucket_name: str, s3_ke
     else:
         new_key = f"{enums.BucketPath.ERROR.value}/{s3_key.split('/', 1)[-1]}"
         functions.move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
-        print(f"{data_package}__{version}")
         metadata = functions.update_metadata(
             metadata={},
             site=site,
