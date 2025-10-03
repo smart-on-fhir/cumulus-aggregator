@@ -21,9 +21,7 @@ s3_client = boto3.client("s3")
 def update_source(metadata, update):
     for update_key, update_val in update.items():
         if isinstance(update_val, dict):
-            metadata[update_key] = update_source(
-                metadata[update_key] if update_key in metadata.keys() else {}, update[update_key]
-            )
+            metadata[update_key] = update_source(metadata.get(update_key, {}), update[update_key])
         else:
             if not (
                 update_val is None
@@ -40,7 +38,7 @@ def process_event_queue(records):
     for record in records:
         # Frustratingly, AWS and moto generate different cases for this key
         message = json.loads(record["body"] if "body" in record.keys() else record["Body"])
-        if not any(x == message["key"] for x in sources.keys()):
+        if message["key"] not in sources:
             sources[message["key"]] = []
         updates = json.loads(message["updates"])
         sources[message["key"]].append(updates)

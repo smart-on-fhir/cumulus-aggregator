@@ -70,10 +70,7 @@ def http_response(
     if extra_headers:
         headers.update(extra_headers)
     if status >= 200 and status < 300:
-        if alt_log:
-            logging.info(alt_log)
-        else:
-            logging.info(body)
+        logging.info(alt_log or body)
     else:
         logging.error(body)
     return {
@@ -282,8 +279,7 @@ def get_s3_key_from_path(s3_path: str):
 
 def get_s3_json_as_dict(bucket, key: str, s3_client=None):
     """reads a json object as dict (typically metadata in this case)"""
-    if s3_client is None:
-        s3_client = boto3.client("s3")
+    s3_client = s3_client or boto3.client("s3")
     bytes_buffer = io.BytesIO()
     s3_client.download_fileobj(
         Bucket=bucket,

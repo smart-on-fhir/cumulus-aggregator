@@ -85,7 +85,7 @@ def cache_api_handler(event, context):
     db = os.environ.get("GLUE_DB_NAME")
     if "Records" in event:
         target = event["Records"][0]["Sns"]["Subject"]
-    elif "detail-type" in event and event["detail-type"] == "Glue Crawler State Change":
+    elif event.get("detail-type") == "Glue Crawler State Change":
         target = enums.JsonFilename.DATA_PACKAGES.value
     else:  # pragma: no cover
         return functions.http_response(500, "Unexpected event source")

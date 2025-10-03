@@ -88,10 +88,9 @@ def has_new_packages(message, transaction) -> bool:
 def cleanup_transaction(message) -> bool:
     key = f"{enums.BucketPath.META.value}/transactions/{message['site']}__{message['study']}.json"
     try:
-        s3_client.head_object(Bucket=os.environ.get("BUCKET_NAME"), Key=key)
+        s3_client.delete_object(Bucket=os.environ.get("BUCKET_NAME"), Key=key)
     except botocore.exceptions.ClientError:
         return False
-    s3_client.delete_object(Bucket=os.environ.get("BUCKET_NAME"), Key=key)
     return True
 
 
@@ -101,7 +100,7 @@ def check_if_complete_handler(event, context):
     message = json.loads(event["Records"][0]["Sns"]["Message"])
     completed, transaction = check_if_complete(message)
     if not completed:
-        return functions.http_response(200, "Processing not completed")
+        return functions.http_response(202, "Processing not completed")
     new = has_new_packages(message, transaction)
 
     if new:

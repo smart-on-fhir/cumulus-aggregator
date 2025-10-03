@@ -126,8 +126,6 @@ class S3Manager:
         :param payload: the variable to write to the file in S3
         """
         path = functions.get_s3_key_from_path(path)
-        if isinstance(payload, dict):
-            payload = json.dumps(payload, indent=2)
         functions.put_s3_file(
             s3_client=self.s3_client, s3_bucket_name=self.s3_bucket_name, key=path, payload=payload
         )
