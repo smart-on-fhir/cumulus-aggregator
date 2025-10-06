@@ -1,8 +1,9 @@
 import copy
-import io
+import json
 import os
 from unittest import mock
 
+import boto3
 import botocore
 import freezegun
 import pandas
@@ -192,9 +193,11 @@ def test_cache_api(mock_client, mock_bucket):
     )
     manager.cache_api()
     publish_args = mock_client.mock_calls[-1][2]
-    assert publish_args["TopicArn"] == mock_utils.TEST_CACHE_API_ARN
-    assert publish_args["Message"] == "data_packages"
-    assert publish_args["Subject"] == "data_packages"
+    assert publish_args["TopicArn"] == mock_utils.TEST_COMPLETENESS_ARN
+    assert publish_args["Message"] == json.dumps(
+        {"site": mock_utils.EXISTING_SITE, "study": mock_utils.EXISTING_STUDY}
+    )
+    assert publish_args["Subject"] == "check_completeness"
 
 
 @mock.patch("src.shared.s3_manager.S3Manager.cache_api")
@@ -208,23 +211,8 @@ def test_write_parquet(mock_cache, mock_bucket):
             mock_utils.EXISTING_VERSION,
         )
     )
-    manager.write_parquet(df, False)
-    df2 = pandas.read_parquet(
-        io.BytesIO(
-            manager.s3_client.get_object(
-                Bucket=manager.s3_bucket_name,
-                Key=(
-                    "aggregates/study/study__encounter/study__encounter__099/"
-                    "study__encounter__aggregate.parquet"
-                ),
-            )["Body"].read()
-        )
-    )
-    assert df.compare(df2).empty
-    assert not mock_cache.called
     manager.write_parquet(
         df,
-        True,
         path=(
             f"s3://{mock_utils.TEST_BUCKET}/aggregates/study/study__encounter/"
             "study__encounter__099/study__encounter__aggregate.parquet"
@@ -366,7 +354,7 @@ def test_presigned_error_handling(mock_bucket):
 )
 @freezegun.freeze_time("2025-01-01")
 def test_update_local_metadata(
-    mock_bucket, site, study, data_package, version, metadata_type, target, extras
+    mock_bucket, site, study, data_package, version, metadata_type, target, extras, mock_queue
 ):
     dp_id = f"{study}__{data_package}__{version}"
     manager = s3_manager.S3Manager(mock_sns_event(site, study, data_package, version))
@@ -383,7 +371,6 @@ def test_update_local_metadata(
         site=site,
         # value should be ignored except when metadata_type is COLUMN_TYPES and the key is column
         value=value,
-        metadata=metadata,
         meta_type=metadata_type,
         extra_items=extras,
     )
@@ -411,7 +398,7 @@ def test_update_local_metadata(
             assert extra in metadata[site][study][data_package][dp_id].keys()
 
 
-def test_write_local_metadata(mock_bucket):
+def test_write_local_metadata(mock_bucket, mock_env, mock_queue):
     manager = s3_manager.S3Manager(
         mock_sns_event(
             mock_utils.EXISTING_SITE,
@@ -420,12 +407,20 @@ def test_write_local_metadata(mock_bucket):
             mock_utils.EXISTING_VERSION,
         )
     )
-    manager.metadata = {"foo": "bar"}
+    manager.metadata = {"a": "b", "foo": "bar"}
+    manager.metadata_delta = {"foo": "bar"}
     manager.write_local_metadata()
-    metadata = manager.s3_client.get_object(
-        Bucket=manager.s3_bucket_name, Key="metadata/transactions.json"
-    )["Body"].read()
-    assert metadata == b'{\n  "foo": "bar"\n}'
+    sqs_client = boto3.client("sqs", region_name="us-east-1")
+    res = sqs_client.receive_message(
+        QueueUrl=mock_utils.TEST_METADATA_UPDATE_URL, MaxNumberOfMessages=10
+    )
+    assert len(res["Messages"]) == 1
+    message = json.loads(res["Messages"][0]["Body"])
+    assert message == {
+        "s3_bucket_name": "cumulus-aggregator-site-counts-test",
+        "key": "metadata/transactions.json",
+        "updates": '{\n  "foo": "bar"\n}',
+    }
 
 
 @mock.patch.dict(os.environ, mock_utils.MOCK_ENV)

@@ -34,7 +34,6 @@ def process_flat(manager: s3_manager.S3Manager):
         enums.ColumnTypesKeys.COLUMNS.value,
         value=column_dict,
         site=manager.site,
-        metadata=manager.types_metadata,
         meta_type=enums.JsonFilename.COLUMN_TYPES.value,
         extra_items=extras,
     )
@@ -46,13 +45,10 @@ def process_flat(manager: s3_manager.S3Manager):
     manager.update_local_metadata(
         enums.ColumnTypesKeys.LAST_DATA_UPDATE.value,
         value=column_dict,
-        metadata=manager.types_metadata,
         meta_type=enums.JsonFilename.COLUMN_TYPES.value,
         extra_items=extras,
     )
-    manager.write_local_metadata(
-        metadata=manager.types_metadata, meta_type=enums.JsonFilename.COLUMN_TYPES.value
-    )
+    manager.write_local_metadata(meta_type=enums.JsonFilename.COLUMN_TYPES.value)
     manager.write_local_metadata()
     manager.cache_api()
 

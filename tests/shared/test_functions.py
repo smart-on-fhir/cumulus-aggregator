@@ -22,8 +22,8 @@ from tests import mock_utils
     "copy_res,del_res,raises",
     [
         (200, 204, does_not_raise()),
-        (400, 204, pytest.raises(functions.S3UploadError)),
-        (200, 400, pytest.raises(functions.S3UploadError)),
+        (400, 204, pytest.raises(errors.S3UploadError)),
+        (200, 400, pytest.raises(errors.S3UploadError)),
     ],
 )
 def test_move_s3_file(copy_res, del_res, raises):
@@ -89,6 +89,8 @@ def test_get_s3_keys(mock_bucket):
     assert len(res) == mock_utils.ITEM_COUNT
     res = functions.get_s3_keys(s3_client, mock_utils.TEST_BUCKET, "cache")
     assert res == ["cache/data_packages.json"]
+    res = functions.get_s3_keys(s3_client, mock_utils.TEST_BUCKET, "nonexistant")
+    assert res == []
 
 
 def test_latest_data_package_version(mock_bucket):
@@ -144,6 +146,18 @@ def test_latest_data_package_version(mock_bucket):
             does_not_raise(),
         ),
         (
+            f"{enums.BucketPath.LAST_VALID.value}/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_SITE}/"
+            f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_VERSION}/"
+            f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__flat.parquet",
+            functions.PackageMetadata(
+                mock_utils.EXISTING_STUDY,
+                mock_utils.EXISTING_SITE,
+                mock_utils.EXISTING_DATA_P,
+                mock_utils.EXISTING_VERSION,
+            ),
+            does_not_raise(),
+        ),
+        (
             f"{enums.BucketPath.FLAT.value}/{mock_utils.EXISTING_STUDY}/"
             f"{mock_utils.EXISTING_SITE}/"
             f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__"
@@ -173,6 +187,11 @@ def test_latest_data_package_version(mock_bucket):
         ("badkey", None, pytest.raises(errors.AggregatorS3Error)),
         (
             "badsubbucket/site/study/verison/data.parquet",
+            None,
+            pytest.raises(errors.AggregatorS3Error),
+        ),
+        (
+            f"{enums.BucketPath.UPLOAD.value}/bad_path/data.parquet",
             None,
             pytest.raises(errors.AggregatorS3Error),
         ),

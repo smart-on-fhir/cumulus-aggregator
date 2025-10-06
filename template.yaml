@@ -156,6 +156,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'CumulusAggUnzipUpload-${DeployStage}-${NetworkName}'
+      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
       CodeUri: ./src/site_upload/unzip_upload
       Handler: unzip_upload.unzip_upload_handler
       Runtime: "python3.11"
@@ -169,6 +170,8 @@ Resources:
       Environment:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+          TOPIC_PROCESS_UPLOADS_ARN: !Ref SNSTopicProcessUploads
+          QUEUE_METADATA_UPDATE: !Ref SQSMetadataUpdate
       Policies:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
@@ -179,6 +182,14 @@ Resources:
               - kms:Decrypt
             Resource:
               - !ImportValue cumulus-kms-KMSKeyArn
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt SNSTopicProcessUploads.TopicName
+        - Statement:
+          - Sid: QueuePolicy
+            Action:
+              - sqs:SendMessage
+            Effect: Allow
+            Resource: !GetAtt SQSMetadataUpdate.Arn
 
   UnzipUploadLogGroup:
     Type: AWS::Logs::LogGroup
@@ -206,7 +217,12 @@ Resources:
           TOPIC_PROCESS_COUNTS_ARN: !Ref SNSTopicProcessCounts
           TOPIC_PROCESS_FLAT_ARN: !Ref SNSTopicProcessFlat
           TOPIC_PROCESS_STUDY_META_ARN: !Ref SNSTopicProcessStudyMeta
-
+          QUEUE_METADATA_UPDATE: !Ref SQSMetadataUpdate
+      Events:
+        ProcessUploadSNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref SNSTopicProcessUploads
       Policies:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
@@ -223,6 +239,12 @@ Resources:
               - kms:Decrypt
             Resource:
               - !ImportValue cumulus-kms-KMSKeyArn
+        - Statement:
+          - Sid: QueuePolicy
+            Action:
+              - sqs:SendMessage
+            Effect: Allow
+            Resource: !GetAtt SQSMetadataUpdate.Arn
 
   ProcessUploadLogGroup:
     Type: AWS::Logs::LogGroup
@@ -248,7 +270,8 @@ Resources:
       Environment:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
-          TOPIC_CACHE_API_ARN: !Ref SNSTopicCacheAPI
+          TOPIC_COMPLETENESS_ARN: !Ref SNSTopicCheckCompleteness
+          QUEUE_METADATA_UPDATE: !Ref SQSMetadataUpdate
       Events:
         ProcessCountsUploadSNSEvent:
           Type: SNS
@@ -258,7 +281,7 @@ Resources:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
         - SNSPublishMessagePolicy:
-            TopicName: !GetAtt SNSTopicCacheAPI.TopicName
+            TopicName: !GetAtt SNSTopicCheckCompleteness.TopicName
         - Statement:
           - Sid: KMSDecryptPolicy
             Effect: Allow
@@ -266,6 +289,12 @@ Resources:
               - kms:Decrypt
             Resource:
               - !ImportValue cumulus-kms-KMSKeyArn
+        - Statement:
+          - Sid: QueuePolicy
+            Action:
+              - sqs:SendMessage
+            Effect: Allow
+            Resource: !GetAtt SQSMetadataUpdate.Arn
 
   PowersetMergeLogGroup:
     Type: AWS::Logs::LogGroup
@@ -291,7 +320,8 @@ Resources:
       Environment:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
-          TOPIC_CACHE_API_ARN: !Ref SNSTopicCacheAPI
+          TOPIC_COMPLETENESS_ARN: !Ref SNSTopicCheckCompleteness
+          QUEUE_METADATA_UPDATE: !Ref SQSMetadataUpdate
       Events:
         ProcessFlatUploadSNSEvent:
          Type: SNS
@@ -301,7 +331,7 @@ Resources:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
         - SNSPublishMessagePolicy:
-            TopicName: !GetAtt SNSTopicCacheAPI.TopicName
+            TopicName: !GetAtt SNSTopicCheckCompleteness.TopicName
         - Statement:
           - Sid: KMSDecryptPolicy
             Effect: Allow
@@ -309,6 +339,12 @@ Resources:
               - kms:Decrypt
             Resource:
               - !ImportValue cumulus-kms-KMSKeyArn
+        - Statement:
+          - Sid: QueuePolicy
+            Action:
+              - sqs:SendMessage
+            Effect: Allow
+            Resource: !GetAtt SQSMetadataUpdate.Arn
 
   ProcessFlatLogGroup:
     Type: AWS::Logs::LogGroup
@@ -334,6 +370,7 @@ Resources:
       Environment:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+          QUEUE_METADATA_UPDATE: !Ref SQSMetadataUpdate
       Events:
         ProcessUploadSNSEvent:
           Type: SNS
@@ -349,12 +386,139 @@ Resources:
               - kms:Decrypt
             Resource:
               - !ImportValue cumulus-kms-KMSKeyArn
+        - Statement:
+          - Sid: QueuePolicy
+            Action:
+              - sqs:SendMessage
+            Effect: Allow
+            Resource: !GetAtt SQSMetadataUpdate.Arn
 
   StudyPeriodLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${StudyPeriodFunction}"
       RetentionInDays: !Ref RetentionTime
+
+  ProcessMetadataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggProcessMetadata-${DeployStage}-${NetworkName}'
+      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
+      CodeUri: ./src/site_upload/update_metadata
+      Handler: update_metadata.update_metadata_handler
+      Runtime: "python3.11"
+      LoggingConfig:
+        ApplicationLogLevel: !Ref LogLevel
+        LogFormat: !Ref LogFormat
+        LogGroup: !Sub "/aws/lambda/CumulusAggProcessMetadata-${DeployStage}-${NetworkName}"
+      MemorySize: 512
+      Timeout: 30
+      Description: Processes metadata updates and writes to S3
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+      Events:
+        MetadataUpdateSQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt SQSMetadataUpdate.Arn
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+        - Statement:
+          - Sid: KMSDecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
+        - Statement:
+          - Sid: QueuePolicy
+            Action:
+              - sqs:ChangeMessageVisibility
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+              - sqs:GetQueueUrl
+              - sqs:ReceiveMessage
+            Effect: Allow
+            Resource: !GetAtt SQSMetadataUpdate.Arn
+
+  ProcessMetadataLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ProcessMetadataFunction}"
+      RetentionInDays: !Ref RetentionTime
+
+  CheckCompletenessFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggCheckCompleteness-${DeployStage}-${NetworkName}'
+      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
+      CodeUri: ./src/site_upload/check_if_complete
+      Handler: check_if_complete.check_if_complete_handler
+      Runtime: "python3.11"
+      LoggingConfig:
+        ApplicationLogLevel: !Ref LogLevel
+        LogFormat: !Ref LogFormat
+        LogGroup: !Sub "/aws/lambda/CumulusAggCheckCompleteness-${DeployStage}-${NetworkName}"
+      MemorySize: 512
+      Timeout: 800
+      Description: Caches selected database queries to S3
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+          GLUE_DB_NAME: !Sub '${GlueNameParameter}-${DeployStage}-${NetworkName}'
+          TOPIC_CACHE_API_ARN: !Ref SNSTopicCacheAPI
+          GLUE_CRAWLER_NAME: !Ref GlueCrawler
+          WORKGROUP_NAME: !Sub '${AthenaWorkgroupNameParameter}-${DeployStage}-${NetworkName}'
+      Events:
+        CheckCompletenessSNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref SNSTopicCheckCompleteness
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt SNSTopicCacheAPI.TopicName
+        - Statement:
+          - Sid: GluePermissionsPolicy
+            Effect: Allow
+            Action:
+              - glue:*Table*
+              - glue:*Partition*
+            Resource:
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${GlueNameParameter}-${DeployStage}-${NetworkName}'
+              - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${GlueNameParameter}-${DeployStage}-${NetworkName}/*'
+        - Statement:
+          - Sid: AthenaExecuteQueryPermissionsPolicy
+            Effect: Allow
+            Action:
+              - athena:*
+            Resource: !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroupNameParameter}-${DeployStage}-${NetworkName}'
+
+        - Statement:
+          - Sid: CrawlPermissionsPolicy
+            Effect: Allow
+            Action:
+              - glue:*
+            Resource:
+              - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:crawler/${GlueCrawler}"
+        - Statement:
+          - Sid: KMSDecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
+
+  CheckCompletenessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${CheckCompletenessFunction}"
+      RetentionInDays: !Ref RetentionTime
+
 
   CacheAPIFunction:
     Type: AWS::Serverless::Function
@@ -458,10 +622,10 @@ Resources:
             Effect: Allow
             Resource: !GetAtt SQSTransactionCleanup.Arn
 
-  CacheAPILogGroup:
+  TransactionCleanupLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${CacheAPIFunction}"
+      LogGroupName: !Sub "/aws/lambda/${TransactionCleanupFunction}"
       RetentionInDays: !Ref RetentionTime
 
   # Dashboard API
@@ -914,7 +1078,23 @@ Resources:
       SourceArn: !Sub 'arn:aws:s3:::${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
       SourceAccount: !Ref AWS::AccountId
 
+  EventInvokeCachePermission: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: !Ref CacheAPIFunction
+      Action: "lambda:InvokeFunction"
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt GlueCrawlCompleteRule.Arn
+
 ### SNS topics
+  SNSTopicProcessUploads:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'CumulusProcessUploads-${DeployStage}-${NetworkName}'
+      Tags:
+        - Key: Name
+          Value: !Sub 'CumulusProcessUploads-${DeployStage}-${NetworkName}'
+
   SNSTopicProcessCounts:
     Type: AWS::SNS::Topic
     Properties:
@@ -938,6 +1118,14 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub 'CumulusProcessStudyMeta-${DeployStage}-${NetworkName}'
+
+  SNSTopicCheckCompleteness:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'SNSTopicCheckCompleteness-${DeployStage}-${NetworkName}'
+      Tags:
+        - Key: Name
+          Value: !Sub 'SNSTopicCheckCompleteness-${DeployStage}-${NetworkName}'
 
   SNSTopicCacheAPI:
     Type: AWS::SNS::Topic
@@ -980,6 +1168,7 @@ Resources:
       Topics: 
         - !Ref SNSStudyPayload
 
+# SQS Queues
 
   SQSTransactionCleanup:
     Type: AWS::SQS::Queue
@@ -993,6 +1182,41 @@ Resources:
       FunctionName:
         !Ref TransactionCleanupFunction
 
+  SQSMetadataUpdate:
+    Type: AWS::SQS::Queue
+    Properties:
+      FifoQueue: True
+      ContentBasedDeduplication: True
+
+  SQSMetadataUpdateEventSource:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt SQSMetadataUpdate.Arn
+      FunctionName:
+        !Ref ProcessMetadataFunction
+
+# EventBridge rules
+
+  GlueCrawlCompleteRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub "CumulusPostCrawlCache-${DeployStage}-${NetworkName}"
+      EventPattern: 
+        source:
+          - "aws.glue"
+        detail-type:
+          - "Glue Crawler State Change"
+        detail:
+          crawlerName:
+            - !Ref GlueCrawler
+          state:
+              - "Succeeded"
+      Targets: 
+        - Arn: !GetAtt CacheAPIFunction.Arn
+          Id: CacheFunction
+
+
+
 ### S3 Buckets
 
   AggregatorBucket:
@@ -1003,13 +1227,6 @@ Resources:
       BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
       NotificationConfiguration:
         LambdaConfigurations:
-          - Event: s3:ObjectCreated:*
-            Function: !GetAtt ProcessUploadFunction.Arn
-            Filter:
-              S3Key:
-                Rules:
-                  - Name: prefix
-                    Value: 'site_upload/'
           - Event: s3:ObjectCreated:*
             Function: !GetAtt UnzipUploadFunction.Arn
             Filter:

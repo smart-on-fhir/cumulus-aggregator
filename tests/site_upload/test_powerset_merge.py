@@ -1,4 +1,5 @@
 import io
+import json
 from contextlib import nullcontext as does_not_raise
 from datetime import UTC, datetime
 
@@ -9,21 +10,9 @@ import pytest
 from freezegun import freeze_time
 from pandas import DataFrame, read_parquet
 
-from src.shared import enums, functions
+from src.shared import enums
 from src.site_upload.powerset_merge import powerset_merge
-from tests.mock_utils import (
-    EXISTING_DATA_P,
-    EXISTING_SITE,
-    EXISTING_STUDY,
-    EXISTING_VERSION,
-    ITEM_COUNT,
-    NEW_SITE,
-    NEW_STUDY,
-    NEW_VERSION,
-    TEST_BUCKET,
-    get_mock_column_types_metadata,
-    get_mock_metadata,
-)
+from tests import mock_utils
 
 
 @freeze_time("2020-01-01")
@@ -32,98 +21,98 @@ from tests.mock_utils import (
     [
         (  # Adding a new data package to a site with uploads
             "./tests/test_data/count_synthea_patient.parquet",
-            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}/"
-            f"{EXISTING_VERSION}/encounter.parquet",
-            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}/"
-            f"{EXISTING_VERSION}/encounter.parquet",
+            f"/{mock_utils.NEW_STUDY}/{mock_utils.NEW_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}/"
+            f"{mock_utils.EXISTING_VERSION}/encounter.parquet",
+            f"/{mock_utils.NEW_STUDY}/{mock_utils.NEW_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}/"
+            f"{mock_utils.EXISTING_VERSION}/encounter.parquet",
             False,
             False,
             200,
-            ITEM_COUNT + 2,
+            mock_utils.ITEM_COUNT + 2,
             506,
             [1103, pandas.NA, pandas.NA, pandas.NA, pandas.NA],
             [10, pandas.NA, 78, "Not Hispanic or Latino", "princeton_plainsboro_teaching_hospital"],
         ),
         (  # Adding a new data package to a site without uploads
             "./tests/test_data/count_synthea_patient.parquet",
-            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
-            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{mock_utils.NEW_STUDY}/{mock_utils.NEW_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.NEW_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/encounter.parquet",
+            f"/{mock_utils.NEW_STUDY}/{mock_utils.NEW_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.NEW_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/encounter.parquet",
             False,
             False,
             200,
-            ITEM_COUNT + 2,
+            mock_utils.ITEM_COUNT + 2,
             506,
             [1103, pandas.NA, pandas.NA, pandas.NA, pandas.NA],
             [10, pandas.NA, 78, "Not Hispanic or Latino", "chicago_hope"],
         ),
         (  # Updating an existing data package
             "./tests/test_data/count_synthea_patient.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/encounter.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/encounter.parquet",
             True,
             False,
             200,
-            ITEM_COUNT + 2,
+            mock_utils.ITEM_COUNT + 2,
             506,
             [1103, pandas.NA, pandas.NA, pandas.NA, pandas.NA],
             [10, pandas.NA, 78, "Not Hispanic or Latino", "princeton_plainsboro_teaching_hospital"],
         ),
         (  # Updating an existing data package w/ extra files
             "./tests/test_data/count_synthea_patient.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/encounter.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/encounter.parquet",
             True,
             True,
             200,
-            ITEM_COUNT + 3,
+            mock_utils.ITEM_COUNT + 3,
             506,
             [1103, pandas.NA, pandas.NA, pandas.NA, pandas.NA],
             [10, pandas.NA, 78, "Not Hispanic or Latino", "princeton_plainsboro_teaching_hospital"],
         ),
         (  # New version of existing data package
             "./tests/test_data/count_synthea_patient.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{NEW_VERSION}/encounter.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{NEW_VERSION}/encounter.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.NEW_VERSION}/encounter.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.NEW_VERSION}/encounter.parquet",
             True,
             False,
             200,
-            ITEM_COUNT + 3,
+            mock_utils.ITEM_COUNT + 3,
             506,
             [1103, pandas.NA, pandas.NA, pandas.NA, pandas.NA],
             [10, pandas.NA, 78, "Not Hispanic or Latino", "princeton_plainsboro_teaching_hospital"],
         ),
         (  # Invalid parquet file
             "./tests/site_upload/test_powerset_merge.py",
-            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/patient.parquet",
-            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/patient.parquet",
+            f"/{mock_utils.NEW_STUDY}/{mock_utils.NEW_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/patient.parquet",
+            f"/{mock_utils.NEW_STUDY}/{mock_utils.NEW_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/patient.parquet",
             False,
             False,
             500,
-            ITEM_COUNT + 1,
+            mock_utils.ITEM_COUNT + 1,
             0,
             [],
             [],
         ),
         (  # Checks presence of commas in strings does not cause an error
             "./tests/test_data/cube_strings_with_commas.parquet",
-            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
-            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{mock_utils.NEW_STUDY}/{mock_utils.NEW_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/encounter.parquet",
+            f"/{mock_utils.NEW_STUDY}/{mock_utils.NEW_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/encounter.parquet",
             False,
             False,
             200,
-            ITEM_COUNT + 2,
+            mock_utils.ITEM_COUNT + 2,
             30,
             [37990, pandas.NA, pandas.NA, pandas.NA],
             [
@@ -136,28 +125,28 @@ from tests.mock_utils import (
         (  # ensuring that a data package that is a substring does not get
             # merged by substr match
             "./tests/test_data/count_synthea_patient.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/{EXISTING_SITE}/"
-            f"{EXISTING_VERSION}/encount.parquet",
-            f"/{EXISTING_STUDY}/{EXISTING_STUDY}__{EXISTING_DATA_P[0:-2]}/{EXISTING_SITE}/"
-            f"{EXISTING_VERSION}/encount.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P[0:-2]}/{mock_utils.EXISTING_SITE}/"
+            f"{mock_utils.EXISTING_VERSION}/encount.parquet",
+            f"/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P[0:-2]}/{mock_utils.EXISTING_SITE}/"
+            f"{mock_utils.EXISTING_VERSION}/encount.parquet",
             False,
             False,
             200,
-            ITEM_COUNT + 2,
+            mock_utils.ITEM_COUNT + 2,
             506,
             [1103, pandas.NA, pandas.NA, pandas.NA, pandas.NA],
             [10, pandas.NA, 78, "Not Hispanic or Latino", "princeton_plainsboro_teaching_hospital"],
         ),
         (  # Empty file upload
             None,
-            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
-            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{mock_utils.NEW_STUDY}/{mock_utils.NEW_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/encounter.parquet",
+            f"/{mock_utils.NEW_STUDY}/{mock_utils.NEW_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/encounter.parquet",
             False,
             False,
             500,
-            ITEM_COUNT + 1,
+            mock_utils.ITEM_COUNT + 1,
             0,
             [],
             [],
@@ -165,12 +154,12 @@ from tests.mock_utils import (
         (  # Race condition - file deleted before job starts
             None,
             None,
-            f"/{NEW_STUDY}/{NEW_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}"
-            f"/{EXISTING_VERSION}/encounter.parquet",
+            f"/{mock_utils.NEW_STUDY}/{mock_utils.NEW_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}"
+            f"/{mock_utils.EXISTING_VERSION}/encounter.parquet",
             False,
             False,
             500,
-            ITEM_COUNT,
+            mock_utils.ITEM_COUNT,
             0,
             [],
             [],
@@ -187,35 +176,37 @@ def test_powerset_merge_single_upload(
     expected_contents,
     mock_bucket,
     mock_notification,
+    mock_queue,
     expected_rows,
     first_row,
     last_row,
 ):
     s3_client = boto3.client("s3", region_name="us-east-1")
+    sqs_client = boto3.client("sqs", region_name="us-east-1")
     if upload_file is not None:
         s3_client.upload_file(
             upload_file,
-            TEST_BUCKET,
+            mock_utils.TEST_BUCKET,
             f"{enums.BucketPath.LATEST.value}{upload_path}",
         )
     elif upload_path is not None:
         with io.BytesIO(DataFrame().to_parquet()) as upload_fileobj:
             s3_client.upload_fileobj(
                 upload_fileobj,
-                TEST_BUCKET,
+                mock_utils.TEST_BUCKET,
                 f"{enums.BucketPath.LATEST.value}{upload_path}",
             )
     if archives:
         s3_client.upload_file(
             upload_file,
-            TEST_BUCKET,
+            mock_utils.TEST_BUCKET,
             f"{enums.BucketPath.LAST_VALID.value}{upload_path}",
         )
     if duplicates:
         duplicate_path = upload_path.replace(".parquet", "duplicate.parquet")
         s3_client.upload_file(
             upload_file,
-            TEST_BUCKET,
+            mock_utils.TEST_BUCKET,
             f"{enums.BucketPath.LAST_VALID.value}{duplicate_path}",
         )
 
@@ -239,60 +230,18 @@ def test_powerset_merge_single_upload(
     dp_id = f"{data_package}__{version}"
     res = powerset_merge.powerset_merge_handler(event, {})
     assert res["statusCode"] == status
-    s3_res = s3_client.list_objects_v2(Bucket=TEST_BUCKET)
+    s3_res = s3_client.list_objects_v2(Bucket=mock_utils.TEST_BUCKET)
     assert len(s3_res["Contents"]) == expected_contents
     for item in s3_res["Contents"]:
         if item["Key"].endswith("aggregate.parquet"):
             assert item["Key"].startswith(enums.BucketPath.AGGREGATE.value)
             # This finds the aggregate that was created/updated - ie it skips mocks
             if study in item["Key"] and status == 200:
-                agg_df = awswrangler.s3.read_parquet(f"s3://{TEST_BUCKET}/{item['Key']}")
+                agg_df = awswrangler.s3.read_parquet(f"s3://{mock_utils.TEST_BUCKET}/{item['Key']}")
                 assert (agg_df["site"].eq(site)).any()
                 assert expected_rows == len(agg_df)
                 assert first_row == agg_df.iloc[0].to_list()
                 assert last_row == agg_df.iloc[-1].to_list()
-        elif item["Key"].endswith("transactions.json"):
-            assert item["Key"].startswith(enums.BucketPath.META.value)
-            metadata = functions.read_metadata(s3_client, TEST_BUCKET)
-            if res["statusCode"] == 200:
-                assert (
-                    metadata[site][study][data_package.split("__")[1]][dp_id]["last_aggregation"]
-                    == datetime.now(UTC).isoformat()
-                )
-
-            else:
-                assert (
-                    metadata["princeton_plainsboro_teaching_hospital"]["study"]["encounter"]["099"][
-                        "last_aggregation"
-                    ]
-                    == get_mock_metadata()["princeton_plainsboro_teaching_hospital"]["study"][
-                        "encounter"
-                    ]["099"]["last_aggregation"]
-                )
-            if upload_file is not None and study != NEW_STUDY:
-                # checking to see that merge powerset didn't touch last upload
-                assert (
-                    metadata[site][study][data_package.split("__")[1]][dp_id]["last_upload"]
-                    != datetime.now(UTC).isoformat()
-                )
-        elif item["Key"].endswith("column_types.json"):
-            assert item["Key"].startswith(enums.BucketPath.META.value)
-            metadata = functions.read_metadata(
-                s3_client, TEST_BUCKET, meta_type=enums.JsonFilename.COLUMN_TYPES.value
-            )
-            if res["statusCode"] == 200:
-                last_update = metadata[study][data_package.split("__")[1]][dp_id][
-                    "last_data_update"
-                ]
-                assert last_update == datetime.now(UTC).isoformat()
-
-            else:
-                assert (
-                    metadata["study"]["encounter"]["study__encounter__099"]["last_data_update"]
-                    == get_mock_column_types_metadata()["study"]["encounter"][
-                        "study__encounter__099"
-                    ]["last_data_update"]
-                )
         elif item["Key"].startswith(enums.BucketPath.LAST_VALID.value):
             if item["Key"].endswith(".parquet"):
                 assert item["Key"] == (f"{enums.BucketPath.LAST_VALID.value}{upload_path}")
@@ -308,7 +257,7 @@ def test_powerset_merge_single_upload(
                 or item["Key"].startswith(enums.BucketPath.CACHE.value)
                 or item["Key"].startswith(enums.BucketPath.FLAT.value)
                 or item["Key"].startswith(enums.BucketPath.STUDY_META.value)
-                or item["Key"].endswith("study_periods.json")
+                or item["Key"].startswith(enums.BucketPath.META.value)
             )
     if archives:
         keys = []
@@ -317,6 +266,34 @@ def test_powerset_merge_single_upload(
         date_str = datetime.now(UTC).isoformat()
         archive_path = f"/{date_str}.".join(upload_path.rsplit("/", 1))
         assert f"{enums.BucketPath.ARCHIVE.value}{archive_path}" in keys
+    if res["statusCode"] == 200:
+        sqs_res = sqs_client.receive_message(
+            QueueUrl=mock_utils.TEST_METADATA_UPDATE_URL, MaxNumberOfMessages=10
+        )
+        assert len(sqs_res["Messages"]) == 2
+        transactions = json.loads(sqs_res["Messages"][0]["Body"])
+        assert transactions["key"] == "metadata/transactions.json"
+        t_updates = json.loads(transactions["updates"])
+        assert (
+            t_updates[site][study][data_package.split("__")[1]][dp_id]["last_data_update"]
+            == datetime.now(UTC).isoformat()
+        )
+        assert (
+            "transaction_format_version"
+            in t_updates[site][study][data_package.split("__")[1]][dp_id].keys()
+        )
+
+        column_types = json.loads(sqs_res["Messages"][1]["Body"])
+        assert column_types["key"] == "metadata/column_types.json"
+        c_updates = json.loads(column_types["updates"])
+        assert (
+            c_updates[study][data_package.split("__")[1]][dp_id]["last_data_update"]
+            == datetime.now(UTC).isoformat()
+        )
+        assert (
+            "column_types_format_version"
+            in c_updates[study][data_package.split("__")[1]][dp_id].keys()
+        )
 
 
 @freeze_time("2020-01-01")
@@ -334,40 +311,41 @@ def test_powerset_merge_join_study_data(
     expected_errors,
     mock_bucket,
     mock_notification,
+    mock_queue,
 ):
     s3_client = boto3.client("s3", region_name="us-east-1")
     s3_client.upload_file(
         upload_file,
-        TEST_BUCKET,
-        f"{enums.BucketPath.LATEST.value}/{EXISTING_STUDY}/"
-        f"{EXISTING_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}/"
-        f"{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+        mock_utils.TEST_BUCKET,
+        f"{enums.BucketPath.LATEST.value}/{mock_utils.EXISTING_STUDY}/"
+        f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.NEW_SITE}/"
+        f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_VERSION}/encounter.parquet",
     )
 
     s3_client.upload_file(
         "./tests/test_data/count_synthea_patient.parquet",
-        TEST_BUCKET,
-        f"{enums.BucketPath.LAST_VALID.value}/{EXISTING_STUDY}/"
-        f"{EXISTING_STUDY}__{EXISTING_DATA_P}/{EXISTING_SITE}/"
-        f"{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+        mock_utils.TEST_BUCKET,
+        f"{enums.BucketPath.LAST_VALID.value}/{mock_utils.EXISTING_STUDY}/"
+        f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.EXISTING_SITE}/"
+        f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_VERSION}/encounter.parquet",
     )
 
     if archives:
         s3_client.upload_file(
             "./tests/test_data/count_synthea_patient.parquet",
-            TEST_BUCKET,
-            f"{enums.BucketPath.LAST_VALID.value}/{EXISTING_STUDY}/"
-            f"{EXISTING_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}/"
-            f"{EXISTING_STUDY}__{EXISTING_DATA_P}__{EXISTING_VERSION}/encounter.parquet",
+            mock_utils.TEST_BUCKET,
+            f"{enums.BucketPath.LAST_VALID.value}/{mock_utils.EXISTING_STUDY}/"
+            f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.NEW_SITE}/"
+            f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_VERSION}/encounter.parquet",
         )
 
     event = {
         "Records": [
             {
                 "Sns": {
-                    "Message": f"{enums.BucketPath.LATEST.value}/{EXISTING_STUDY}"
-                    f"/{EXISTING_STUDY}__{EXISTING_DATA_P}/{NEW_SITE}"
-                    f"/{EXISTING_VERSION}/encounter.parquet",
+                    "Message": f"{enums.BucketPath.LATEST.value}/{mock_utils.EXISTING_STUDY}"
+                    f"/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}/{mock_utils.NEW_SITE}"
+                    f"/{mock_utils.EXISTING_VERSION}/encounter.parquet",
                     "TopicArn": "TOPIC_PROCESS_COUNTS_ARN",
                 }
             }
@@ -376,12 +354,12 @@ def test_powerset_merge_join_study_data(
     res = powerset_merge.powerset_merge_handler(event, {})
     assert res["statusCode"] == 200
     errors = 0
-    s3_res = s3_client.list_objects_v2(Bucket=TEST_BUCKET)
+    s3_res = s3_client.list_objects_v2(Bucket=mock_utils.TEST_BUCKET)
     for item in s3_res["Contents"]:
         if item["Key"].startswith(enums.BucketPath.ERROR.value):
             errors += 1
         elif item["Key"].startswith(f"{enums.BucketPath.AGGREGATE.value}/study"):
-            agg_df = awswrangler.s3.read_parquet(f"s3://{TEST_BUCKET}/{item['Key']}")
+            agg_df = awswrangler.s3.read_parquet(f"s3://{mock_utils.TEST_BUCKET}/{item['Key']}")
             # if a file cant be merged and there's no fallback, we expect
             # [pandas.NA, site_name], otherwise, [pandas.NA, site_name, uploading_site_name]
             if errors != 0 and not archives:
@@ -416,9 +394,9 @@ def test_expand_and_concat(mock_bucket, upload_file, load_empty, raises):
         s3_client = boto3.client("s3", region_name="us-east-1")
         s3_client.upload_file(
             upload_file,
-            TEST_BUCKET,
+            mock_utils.TEST_BUCKET,
             s3_path,
         )
         powerset_merge.expand_and_concat_powersets(
-            df, f"s3://{TEST_BUCKET}/{s3_path}", EXISTING_STUDY
+            df, f"s3://{mock_utils.TEST_BUCKET}/{s3_path}", mock_utils.EXISTING_STUDY
         )

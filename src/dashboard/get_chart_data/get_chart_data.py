@@ -294,7 +294,7 @@ def chart_data_handler(event, context):
             workgroup=os.environ.get("WORKGROUP_NAME"),
         )
         res = _format_payload(df, query_params, filter_groups, count_col)
-        res = functions.http_response(200, res)
+        res = functions.http_response(200, res, alt_log="Chart data succesfully retrieved")
     except errors.AggregatorS3Error:
         # while the API is publicly accessible, we've been asked to not pass
         # helpful error messages back. revisit when dashboard is in AWS.

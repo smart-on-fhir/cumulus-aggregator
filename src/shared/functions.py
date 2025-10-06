@@ -5,6 +5,7 @@ import dataclasses
 import io
 import json
 import logging
+import os
 from datetime import UTC, datetime
 
 import boto3
@@ -43,8 +44,20 @@ def http_response(
     allow_cors: bool = False,
     extra_headers: dict | None = None,
     skip_convert: bool = False,
+    alt_log: str | None = None,
 ) -> dict:
-    """Generates the payload AWS lambda expects as a return value"""
+    """Generates the payload AWS lambda expects as a return value
+
+    :param status: the HTTP status code
+    :param body: the message to return in the HTTP body
+    :allow_cors: if True, appends CORS allow headers
+    :extra_headers: A dictionary of additional headers to append to the response
+    :skip_convert: if False, attempts to dump the body from a json object to a string,
+        otherwise leaves the body as is
+    :alt_log: if true, writes the contents of alt_log to cloudwatch logs, otherwise
+        writes the contents of the body.
+
+    """
     headers = {"Content-Type": "application/json"}
     if allow_cors:
         headers.update(
@@ -56,6 +69,10 @@ def http_response(
         )
     if extra_headers:
         headers.update(extra_headers)
+    if status >= 200 and status < 300:
+        logging.info(alt_log or body)
+    else:
+        logging.error(body)
     return {
         "isBase64Encoded": False,
         "statusCode": status,
@@ -153,7 +170,7 @@ def update_metadata(
                 data_version_metadata[target] = dt.isoformat()
         # Should only be hit if you add a new JSON dict and forget to add it
         # to this function
-        case _:
+        case _:  # pragma: no cover
             raise ValueError(f"{meta_type} does not have a handler for updates.")
     data_version_metadata.update(extra_items)
     return metadata
@@ -165,26 +182,35 @@ def _update_or_clone_template(meta_dict: dict, version, template: str):
 
 def write_metadata(
     *,
-    s3_client,
+    sqs_client,
     s3_bucket_name: str,
     metadata: dict,
     meta_type: str = enums.JsonFilename.TRANSACTIONS.value,
 ) -> None:
-    """Writes transaction info from ∏a dictionary to an s3 bucket metadata location"""
+    """Queues transaction deltas to be written to an S3 bucket"""
     check_meta_type(meta_type)
-
-    s3_client.put_object(
-        Bucket=s3_bucket_name,
-        Key=f"{enums.BucketPath.META.value}/{meta_type}.json",
-        Body=json.dumps(metadata, default=str, indent=2),
+    sqs_client.send_message(
+        QueueUrl=os.environ.get("QUEUE_METADATA_UPDATE"),
+        MessageBody=json.dumps(
+            {
+                "s3_bucket_name": s3_bucket_name,
+                "key": f"{enums.BucketPath.META.value}/{meta_type}.json",
+                "updates": json.dumps(metadata, default=str, indent=2),
+            }
+        ),
+        MessageGroupId="cumulus",
     )
 
 
 # S3 data management
 
 
-class S3UploadError(Exception):
-    pass
+def put_s3_file(s3_client, s3_bucket_name: str, key: str, payload: str | dict) -> None:
+    """Puts the object in payload into S3 at the specified key"""
+    if isinstance(payload, dict):
+        payload = json.dumps(payload, default=str, indent=2)
+    payload = payload.encode("UTF-8")
+    s3_client.put_object(Bucket=s3_bucket_name, Key=key, Body=payload)
 
 
 def delete_s3_file(s3_client, s3_bucket_name: str, key: str) -> None:
@@ -192,7 +218,7 @@ def delete_s3_file(s3_client, s3_bucket_name: str, key: str) -> None:
     delete_response = s3_client.delete_object(Bucket=s3_bucket_name, Key=key)
     if delete_response["ResponseMetadata"]["HTTPStatusCode"] != 204:
         logger.error("error deleting file %s", key)
-        raise S3UploadError
+        raise errors.S3UploadError
 
 
 def move_s3_file(s3_client, s3_bucket_name: str, old_key: str, new_key) -> None:
@@ -201,7 +227,7 @@ def move_s3_file(s3_client, s3_bucket_name: str, old_key: str, new_key) -> None:
     copy_response = s3_client.copy_object(CopySource=source, Bucket=s3_bucket_name, Key=new_key)
     if copy_response["ResponseMetadata"]["HTTPStatusCode"] != 200:
         logger.error("error copying file %s to %s", old_key, new_key)
-        raise S3UploadError
+        raise errors.S3UploadError
     delete_s3_file(s3_client, s3_bucket_name, old_key)
 
 
@@ -247,9 +273,9 @@ def get_s3_key_from_path(s3_path: str):
     return s3_path
 
 
-def get_s3_json_as_dict(bucket, key: str):
+def get_s3_json_as_dict(bucket, key: str, s3_client=None):
     """reads a json object as dict (typically metadata in this case)"""
-    s3_client = boto3.client("s3")
+    s3_client = s3_client or boto3.client("s3")
     bytes_buffer = io.BytesIO()
     s3_client.download_fileobj(
         Bucket=bucket,
@@ -292,15 +318,15 @@ def parse_s3_key(key: str) -> PackageMetadata:
     """Handles extraction of package metadata from an s3 key"""
     try:
         # did we get a full path instead?
-        key = get_s3_key_from_path(key)
-        key = key.split("/")
-        match key[0]:
+        key_parts = get_s3_key_from_path(key)
+        key_parts = key_parts.split("/")
+        match key_parts[0]:
             case enums.BucketPath.AGGREGATE.value:
                 package = PackageMetadata(
-                    study=key[1],
+                    study=key_parts[1],
                     site=None,
-                    data_package=key[2].split("__")[1],
-                    version=key[3],
+                    data_package=key_parts[2].split("__")[1],
+                    version=key_parts[3],
                 )
             case (
                 enums.BucketPath.ARCHIVE.value
@@ -311,42 +337,42 @@ def parse_s3_key(key: str) -> PackageMetadata:
             ):
                 try:
                     package = PackageMetadata(
-                        study=key[1],
-                        site=key[3],
-                        data_package=key[2].split("__")[1],
-                        version=key[4],
+                        study=key_parts[1],
+                        site=key_parts[3],
+                        data_package=key_parts[2].split("__")[1],
+                        version=key_parts[4],
                     )
                 except IndexError:
                     # do we have a flat package in latest? We'll check with the flat parsing rules
                     package = PackageMetadata(
-                        study=key[1],
-                        site=key[2],
-                        data_package=key[3].split("__")[1],
-                        version=key[3].split("__")[3],
+                        study=key_parts[1],
+                        site=key_parts[2],
+                        data_package=key_parts[3].split("__")[1],
+                        version=key_parts[3].split("__")[3],
                     )
             case enums.BucketPath.FLAT.value:
                 package = PackageMetadata(
-                    study=key[1],
-                    site=key[2],
-                    data_package=key[3].split("__")[1],
-                    version=key[3].split("__")[3],
+                    study=key_parts[1],
+                    site=key_parts[2],
+                    data_package=key_parts[3].split("__")[1],
+                    version=key_parts[3].split("__")[3],
                 )
             case enums.BucketPath.UPLOAD.value:
                 package = PackageMetadata(
-                    study=key[1],
-                    site=key[3],
-                    data_package=key[2],
-                    version=key[4],
+                    study=key_parts[1],
+                    site=key_parts[3],
+                    data_package=key_parts[2],
+                    version=key_parts[4],
                 )
             case enums.BucketPath.UPLOAD_STAGING.value:
                 package = PackageMetadata(
-                    study=key[1],
-                    site=key[2],
+                    study=key_parts[1],
+                    site=key_parts[2],
                     data_package=None,
-                    version=key[3],
+                    version=key_parts[3],
                 )
             case _:
-                raise errors.AggregatorS3Error(f" {key[0]} does not correspond to a data package")
+                raise errors.AggregatorS3Error(f" {key} does not correspond to a data package")
         if "__" in package.version:
             package.version = package.version.split("__")[-1]
         return package

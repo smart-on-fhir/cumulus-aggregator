@@ -1,15 +1,27 @@
 """Storage for state variables/methods shared by test modules"""
 
+import calendar
+import datetime
+import json
+
+from src.shared import enums, functions
+
 TEST_BUCKET = "cumulus-aggregator-site-counts-test"
 TEST_WORKGROUP = "cumulus-aggregator-test-wg"
 TEST_GLUE_DB = "cumulus-aggregator-test-db"
+TEST_GLUE_CRAWLER = "cumulus-aggregator-test-crawler"
 TEST_PROCESS_COUNTS_ARN = "arn:aws:sns:us-east-1:123456789012:test-counts"
 TEST_PROCESS_FLAT_ARN = "arn:aws:sns:us-east-1:123456789012:test-flat"
 TEST_PROCESS_STUDY_META_ARN = "arn:aws:sns:us-east-1:123456789012:test-meta"
+TEST_COMPLETENESS_ARN = "arn:aws:sns:us-east-1:123456789012:test-completeness"
 TEST_CACHE_API_ARN = "arn:aws:sns:us-east-1:123456789012:test-cache"
+TEST_PROCESS_UPLOADS_ARN = "arn:aws:sns:us-east-1:123456789012:test-uploads"
 TEST_TRANSACTION_CLEANUP_URL = (
     "https://sqs.us-east-1.amazonaws.com/123456789012/test-transaction-cleanup"
 )
+TEST_TRANSACTION_CLEANUP_ARN = "arn:aws:sqs:us-east-1:123456789012:transaction-cleanup"
+TEST_METADATA_UPDATE_URL = "https://sqs.us-east-1.amazonaws.com/123456789012/test-metadata-update"
+TEST_METADATA_UPDATE_ARN = "arn:aws:sqs:us-east-1:123456789012:test-metadata-update"
 ITEM_COUNT = 11
 DATA_PACKAGE_COUNT = 3
 
@@ -29,14 +41,23 @@ NEW_VERSION = "100"
 # This is a convenience for loading into os.environ with mock.patch.dict.
 # Other cases should probably use the getter version below.
 MOCK_ENV = {
+    "AWS_ACCESS_KEY_ID": "testing",
+    "AWS_SECRET_ACCESS_KEY": "testing",
+    "AWS_SECURITY_TOKEN": "testing",
+    "AWS_SESSION_TOKEN": "testing",
+    "AWS_DEFAULT_REGION": "us-east-1",
     "BUCKET_NAME": TEST_BUCKET,
     "GLUE_DB_NAME": TEST_GLUE_DB,
+    "GLUE_CRAWLER_NAME": TEST_GLUE_CRAWLER,
     "WORKGROUP_NAME": TEST_WORKGROUP,
     "TOPIC_PROCESS_COUNTS_ARN": TEST_PROCESS_COUNTS_ARN,
     "TOPIC_PROCESS_FLAT_ARN": TEST_PROCESS_FLAT_ARN,
     "TOPIC_PROCESS_STUDY_META_ARN": TEST_PROCESS_STUDY_META_ARN,
     "TOPIC_CACHE_API_ARN": TEST_CACHE_API_ARN,
+    "TOPIC_COMPLETENESS_ARN": TEST_COMPLETENESS_ARN,
+    "TOPIC_PROCESS_UPLOADS_ARN": TEST_PROCESS_UPLOADS_ARN,
     "QUEUE_TRANSACTION_CLEANUP": TEST_TRANSACTION_CLEANUP_URL,
+    "QUEUE_METADATA_UPDATE": TEST_METADATA_UPDATE_URL,
 }
 
 
@@ -266,3 +287,60 @@ def get_mock_data_packages_cache():
 
 def get_mock_env():
     return MOCK_ENV
+
+
+def get_mock_transaction(uploaded_at: str | None = None, transaction_id: str | None = None):
+    if uploaded_at is None:
+        uploaded_at = datetime.datetime.now(datetime.UTC).isoformat()
+    if transaction_id is None:
+        transaction_id = "12345678-90ab-cdef-1234-567890abcdef"
+    return {"id": transaction_id, "uploaded_at": uploaded_at}
+
+
+def put_mock_transaction(s3_client, site: str, study: str, transaction: dict):
+    functions.put_s3_file(
+        s3_client=s3_client,
+        s3_bucket_name=TEST_BUCKET,
+        key=f"{enums.BucketPath.META.value}/transactions/{site}__{study}.json",
+        payload=transaction,
+    )
+
+
+def get_mock_sqs_event_record(
+    body: dict, timestamp: datetime.datetime, source: str = TEST_METADATA_UPDATE_ARN
+):
+    """Generates an event record for mocking an SQS message
+
+    Note: when using this, one or more records should be appended to the
+    Records key in a dict like this:
+
+    { 'Records':[mock_event_1, mock_event_2...]}
+
+    A FIFO queue will generate blocks of no more than 10 messages at a time
+    """
+    return {
+        "messageId": "01234567-89ab-cdef-0123-4656789abcdef",
+        "receiptHandle": "ABCDEFGHIJKLMNOPQR123457890...",
+        "body": json.dumps(body),
+        "attributes": {
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": calendar.timegm(timestamp.timetuple()),
+            "SenderId": "ABCDEFGHIJKLMNOPQR",
+            "ApproximateFirstReceiveTimestamp": calendar.timegm(timestamp.timetuple()),
+        },
+        # note: this is included as an example - we won't be using it in all likelihood,
+        # but if this changes, we'll need to allow a way for a user to pass in
+        # attribute values
+        "messageAttributes": {
+            "myAttribute": {
+                "stringValue": "myValue",
+                "stringListValues": [],
+                "binaryListValues": [],
+                "dataType": "String",
+            }
+        },
+        "md5OfBody": "0123456789abcdef012345678",
+        "eventSource": "aws:sqs",
+        "eventSourceARN": source,
+        "awsRegion": "us-east-1",
+    }

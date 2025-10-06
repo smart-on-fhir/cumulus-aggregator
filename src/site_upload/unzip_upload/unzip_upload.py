@@ -8,7 +8,7 @@ from io import BytesIO
 
 import boto3
 
-from shared import decorators, enums, functions
+from shared import decorators, enums, functions, s3_manager
 
 log_level = os.environ.get("LAMBDA_LOG_LEVEL", "INFO")
 logger = logging.getLogger()
@@ -21,21 +21,46 @@ def unzip_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> Non
     archive = zipfile.ZipFile(buffer)
     files = archive.namelist()
     files.remove("manifest.toml")
-    # The manifest will be used as a signal that the extract has finished,
-    # so we'll extract it last in all cases.
+
+    # We'll update the transaction data with the files we're going to process
+    # (we can't use the manifest, because empty tables will not get uploaded),
+    # and use this later to check to see if all files have been processed.
+    # Since metadata is just copied and not otherwise massaged, we skip it
+    manager = s3_manager.S3Manager(site=metadata.site, study=metadata.study)
+    transaction = manager.get_transaction()
+    for upload_type in [
+        enums.UploadTypes.CUBE,
+        enums.UploadTypes.FLAT,
+        enums.UploadTypes.ANNOTATED_CUBE,
+    ]:
+        transaction[f"{upload_type}"] = [file for file in files if f".{upload_type}." in file]
+        transaction["version"] = metadata.version
+    manager.put_file(path=manager.transaction, payload=transaction)
+
+    # The manifest may be used in future cases to handle metadata, so we'll
+    # extract it last in all cases
     # TODO: decide on extract location for manifests
+    new_keys = []
     for file_list in [files, ["manifest.toml"]]:
         for file in file_list:
+            data_package = file.split(".")[0]
             target_folder = (
                 functions.get_folder_from_s3_path(s3_key)
                 .replace(
                     f"{enums.BucketPath.UPLOAD_STAGING.value}/", f"{enums.BucketPath.UPLOAD.value}/"
                 )
-                .replace(f"/{metadata.study}/", f"/{metadata.study}/{file.split('.')[0]}/")
+                .replace(
+                    f"/{metadata.study}/", f"/{metadata.study}/{metadata.study}__{data_package}/"
+                )
+                .replace(
+                    f"/{metadata.version}/",
+                    f"/{metadata.study}__{data_package}__{metadata.version}",
+                )
             )
             s3_client.upload_fileobj(
                 archive.open(file), Bucket=s3_bucket_name, Key=f"{target_folder}/{file}"
             )
+            new_keys.append(f"{target_folder}/{file}")
     archive_key = s3_key.replace(
         f"{enums.BucketPath.UPLOAD_STAGING.value}/", f"{enums.BucketPath.ARCHIVE.value}/"
     )
@@ -45,6 +70,10 @@ def unzip_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> Non
         old_key=s3_key,
         new_key=f"{archive_key}.{datetime.datetime.now(datetime.UTC).isoformat()}",
     )
+    topic_sns_arn = os.environ.get("TOPIC_PROCESS_UPLOADS_ARN")
+    sns_subject = "Process file unzip event"
+    for key in new_keys:
+        sns_client.publish(TopicArn=topic_sns_arn, Message=key, Subject=sns_subject)
 
 
 @decorators.generic_error_handler(msg="Error processing file upload")

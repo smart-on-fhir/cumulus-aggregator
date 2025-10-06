@@ -60,7 +60,6 @@ def test_fetch_upload_url(body, status, mock_bucket, mock_queue):
                 f"{enums.BucketPath.UPLOAD_STAGING.value}/{body['study']}/"
                 f"{EXISTING_SITE}/{body['data_package_version']}/encounter.parquet"
             )
-
     assert "Access-Control-Allow-Origin" not in response["headers"]
 
 

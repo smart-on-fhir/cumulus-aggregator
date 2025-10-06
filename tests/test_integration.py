@@ -8,13 +8,16 @@ We have to mock a lot of AWS infrastructure to do this, since we can't do event
 processing or athena queries locally.
 """
 
+import datetime
 import json
 import pathlib
+import zipfile
 from unittest import mock
 
 import boto3
 import pandas
 import pytest
+import toml
 from freezegun import freeze_time
 from moto.core import DEFAULT_ACCOUNT_ID
 from moto.sns import sns_backends
@@ -28,6 +31,8 @@ from src.site_upload.cache_api import cache_api
 from src.site_upload.powerset_merge import powerset_merge
 from src.site_upload.process_flat import process_flat
 from src.site_upload.process_upload import process_upload
+from src.site_upload.unzip_upload import unzip_upload
+from src.site_upload.update_metadata import update_metadata
 from tests import mock_utils
 
 CURRENT_COL_TYPES_VERSION = "3"
@@ -58,7 +63,7 @@ CURRENT_COL_TYPES_VERSION = "3"
             True,
         ),
         (
-            pathlib.Path(__file__).parent / "test_data/mock_cube_col_types.parquet",
+            pathlib.Path(__file__).parent / "test_data/count_synthea_patient.parquet",
             "cube",
             mock_utils.EXISTING_STUDY,
             mock_utils.EXISTING_SITE,
@@ -68,7 +73,7 @@ CURRENT_COL_TYPES_VERSION = "3"
             False,
         ),
         (
-            pathlib.Path(__file__).parent / "test_data/mock_cube_col_types.parquet",
+            pathlib.Path(__file__).parent / "test_data/count_synthea_patient.parquet",
             "cube",
             mock_utils.EXISTING_STUDY,
             mock_utils.EXISTING_SITE,
@@ -123,6 +128,7 @@ def test_integration(
     tmp_path,
     mock_bucket,
     mock_notification,
+    mock_queue,
     upload_file,
     upload_type,
     study,
@@ -134,16 +140,33 @@ def test_integration(
 ):
     s3_client = boto3.client("s3", region_name="us-east-1")
     sns_backend = sns_backends[DEFAULT_ACCOUNT_ID]["us-east-1"]
-    if upload_type == "flat":
-        upload_key = (
-            f"site_upload/{study}/{site}/{study}__{data_package}__{site}__{version}"
-            f"/user__{site}__{study}.{upload_type}.parquet"
+    sqs_client = boto3.client("sqs", region_name="us-east-1")
+    # Upload prep
+    # TODO: consider importing the library and using it to create a manifest
+    with open(tmp_path / "manifest.toml", "w") as manifest_file:
+        manifest = {}
+        manifest["study_prefix"] = study
+        manifest["export_config"] = {}
+        if upload_type == "flat":
+            manifest["export_config"]["flat_list"] = [data_package]
+        else:
+            manifest["export_config"]["count_list"] = [data_package]
+        toml.dump(manifest, manifest_file)
+    with zipfile.ZipFile(tmp_path / "upload.zip", "w") as upload_zip:
+        upload_zip.write(upload_file, arcname=f"{data_package}.{upload_type}.parquet")
+        upload_zip.write(tmp_path / "manifest.toml", arcname="manifest.toml")
+        upload_zip.write(
+            pathlib.Path(__file__).parent / "test_data/meta_date.parquet",
+            arcname="meta_date.parquet",
         )
-    else:
-        upload_key = (
-            f"site_upload/{study}/{study}__{data_package}/{site}/{version}"
-            f"/user__{site}__{study}.{upload_type}.parquet"
-        )
+    upload_key = f"{enums.BucketPath.UPLOAD_STAGING.value}/{study}/{site}/{version}/upload.zip"
+    s3_client.put_object(
+        Bucket=mock_utils.TEST_BUCKET,
+        Key=f"{enums.BucketPath.META.value}/transactions/{site}__{study}.json",
+        Body=json.dumps(
+            {"id": "12345", "uploaded_at": datetime.datetime.now(datetime.UTC).isoformat()}
+        ).encode("UTF-8"),
+    )
 
     # Expected tables based on the mock bucket configuration
     tables = [
@@ -174,13 +197,32 @@ def test_integration(
         "multiValueQueryStringParameters": {},
         "pathParameters": [],
     }
+    # TODO: supress this info warning?
     dp_before = get_data_packages.data_packages_handler(dp_before_event, [])
 
     # Mock the upload and the event kicking off the aggregator processing pipeline
-    s3_client.upload_file(upload_file, mock_utils.TEST_BUCKET, upload_key)
+    s3_client.upload_file(tmp_path / "upload.zip", mock_utils.TEST_BUCKET, upload_key)
     upload_event = {"Records": [{"awsRegion": "us-east-1", "s3": {"object": {"key": upload_key}}}]}
-    upload_res = process_upload.process_upload_handler(upload_event, {})
-    assert upload_res["statusCode"] == 200
+    unzip_res = unzip_upload.unzip_upload_handler(upload_event, {})
+    assert unzip_res["statusCode"] == 200
+
+    # Mock running the upload processing for the unzipped files
+    files = s3_client.list_objects_v2(
+        Bucket=mock_utils.TEST_BUCKET, Prefix=enums.BucketPath.UPLOAD.value
+    )
+    keys = list(file["Key"] for file in files["Contents"])
+    for key in keys:
+        if "manifest.toml" not in key:
+            upload_event = {
+                "Records": [
+                    {
+                        "awsRegion": "us-east-1",
+                        "Sns": {"Message": key},
+                    }
+                ]
+            }
+            upload_res = process_upload.process_upload_handler(upload_event, {})
+            assert upload_res["statusCode"] == 200
 
     # We'll need to construct events from the moto sns mock message backend, which looks like this:
     # [(event_id, s3_key, event id, unused field, unused field)]
@@ -210,6 +252,15 @@ def test_integration(
         }
         merge_res = process_flat.process_flat_handler(counts_event, {})
         assert merge_res["statusCode"] == 200
+
+    # we have some items in the FIFO queue we'll need to process to get into the caches,
+    # so we'll grab the queue contents and run them through the update processor
+    res = sqs_client.receive_message(
+        QueueUrl=mock_utils.TEST_METADATA_UPDATE_URL, MaxNumberOfMessages=10
+    )
+    sqs_event = {"Records": res["Messages"]}
+    update_res = update_metadata.update_metadata_handler(sqs_event, {})
+    assert update_res["statusCode"] == 200
 
     # The cache is triggered by an S3 event set up in the cloudformation template. We'll have
     # to mock this event as well by expected file path
@@ -296,6 +347,15 @@ def test_integration(
             )["Body"].read()
         )
     post_process_df = pandas.read_parquet(tmp_path / "processed.parquet")
+
+    # ----------------
+    # Some of our test data uses types we no longer expect (i.e. integers)
+    # which collide with 'cumulus__none'.
+    # Changing this breaks a lot of tests, so for now we'll paper over it.
+    # TODO: update test data
+    if "age" in post_process_df.columns:
+        post_process_df = post_process_df.astype({"age": object})
+    # ----------------
 
     # We'll approximate a sql query by slicing and returning unique values from
     # the post_process df
