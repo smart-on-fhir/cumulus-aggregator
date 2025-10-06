@@ -205,16 +205,12 @@ def write_metadata(
 # S3 data management
 
 
-class S3UploadError(Exception):
-    pass
-
-
 def put_s3_file(s3_client, s3_bucket_name: str, key: str, payload: str | dict) -> None:
     """Puts the object in payload into S3 at the specified key"""
     if isinstance(payload, dict):
         payload = json.dumps(payload, default=str, indent=2)
     payload = payload.encode("UTF-8")
-    s3_client.upload_fileobj(Bucket=s3_bucket_name, Key=key, Fileobj=io.BytesIO(payload))
+    s3_client.put_object(Bucket=s3_bucket_name, Key=key, Body=payload)
 
 
 def delete_s3_file(s3_client, s3_bucket_name: str, key: str) -> None:
@@ -222,7 +218,7 @@ def delete_s3_file(s3_client, s3_bucket_name: str, key: str) -> None:
     delete_response = s3_client.delete_object(Bucket=s3_bucket_name, Key=key)
     if delete_response["ResponseMetadata"]["HTTPStatusCode"] != 204:
         logger.error("error deleting file %s", key)
-        raise S3UploadError
+        raise errors.S3UploadError
 
 
 def move_s3_file(s3_client, s3_bucket_name: str, old_key: str, new_key) -> None:
@@ -231,7 +227,7 @@ def move_s3_file(s3_client, s3_bucket_name: str, old_key: str, new_key) -> None:
     copy_response = s3_client.copy_object(CopySource=source, Bucket=s3_bucket_name, Key=new_key)
     if copy_response["ResponseMetadata"]["HTTPStatusCode"] != 200:
         logger.error("error copying file %s to %s", old_key, new_key)
-        raise S3UploadError
+        raise errors.S3UploadError
     delete_s3_file(s3_client, s3_bucket_name, old_key)
 
 

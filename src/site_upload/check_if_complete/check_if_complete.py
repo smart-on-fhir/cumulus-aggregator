@@ -62,14 +62,14 @@ def check_if_complete(message) -> (bool, dict):
 def has_new_packages(message, transaction) -> bool:
     db = os.environ.get("GLUE_DB_NAME")
     s3_bucket_name = os.environ.get("BUCKET_NAME")
-    if not re.fullmatch("^[a-zA-Z0-9_]+$", message['study']): #pragma: no cover
+    if not re.fullmatch("^[a-zA-Z0-9_]+$", message["study"]):  # pragma: no cover
         raise errors.AggregatorAthenaError("Invalid study")
     tables = awswrangler.athena.read_sql_query(
         (
             f"SELECT table_name FROM information_schema.tables "  # noqa: S608
-            f"WHERE table_schema = '{db}' "  
+            f"WHERE table_schema = '{db}' "
             f"AND regexp_like(table_name, '^{message['study']}__')"
-        ), 
+        ),
         database=db,
         s3_output=f"s3://{s3_bucket_name}/awswrangler",
         workgroup=os.environ.get("WORKGROUP_NAME"),

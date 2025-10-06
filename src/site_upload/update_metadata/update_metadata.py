@@ -22,11 +22,8 @@ def update_source(metadata, update):
     for update_key, update_val in update.items():
         if isinstance(update_val, dict):
             metadata[update_key] = update_source(metadata.get(update_key, {}), update[update_key])
-        elif (
-              update_val is not None
-                or metadata.get(update_key) is None
-            ):
-                metadata[update_key] = update_val
+        elif update_val is not None or metadata.get(update_key) is None:
+            metadata[update_key] = update_val
     return metadata
 
 

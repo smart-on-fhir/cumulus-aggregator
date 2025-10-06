@@ -22,8 +22,8 @@ from tests import mock_utils
     "copy_res,del_res,raises",
     [
         (200, 204, does_not_raise()),
-        (400, 204, pytest.raises(functions.S3UploadError)),
-        (200, 400, pytest.raises(functions.S3UploadError)),
+        (400, 204, pytest.raises(errors.S3UploadError)),
+        (200, 400, pytest.raises(errors.S3UploadError)),
     ],
 )
 def test_move_s3_file(copy_res, del_res, raises):
