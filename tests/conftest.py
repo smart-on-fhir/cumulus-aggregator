@@ -80,7 +80,7 @@ def _init_mock_data(s3_client, bucket, study, data_package, version):
 
 @pytest.fixture(scope="session", autouse=True)
 def mock_env():
-    with mock.patch.dict(os.environ, mock_utils.MOCK_ENV):
+    with mock.patch.dict(os.environ, mock_utils.MOCK_ENV, clear=True):
         yield
 
 

@@ -41,6 +41,11 @@ NEW_VERSION = "100"
 # This is a convenience for loading into os.environ with mock.patch.dict.
 # Other cases should probably use the getter version below.
 MOCK_ENV = {
+    "AWS_ACCESS_KEY_ID": "testing",
+    "AWS_SECRET_ACCESS_KEY": "testing",
+    "AWS_SECURITY_TOKEN": "testing",
+    "AWS_SESSION_TOKEN": "testing",
+    "AWS_DEFAULT_REGION": "us-east-1",
     "BUCKET_NAME": TEST_BUCKET,
     "GLUE_DB_NAME": TEST_GLUE_DB,
     "GLUE_CRAWLER_NAME": TEST_GLUE_CRAWLER,

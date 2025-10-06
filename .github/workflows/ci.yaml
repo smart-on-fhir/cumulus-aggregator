@@ -28,7 +28,12 @@ jobs:
           git submodule update
       - name: Test with pytest
         run: |
-          export AWS_DEFAULT_REGION=us-east-1; python -m pytest --cov-report xml --cov=src tests
+          export AWS_ACCESS_KEY_ID='testing'
+          export AWS_SECRET_ACCESS_KEY='testing'
+          export AWS_SECURITY_TOKEN='testing'
+          export AWS_SESSION_TOKEN='testing'
+          export AWS_DEFAULT_REGION='us-east-1' 
+          python -m pytest --cov-report xml --cov=src tests
 
       - name: Log missing coverage
         run: |
