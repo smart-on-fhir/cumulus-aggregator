@@ -55,6 +55,12 @@ def reset_state(s3_client, transaction):
     )
 
 
+def delete_transaction():
+    print("delete")
+    s3_client = boto3.client("s3", region_name="us-east-1")
+    s3_client.delete_object(Bucket=mock_utils.TEST_BUCKET, Key=transaction_key)
+
+
 @freeze_time("2020-01-01 12:00:00")
 @mock.patch("src.site_upload.check_if_complete.check_if_complete.sleep", returns=time.sleep(1))
 def test_check_if_complete(mock_wait, mock_bucket, mock_notification, mock_glue):
@@ -162,5 +168,24 @@ def test_check_if_complete(mock_wait, mock_bucket, mock_notification, mock_glue)
         "Crawl for {"
         f"'site': '{mock_utils.EXISTING_SITE}', 'study': '{mock_utils.NEW_STUDY}'"
         "} not required, directly invoked caching"
+    )
+    assert res["body"] == f'"{body}"'
+
+    # No new packages and transaction deleted, so this has already been queued by a parallel task.
+
+    reset_state(s3_client, transaction)
+
+    with freeze_time("2020-01-01 12:03:00"):
+        with mock.patch("awswrangler.athena.read_sql_query") as query:
+            with mock.patch(
+                "src.site_upload.check_if_complete.check_if_complete.mock_entrypoint"
+            ) as entrypoint:
+                entrypoint.side_effect = delete_transaction
+                query.return_value = pandas.DataFrame(data={"table_name": expected_tables})
+                res = check_if_complete.check_if_complete_handler(event, {})
+    body = (
+        "Processing request for {"
+        f"'site': '{mock_utils.EXISTING_SITE}', 'study': '{mock_utils.NEW_STUDY}'"
+        "} already sent"
     )
     assert res["body"] == f'"{body}"'

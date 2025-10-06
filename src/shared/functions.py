@@ -170,7 +170,7 @@ def update_metadata(
                 data_version_metadata[target] = dt.isoformat()
         # Should only be hit if you add a new JSON dict and forget to add it
         # to this function
-        case _:
+        case _:  # pragma: no cover
             raise ValueError(f"{meta_type} does not have a handler for updates.")
     data_version_metadata.update(extra_items)
     return metadata

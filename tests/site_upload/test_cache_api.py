@@ -15,19 +15,26 @@ def mock_data_packages(*args, **kwargs):
     return pandas.DataFrame(get_mock_data_packages_cache(), columns=["table_name"])
 
 
-# This may seem like overkill for now, but eventually we will have multiple
-# cache types
+def mock_event(source, subject, message):
+    if source == "sns":
+        return {"Records": [{"Sns": {"Subject": subject, "Message": message}}]}
+    elif source == "eventbridge":
+        return {"detail-type": message}
+    raise Exception("invalid event mock")
+
+
 @pytest.mark.parametrize(
-    "subject,message,mock_result,status",
+    "subject,source,message,mock_result,status",
     [
-        ("data_packages", "", mock_data_packages, 200),
-        ("nonexistant", "endpoint", lambda: None, 500),
+        ("data_packages", "sns", "", mock_data_packages, 200),
+        ("nonexistant", "sns", "endpoint", lambda: None, 500),
+        ("", "eventbridge", "Glue Crawler State Change", mock_data_packages, 200),
     ],
 )
-def test_cache_api_handler(mocker, mock_bucket, subject, message, mock_result, status):
+def test_cache_api_handler(mocker, mock_bucket, subject, source, message, mock_result, status):
     mock_query_result = mocker.patch("awswrangler.athena.read_sql_query")
     mock_query_result.side_effect = mock_result
-    event = {"Records": [{"Sns": {"Subject": subject, "Message": message}}]}
+    event = mock_event(source, subject, message)
     res = cache_api.cache_api_handler(event, {})
     assert res["statusCode"] == status
 

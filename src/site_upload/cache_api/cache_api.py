@@ -89,5 +89,6 @@ def cache_api_handler(event, context):
         target = enums.JsonFilename.DATA_PACKAGES.value
     else:  # pragma: no cover
         return functions.http_response(500, "Unexpected event source")
+    print(target)
     cache_api_data(s3_client, s3_bucket_name, db, target)
     return functions.http_response(200, "Study period update successful")

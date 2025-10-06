@@ -87,11 +87,30 @@ def has_new_packages(message, transaction) -> bool:
 
 def cleanup_transaction(message) -> bool:
     key = f"{enums.BucketPath.META.value}/transactions/{message['site']}__{message['study']}.json"
+    # The delete_object function :should: be returning a dict with a flag
+    # that can be used to determine if the delete was successful or not, but
+    # as of this writing (boto 1.35.30) it does not. So we use the head_object
+    # function to simulate this. There is a low-probability race condition here,
+    # but it should only affect logging, so we'll live with it for now.
     try:
-        s3_client.delete_object(Bucket=os.environ.get("BUCKET_NAME"), Key=key)
+        s3_client.head_object(Bucket=os.environ.get("BUCKET_NAME"), Key=key)
     except botocore.exceptions.ClientError:
         return False
+    s3_client.delete_object(Bucket=os.environ.get("BUCKET_NAME"), Key=key)
     return True
+
+
+def mock_entrypoint():
+    """Entrypoint for mocks
+
+    This is a convenience function for testing a specific edge case,
+    where you have two functions or more invocation that look like
+    they have hit the completion state. The first past the post will
+    delete the transaction log. Tests can override this to mimic
+    this deletion happening to test the graceful exit behavior.
+    """
+
+    pass
 
 
 @decorators.generic_error_handler(msg="Error processing metadata events")
@@ -103,6 +122,7 @@ def check_if_complete_handler(event, context):
         return functions.http_response(202, "Processing not completed")
     new = has_new_packages(message, transaction)
 
+    mock_entrypoint()
     if new:
         attempts = 0
         while attempts < 10:
