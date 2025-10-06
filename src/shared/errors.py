@@ -1,3 +1,6 @@
+class AggregatorAthenaError(Exception):
+    """Errors related to accessing data in Athena"""
+
 class AggregatorS3Error(Exception):
     """Errors related to accessing files in S3"""
 

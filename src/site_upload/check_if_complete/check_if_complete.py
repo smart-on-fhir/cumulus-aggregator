@@ -2,13 +2,14 @@ import datetime
 import json
 import logging
 import os
+import re
 from time import sleep
 
 import awswrangler
 import boto3
 import botocore
 
-from shared import decorators, enums, functions
+from shared import decorators, enums, errors, functions
 
 logger = logging.getLogger()
 logger.setLevel("INFO")
@@ -53,7 +54,7 @@ def check_if_complete(message) -> (bool, dict):
             # processed is a minute, and since this is largely parallel it shouldn't
             # change by much; we'll set a large buffer just in case, which should
             # still exclude dangling files from error states
-            if upload_time > head["LastModified"] or (delta.seconds >= 300 and delta.seconds < 0):
+            if 300 >= delta.total_seconds() < 0:
                 return False, None
     return True, transaction
 
@@ -61,12 +62,14 @@ def check_if_complete(message) -> (bool, dict):
 def has_new_packages(message, transaction) -> bool:
     db = os.environ.get("GLUE_DB_NAME")
     s3_bucket_name = os.environ.get("BUCKET_NAME")
+    if not re.fullmatch("^[a-zA-Z0-9_]+$", message['study']): #pragma: no cover
+        raise errors.AggregatorAthenaError("Invalid study")
     tables = awswrangler.athena.read_sql_query(
         (
             f"SELECT table_name FROM information_schema.tables "  # noqa: S608
-            f"WHERE table_schema = '{db}' "  # nosec
+            f"WHERE table_schema = '{db}' "  
             f"AND regexp_like(table_name, '^{message['study']}__')"
-        ),
+        ), 
         database=db,
         s3_output=f"s3://{s3_bucket_name}/awswrangler",
         workgroup=os.environ.get("WORKGROUP_NAME"),
@@ -133,9 +136,8 @@ def check_if_complete_handler(event, context):
                     return functions.http_response(
                         200, f"Processing request for {message!s} already sent"
                     )
-                if "LastCrawl" in crawler and crawler["LastCrawl"][
-                    "StartTime"
-                ] > datetime.datetime.fromisoformat(event["Records"][0]["Sns"]["Timestamp"]):
+                eventtime = datetime.datetime.fromisoformat(event["Records"][0]["Sns"]["Timestamp"])
+                if "LastCrawl" in crawler and crawler["LastCrawl"]["StartTime"] > eventtime:
                     return functions.http_response(
                         200, f"Recrawl request for {message!s} covered by subsequent request"
                     )
