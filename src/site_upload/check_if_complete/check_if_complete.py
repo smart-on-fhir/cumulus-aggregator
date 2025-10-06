@@ -143,7 +143,7 @@ def check_if_complete_handler(event, context):
                 return functions.http_response(200, f"Crawl for {message!s} initiated")
             attempts += 1
             sleep(60)
-        return functions.http_response(500, "Error requesting crawl")  # pragma: no cover
+        return functions.http_response(500, "Error requesting crawl")
     else:
         cleanup_performed = cleanup_transaction(message)
         if not cleanup_performed:

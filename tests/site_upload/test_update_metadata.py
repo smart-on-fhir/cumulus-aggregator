@@ -1,6 +1,7 @@
 import json
 from datetime import UTC, datetime
 
+import boto3
 import pytest
 
 from src.shared import enums, functions
@@ -9,8 +10,66 @@ from tests import mock_utils
 
 
 @pytest.mark.parametrize(
-    "messages,assertions",
+    "messages,assertions,delete",
     [
+        # add the first event
+        (
+            [
+                {
+                    mock_utils.NEW_SITE: {
+                        mock_utils.EXISTING_STUDY: {
+                            mock_utils.EXISTING_DATA_P: {
+                                mock_utils.EXISTING_VERSION: {
+                                    "transaction_format_version": 2,
+                                    "last_upload": "new_val",
+                                    "last_data_update": None,
+                                    "last_aggregation": None,
+                                    "last_error": None,
+                                    "deleted": None,
+                                }
+                            }
+                        }
+                    },
+                    "dest": enums.JsonFilename.TRANSACTIONS.value,  #
+                },
+            ],
+            [
+                (
+                    enums.JsonFilename.TRANSACTIONS.value,
+                    [
+                        mock_utils.NEW_SITE,
+                        mock_utils.EXISTING_STUDY,
+                        mock_utils.EXISTING_DATA_P,
+                        mock_utils.EXISTING_VERSION,
+                        "last_upload",
+                    ],
+                    "new_val",
+                ),
+                (
+                    enums.JsonFilename.TRANSACTIONS.value,
+                    [
+                        mock_utils.NEW_SITE,
+                        mock_utils.EXISTING_STUDY,
+                        mock_utils.EXISTING_DATA_P,
+                        mock_utils.EXISTING_VERSION,
+                        "last_data_update",
+                    ],
+                    None,
+                ),
+                (
+                    enums.JsonFilename.TRANSACTIONS.value,
+                    [
+                        mock_utils.EXISTING_SITE,
+                        mock_utils.EXISTING_STUDY,
+                        mock_utils.EXISTING_DATA_P,
+                        mock_utils.EXISTING_VERSION,
+                        "last_data_update",
+                    ],
+                    {},
+                ),
+            ],
+            True,
+        ),
         # add a new event
         (
             [
@@ -67,6 +126,7 @@ from tests import mock_utils
                     "2023-02-24T15:03:40.657583+00:00",
                 ),
             ],
+            False,
         ),
         # update an existing event (but don't overwrite non-null values with nulls)
         (
@@ -113,6 +173,7 @@ from tests import mock_utils
                     "2023-02-24T15:03:40.657583+00:00",
                 ),
             ],
+            False,
         ),
         # multiple updates to the same metadata
         (
@@ -165,6 +226,7 @@ from tests import mock_utils
                     "newer_val",
                 ),
             ],
+            False,
         ),
         # updates to different metadata
         (
@@ -241,6 +303,7 @@ from tests import mock_utils
                     "cols_update",
                 ),
             ],
+            False,
         ),
         # updates to different parts of the same metadata
         (
@@ -304,11 +367,18 @@ from tests import mock_utils
                     "other_val",
                 ),
             ],
+            False,
         ),
     ],
 )
-def test_update_metadata(mock_bucket, mock_env, mock_queue, messages, assertions):
+def test_update_metadata(mock_bucket, mock_env, mock_queue, messages, assertions, delete):
     records = []
+    if delete:
+        s3_client = boto3.client("s3")
+        s3_client.delete_object(
+            Bucket=mock_utils.TEST_BUCKET,
+            Key=f"{enums.BucketPath.META.value}/{enums.JsonFilename.TRANSACTIONS.value}.json",
+        )
     for message in messages:
         dest = message["dest"]
         del message["dest"]

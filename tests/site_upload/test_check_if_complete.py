@@ -56,7 +56,6 @@ def reset_state(s3_client, transaction):
 
 
 def delete_transaction():
-    print("delete")
     s3_client = boto3.client("s3", region_name="us-east-1")
     s3_client.delete_object(Bucket=mock_utils.TEST_BUCKET, Key=transaction_key)
 
@@ -125,6 +124,32 @@ def test_check_if_complete(mock_wait, mock_bucket, mock_notification, mock_glue)
         "Crawl for {"
         f"'site': '{mock_utils.EXISTING_SITE}', 'study': '{mock_utils.NEW_STUDY}'"
         "} initiated"
+    )
+    assert res["body"] == f'"{body}"'
+
+    # Throw an error when the crawler is stuck in the running state.
+    reset_state(s3_client, transaction)
+    with freeze_time("2020-01-01 12:02:00"):
+        with mock.patch("awswrangler.athena.read_sql_query") as query:
+            query.return_value = pandas.DataFrame(data={"table_name": []})
+            res = check_if_complete.check_if_complete_handler(event, {})
+    body = "Error requesting crawl"
+    assert res["body"] == f'"{body}"'
+    # All aggregates have finished, they are not in the db, but a crawl has already started
+
+    g_client.list_crawls(CrawlerName="cumulus-aggregator-test-crawler")
+    with freeze_time("2020-01-01 12:02:00"):
+        with mock.patch("awswrangler.athena.read_sql_query") as query:
+            with mock.patch(
+                "src.site_upload.check_if_complete.check_if_complete.mock_entrypoint"
+            ) as entrypoint:
+                entrypoint.side_effect = delete_transaction
+                query.return_value = pandas.DataFrame(data={"table_name": []})
+                res = check_if_complete.check_if_complete_handler(event, {})
+    body = (
+        "Processing request for {"
+        f"'site': '{mock_utils.EXISTING_SITE}', 'study': '{mock_utils.NEW_STUDY}'"
+        "} already sent"
     )
     assert res["body"] == f'"{body}"'
 
