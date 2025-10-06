@@ -47,10 +47,10 @@ S3_TEMP_PATH = f"https://{TEST_BUCKET}.s3.amazonaws.com/"
             },
             [
                 {"name": "cnt", "type": "integer", "extDtype": "Int64"},
-                {"name": "gender", "type": "any", "extDtype": "string"},
+                {"name": "gender", "type": "string", "extDtype": "string"},
                 {"name": "age", "type": "integer", "extDtype": "Int64"},
-                {"name": "race_display", "type": "any", "extDtype": "string"},
-                {"name": "site", "type": "any", "extDtype": "string"},
+                {"name": "race_display", "type": "string", "extDtype": "string"},
+                {"name": "site", "type": "string", "extDtype": "string"},
             ],
         ),
         (
@@ -68,10 +68,10 @@ S3_TEMP_PATH = f"https://{TEST_BUCKET}.s3.amazonaws.com/"
             },
             [
                 {"name": "cnt", "type": "integer", "extDtype": "Int64"},
-                {"name": "gender", "type": "any", "extDtype": "string"},
+                {"name": "gender", "type": "string", "extDtype": "string"},
                 {"name": "age", "type": "integer", "extDtype": "Int64"},
-                {"name": "race_display", "type": "any", "extDtype": "string"},
-                {"name": "site", "type": "any", "extDtype": "string"},
+                {"name": "race_display", "type": "string", "extDtype": "string"},
+                {"name": "site", "type": "string", "extDtype": "string"},
             ],
         ),
         (
@@ -111,10 +111,10 @@ def test_get_data_packages(mock_bucket, target, payload_type, code, length, firs
             file = json.loads(file)
             assert file["schema"]["fields"] == [
                 {"name": "cnt", "type": "integer", "extDtype": "Int64"},
-                {"name": "gender", "type": "any", "extDtype": "string"},
+                {"name": "gender", "type": "string", "extDtype": "string"},
                 {"name": "age", "type": "integer", "extDtype": "Int64"},
-                {"name": "race_display", "type": "any", "extDtype": "string"},
-                {"name": "site", "type": "any", "extDtype": "string"},
+                {"name": "race_display", "type": "string", "extDtype": "string"},
+                {"name": "site", "type": "string", "extDtype": "string"},
             ]
             file = file["data"]
         else:
