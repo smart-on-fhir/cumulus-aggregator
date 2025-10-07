@@ -1175,25 +1175,11 @@ Resources:
     Properties:
       DelaySeconds: !Ref TransactionDelay
 
-  SQSTransactionEventSource:
-    Type: AWS::Lambda::EventSourceMapping
-    Properties:
-      EventSourceArn: !GetAtt SQSTransactionCleanup.Arn
-      FunctionName:
-        !Ref TransactionCleanupFunction
-
   SQSMetadataUpdate:
     Type: AWS::SQS::Queue
     Properties:
       FifoQueue: True
       ContentBasedDeduplication: True
-
-  SQSMetadataUpdateEventSource:
-    Type: AWS::Lambda::EventSourceMapping
-    Properties:
-      EventSourceArn: !GetAtt SQSMetadataUpdate.Arn
-      FunctionName:
-        !Ref ProcessMetadataFunction
 
 # EventBridge rules
 
