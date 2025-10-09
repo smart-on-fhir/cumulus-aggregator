@@ -7,7 +7,7 @@ import boto3
 import pandas
 from freezegun import freeze_time
 
-from src.shared import enums
+from src.shared import enums, functions
 from src.site_upload.check_if_complete import check_if_complete
 from tests import mock_utils
 
@@ -29,17 +29,19 @@ expected_tables = [
 def upload_file(filename, version, s3_client):
     dp = filename.split("__")[1].split(".")[0]
     if ".flat." in filename:
-        key = (
-            f"{enums.BucketPath.FLAT.value}/{mock_utils.NEW_STUDY}/{mock_utils.EXISTING_SITE}/"
-            f"{mock_utils.NEW_STUDY}__{dp}__{mock_utils.EXISTING_SITE}__{version}/"
-            f"{mock_utils.NEW_STUDY}__{dp}__{mock_utils.EXISTING_SITE}__flat.parquet"
-        )
+        subbucket = enums.BucketPath.FLAT
+        filename = f"{mock_utils.NEW_STUDY}__{dp}__{mock_utils.EXISTING_SITE}__flat.parquet"
     else:
-        key = (
-            f"{enums.BucketPath.AGGREGATE.value}/{mock_utils.NEW_STUDY}/{mock_utils.NEW_STUDY}__{dp}/"
-            f"{mock_utils.NEW_STUDY}__{dp}__{version}/{mock_utils.NEW_STUDY}__{dp}__aggregate.parquet"
-        )
-
+        subbucket = enums.BucketPath.AGGREGATE
+        filename = f"{mock_utils.NEW_STUDY}__{dp}__aggregate.parquet"
+    key = functions.construct_s3_key(
+        subbucket=subbucket,
+        study=mock_utils.NEW_STUDY,
+        site=mock_utils.EXISTING_SITE,
+        data_package=dp,
+        version=version,
+        filename=filename,
+    )
     s3_client.put_object(
         Bucket=mock_utils.TEST_BUCKET,
         Key=key,

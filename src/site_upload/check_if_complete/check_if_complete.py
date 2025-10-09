@@ -7,7 +7,6 @@ from time import sleep
 
 import awswrangler
 import boto3
-import botocore
 
 from shared import decorators, enums, errors, functions
 
@@ -19,13 +18,16 @@ g_client = boto3.client("glue")
 
 
 def check_if_complete(message) -> (bool, dict):
-    transaction = functions.get_s3_json_as_dict(
-        bucket=os.environ.get("BUCKET_NAME"),
-        key=(
-            f"{enums.BucketPath.META.value}/transactions/{message['site']}__{message['study']}.json"
-        ),
-        s3_client=s3_client,
-    )
+    try:
+        transaction = functions.get_s3_json_as_dict(
+            bucket=os.environ.get("BUCKET_NAME"),
+            key=(
+                f"{enums.BucketPath.META.value}/transactions/{message['site']}__{message['study']}.json"
+            ),
+            s3_client=s3_client,
+        )
+    except Exception:
+        return False, None
     upload_time = datetime.datetime.fromisoformat(transaction["uploaded_at"])
     for filetype, source, suffix in [
         ("cube", enums.BucketPath.AGGREGATE.value, "aggregate"),
@@ -35,26 +37,28 @@ def check_if_complete(message) -> (bool, dict):
         filenames = transaction.get(filetype, [])
         for filename in filenames:
             dp = filename.split("__")[1].split(".")[0]
-            if source == enums.BucketPath.FLAT.value:
-                key = (
-                    f"{source}/{message['study']}/{message['site']}/{message['study']}__{dp}__{message['site']}__{transaction['version']}/"
-                    f"{message['study']}__{dp}__{message['site']}__{suffix}.parquet"
-                )
+            if suffix == "flat":
+                filename = f"{message['study']}__{dp}__{message['site']}__{suffix}.parquet"
             else:
-                key = (
-                    f"{source}/{message['study']}/{message['study']}__{dp}/{message['study']}__{dp}__{transaction['version']}/"
-                    f"{message['study']}__{dp}__{suffix}.parquet"
-                )
+                filename = f"{message['study']}__{dp}__{suffix}.parquet"
+            key = functions.construct_s3_key(
+                subbucket=source,
+                study=message["study"],
+                site=message["site"],
+                data_package=dp,
+                version=transaction["version"],
+                filename=filename,
+            )
             try:
                 head = s3_client.head_object(Bucket=os.environ.get("BUCKET_NAME"), Key=key)
-            except s3_client.exceptions.ClientError:
+            except Exception:
                 return False, None
             delta = head["LastModified"] - upload_time
             # an average time to process from an upload to all the files being
             # processed is a minute, and since this is largely parallel it shouldn't
             # change by much; we'll set a large buffer just in case, which should
             # still exclude dangling files from error states
-            if 300 >= delta.total_seconds() < 0:
+            if 300 <= delta.total_seconds() or delta.total_seconds() < 0:
                 return False, None
     return True, transaction
 
@@ -97,7 +101,7 @@ def cleanup_transaction(message) -> bool:
     # but it should only affect logging, so we'll live with it for now.
     try:
         s3_client.head_object(Bucket=os.environ.get("BUCKET_NAME"), Key=key)
-    except botocore.exceptions.ClientError:
+    except Exception:
         return False
     s3_client.delete_object(Bucket=os.environ.get("BUCKET_NAME"), Key=key)
     return True
@@ -124,7 +128,6 @@ def check_if_complete_handler(event, context):
     if not completed:
         return functions.http_response(202, "Processing not completed")
     new = has_new_packages(message, transaction)
-
     mock_entrypoint()
     if new:
         attempts = 0

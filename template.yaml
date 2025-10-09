@@ -978,83 +978,85 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${DashboardGetStaticFunction}"
       RetentionInDays: !Ref RetentionTime
 
-  DashboardPostDistributeStudyFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub 'CumulusAggDashboardDistributeStudy-${DeployStage}-${NetworkName}'
-      CodeUri: ./src/dashboard/post_distribute
-      Handler: post_distribute.distribute_handler
-      Runtime: "python3.11"
-      LoggingConfig:
-        ApplicationLogLevel: !Ref LogLevel
-        LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardDistributeStudy-${DeployStage}-${NetworkName}"
-      MemorySize: 128
-      Timeout: 30
-      Environment:
-        Variables:
-          TOPIC_QUEUE_API_ARN: !Ref SNSTopicQueueDistribution
-      Events:
-        PostDistributeStudyAPI:
-          Type: Api
-          Properties:
-            RestApiId: !Ref DashboardApiGateway
-            Path: /distribute/
-            Method: Post
-      Policies:
-        - SNSPublishMessagePolicy:
-            TopicName: !GetAtt SNSTopicQueueDistribution.TopicName
+  # TODO: Move this to a seperate CF stack
 
-  DashboardPostDistributeStudyLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${DashboardPostDistributeStudyFunction}"
-      RetentionInDays: !Ref RetentionTime
+  # DashboardPostDistributeStudyFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub 'CumulusAggDashboardDistributeStudy-${DeployStage}-${NetworkName}'
+  #     CodeUri: ./src/dashboard/post_distribute
+  #     Handler: post_distribute.distribute_handler
+  #     Runtime: "python3.11"
+  #     LoggingConfig:
+  #       ApplicationLogLevel: !Ref LogLevel
+  #       LogFormat: !Ref LogFormat
+  #       LogGroup: !Sub "/aws/lambda/CumulusAggDashboardDistributeStudy-${DeployStage}-${NetworkName}"
+  #     MemorySize: 128
+  #     Timeout: 30
+  #     Environment:
+  #       Variables:
+  #         TOPIC_QUEUE_API_ARN: !Ref SNSTopicQueueDistribution
+  #     Events:
+  #       PostDistributeStudyAPI:
+  #         Type: Api
+  #         Properties:
+  #           RestApiId: !Ref DashboardApiGateway
+  #           Path: /distribute/
+  #           Method: Post
+  #     Policies:
+  #       - SNSPublishMessagePolicy:
+  #           TopicName: !GetAtt SNSTopicQueueDistribution.TopicName
 
-  DashboardQueueDistributeStudyFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub 'CumulusAggDashboardQueueStudy-${DeployStage}-${NetworkName}'
-      PackageType: Image
-      ImageConfig:
-        Command: ["queue_distribute.queue_handler"]
-      LoggingConfig:
-        ApplicationLogLevel: !Ref LogLevel
-        LogFormat: !Ref LogFormat
-        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardQueueStudy-${DeployStage}-${NetworkName}"
-      MemorySize: 512
-      Timeout: 100
-      Environment:
-        Variables:
-          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
-          TOPIC_STUDY_PAYLOAD_ARN: !Ref SNSStudyPayload
-      Events:
-        ProcessQueueDistributeSNSEvent:
-          Type: SNS
-          Properties:
-            Topic: !Ref SNSTopicQueueDistribution
-      Policies:
-        - S3ReadPolicy:
-            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
-        - Statement:
-          - Sid: KMSDecryptPolicy
-            Effect: Allow
-            Action:
-              - kms:Decrypt
-            Resource:
-              - !ImportValue cumulus-kms-KMSKeyArn
-        - SNSPublishMessagePolicy:
-            TopicName: !GetAtt SNSStudyPayload.TopicName
-    Metadata:
-      Dockerfile: queue_distribute.Dockerfile
-      DockerContext: ./src/
-      DockerTag: v1
+  # DashboardPostDistributeStudyLogGroup:
+  #   Type: AWS::Logs::LogGroup
+  #   Properties:
+  #     LogGroupName: !Sub "/aws/lambda/${DashboardPostDistributeStudyFunction}"
+  #     RetentionInDays: !Ref RetentionTime
 
-  DashboardQueueDistributeStudyLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${DashboardQueueDistributeStudyFunction}"
-      RetentionInDays: !Ref RetentionTime
+  # DashboardQueueDistributeStudyFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub 'CumulusAggDashboardQueueStudy-${DeployStage}-${NetworkName}'
+  #     PackageType: Image
+  #     ImageConfig:
+  #       Command: ["queue_distribute.queue_handler"]
+  #     LoggingConfig:
+  #       ApplicationLogLevel: !Ref LogLevel
+  #       LogFormat: !Ref LogFormat
+  #       LogGroup: !Sub "/aws/lambda/CumulusAggDashboardQueueStudy-${DeployStage}-${NetworkName}"
+  #     MemorySize: 512
+  #     Timeout: 100
+  #     Environment:
+  #       Variables:
+  #         BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+  #         TOPIC_STUDY_PAYLOAD_ARN: !Ref SNSStudyPayload
+  #     Events:
+  #       ProcessQueueDistributeSNSEvent:
+  #         Type: SNS
+  #         Properties:
+  #           Topic: !Ref SNSTopicQueueDistribution
+  #     Policies:
+  #       - S3ReadPolicy:
+  #           BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+  #       - Statement:
+  #         - Sid: KMSDecryptPolicy
+  #           Effect: Allow
+  #           Action:
+  #             - kms:Decrypt
+  #           Resource:
+  #             - !ImportValue cumulus-kms-KMSKeyArn
+  #       - SNSPublishMessagePolicy:
+  #           TopicName: !GetAtt SNSStudyPayload.TopicName
+  #   Metadata:
+  #     Dockerfile: queue_distribute.Dockerfile
+  #     DockerContext: ./src/
+  #     DockerTag: v1
+
+  # DashboardQueueDistributeStudyLogGroup:
+  #   Type: AWS::Logs::LogGroup
+  #   Properties:
+  #     LogGroupName: !Sub "/aws/lambda/${DashboardQueueDistributeStudyFunction}"
+  #     RetentionInDays: !Ref RetentionTime
 
 ### Lambda permissions
 
@@ -1174,6 +1176,13 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       DelaySeconds: !Ref TransactionDelay
+
+  SQSTransactionEventSource:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt SQSTransactionCleanup.Arn
+      FunctionName:
+        !Ref TransactionCleanupFunction
 
   SQSMetadataUpdate:
     Type: AWS::SQS::Queue

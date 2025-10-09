@@ -16,25 +16,25 @@ logger = logging.getLogger()
 logger.setLevel("INFO")
 
 TRANSACTION_METADATA_TEMPLATE = {
-    enums.TransactionKeys.TRANSACTION_FORMAT_VERSION.value: "2",
-    enums.TransactionKeys.LAST_UPLOAD.value: None,
-    enums.TransactionKeys.LAST_DATA_UPDATE.value: None,
-    enums.TransactionKeys.LAST_AGGREGATION.value: None,
-    enums.TransactionKeys.LAST_ERROR.value: None,
-    enums.TransactionKeys.DELETED.value: None,
+    enums.TransactionKeys.TRANSACTION_FORMAT_VERSION: "2",
+    enums.TransactionKeys.LAST_UPLOAD: None,
+    enums.TransactionKeys.LAST_DATA_UPDATE: None,
+    enums.TransactionKeys.LAST_AGGREGATION: None,
+    enums.TransactionKeys.LAST_ERROR: None,
+    enums.TransactionKeys.DELETED: None,
 }
 
 STUDY_PERIOD_METADATA_TEMPLATE = {
-    enums.StudyPeriodMetadataKeys.STUDY_PERIOD_FORMAT_VERSION.value: "2",
-    enums.StudyPeriodMetadataKeys.EARLIEST_DATE.value: None,
-    enums.StudyPeriodMetadataKeys.LATEST_DATE.value: None,
-    enums.StudyPeriodMetadataKeys.LAST_DATA_UPDATE.value: None,
+    enums.StudyPeriodMetadataKeys.STUDY_PERIOD_FORMAT_VERSION: "2",
+    enums.StudyPeriodMetadataKeys.EARLIEST_DATE: None,
+    enums.StudyPeriodMetadataKeys.LATEST_DATE: None,
+    enums.StudyPeriodMetadataKeys.LAST_DATA_UPDATE: None,
 }
 
 COLUMN_TYPES_METADATA_TEMPLATE = {
-    enums.ColumnTypesKeys.COLUMN_TYPES_FORMAT_VERSION.value: "3",
-    enums.ColumnTypesKeys.COLUMNS.value: None,
-    enums.ColumnTypesKeys.LAST_DATA_UPDATE.value: None,
+    enums.ColumnTypesKeys.COLUMN_TYPES_FORMAT_VERSION: "3",
+    enums.ColumnTypesKeys.COLUMNS: None,
+    enums.ColumnTypesKeys.LAST_DATA_UPDATE: None,
 }
 
 
@@ -86,7 +86,7 @@ def http_response(
 
 def check_meta_type(meta_type: str) -> None:
     """helper for ensuring specified metadata types"""
-    types = [item.value for item in enums.JsonFilename]
+    types = [item for item in enums.JsonFilename]
     if meta_type not in types:
         raise ValueError("invalid metadata type specified")
 
@@ -95,11 +95,11 @@ def read_metadata(
     s3_client,
     s3_bucket_name: str,
     *,
-    meta_type: str = enums.JsonFilename.TRANSACTIONS.value,
+    meta_type: str = enums.JsonFilename.TRANSACTIONS,
 ) -> dict:
     """Reads transaction information from an s3 bucket as a dictionary"""
     check_meta_type(meta_type)
-    s3_path = f"{enums.BucketPath.META.value}/{meta_type}.json"
+    s3_path = f"{enums.BucketPath.META}/{meta_type}.json"
     res = s3_client.list_objects_v2(Bucket=s3_bucket_name, Prefix=s3_path)
     if "Contents" in res:
         res = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_path)
@@ -119,7 +119,7 @@ def update_metadata(
     site: str | None = None,
     dt: datetime | None = None,
     value: str | list | None = None,
-    meta_type: str | None = enums.JsonFilename.TRANSACTIONS.value,
+    meta_type: str | None = enums.JsonFilename.TRANSACTIONS,
     extra_items: dict | None = None,
 ):
     """Safely updates items in metadata dictionary
@@ -136,7 +136,7 @@ def update_metadata(
 
     check_meta_type(meta_type)
     match meta_type:
-        case enums.JsonFilename.TRANSACTIONS.value:
+        case enums.JsonFilename.TRANSACTIONS:
             site_metadata = metadata.setdefault(site, {})
             study_metadata = site_metadata.setdefault(study, {})
             data_package_metadata = study_metadata.setdefault(data_package, {})
@@ -146,7 +146,7 @@ def update_metadata(
 
             dt = dt or datetime.now(UTC)
             data_version_metadata[target] = dt.isoformat()
-        case enums.JsonFilename.STUDY_PERIODS.value:
+        case enums.JsonFilename.STUDY_PERIODS:
             site_metadata = metadata.setdefault(site, {})
             study_period_metadata = site_metadata.setdefault(study, {})
             data_version_metadata = _update_or_clone_template(
@@ -154,7 +154,7 @@ def update_metadata(
             )
             dt = dt or datetime.now(UTC)
             data_version_metadata[target] = dt.isoformat()
-        case enums.JsonFilename.COLUMN_TYPES.value:
+        case enums.JsonFilename.COLUMN_TYPES:
             study_metadata = metadata.setdefault(study, {})
             if extra_items.get("type") == "flat":
                 data_package_metadata = study_metadata.setdefault(f"{data_package}__{site}", {})
@@ -163,7 +163,7 @@ def update_metadata(
             data_version_metadata = _update_or_clone_template(
                 data_package_metadata, version, COLUMN_TYPES_METADATA_TEMPLATE
             )
-            if target == enums.ColumnTypesKeys.COLUMNS.value:
+            if target == enums.ColumnTypesKeys.COLUMNS:
                 data_version_metadata[target] = value
             else:
                 dt = dt or datetime.now(UTC)
@@ -185,7 +185,7 @@ def write_metadata(
     sqs_client,
     s3_bucket_name: str,
     metadata: dict,
-    meta_type: str = enums.JsonFilename.TRANSACTIONS.value,
+    meta_type: str = enums.JsonFilename.TRANSACTIONS,
 ) -> None:
     """Queues transaction deltas to be written to an S3 bucket"""
     check_meta_type(meta_type)
@@ -194,7 +194,7 @@ def write_metadata(
         MessageBody=json.dumps(
             {
                 "s3_bucket_name": s3_bucket_name,
-                "key": f"{enums.BucketPath.META.value}/{meta_type}.json",
+                "key": f"{enums.BucketPath.META}/{meta_type}.json",
                 "updates": json.dumps(metadata, default=str, indent=2),
             }
         ),
@@ -306,12 +306,24 @@ def get_latest_data_package_version(bucket, prefix):
     return highest_ver
 
 
-@dataclasses.dataclass()
+@dataclasses.dataclass(kw_only=True)
 class PackageMetadata:
     study: str
-    site: str | None
-    data_package: str | None
+    site: str | None = None
     version: str
+    data_package: str | None = None
+    filename: str | None = None
+
+    def __eq__(self, other):
+        if not isinstance(other, PackageMetadata):
+            return NotImplemented
+        return (
+            self.study == other.study
+            and self.site == other.site
+            and self.data_package == other.data_package
+            and self.version == other.version
+            and self.filename == other.filename
+        )
 
 
 def parse_s3_key(key: str) -> PackageMetadata:
@@ -321,60 +333,148 @@ def parse_s3_key(key: str) -> PackageMetadata:
         key_parts = get_s3_key_from_path(key)
         key_parts = key_parts.split("/")
         match key_parts[0]:
-            case enums.BucketPath.AGGREGATE.value:
+            case enums.BucketPath.AGGREGATE:
                 package = PackageMetadata(
                     study=key_parts[1],
                     site=None,
                     data_package=key_parts[2].split("__")[1],
                     version=key_parts[3],
+                    filename=key_parts[4],
                 )
             case (
-                enums.BucketPath.ARCHIVE.value
-                | enums.BucketPath.ERROR.value
-                | enums.BucketPath.LAST_VALID.value
-                | enums.BucketPath.LATEST.value
-                | enums.BucketPath.STUDY_META.value
+                enums.BucketPath.ARCHIVE
+                | enums.BucketPath.ERROR
+                | enums.BucketPath.LAST_VALID
+                | enums.BucketPath.LATEST
+                | enums.BucketPath.STUDY_META
             ):
-                try:
-                    package = PackageMetadata(
-                        study=key_parts[1],
-                        site=key_parts[3],
-                        data_package=key_parts[2].split("__")[1],
-                        version=key_parts[4],
-                    )
-                except IndexError:
-                    # do we have a flat package in latest? We'll check with the flat parsing rules
-                    package = PackageMetadata(
-                        study=key_parts[1],
-                        site=key_parts[2],
-                        data_package=key_parts[3].split("__")[1],
-                        version=key_parts[3].split("__")[3],
-                    )
-            case enums.BucketPath.FLAT.value:
+                package = PackageMetadata(
+                    study=key_parts[1],
+                    site=key_parts[3],
+                    data_package=key_parts[2].split("__")[1],
+                    version=key_parts[4],
+                    filename=key_parts[5],
+                )
+            case enums.BucketPath.FLAT | enums.BucketPath.LATEST_FLAT:
                 package = PackageMetadata(
                     study=key_parts[1],
                     site=key_parts[2],
                     data_package=key_parts[3].split("__")[1],
                     version=key_parts[3].split("__")[3],
+                    filename=key_parts[4],
                 )
-            case enums.BucketPath.UPLOAD.value:
+            case enums.BucketPath.UPLOAD:
                 package = PackageMetadata(
                     study=key_parts[1],
                     site=key_parts[3],
                     data_package=key_parts[2],
                     version=key_parts[4],
+                    filename=key_parts[5],
                 )
-            case enums.BucketPath.UPLOAD_STAGING.value:
+            case enums.BucketPath.UPLOAD_STAGING | enums.BucketPath.ARCHIVE:
                 package = PackageMetadata(
                     study=key_parts[1],
                     site=key_parts[2],
                     data_package=None,
                     version=key_parts[3],
+                    filename=key_parts[4],
                 )
             case _:
                 raise errors.AggregatorS3Error(f" {key} does not correspond to a data package")
         if "__" in package.version:
             package.version = package.version.split("__")[-1]
+
         return package
     except IndexError:
         raise errors.AggregatorS3Error(f"{key} is not an expected S3 key")
+
+
+def construct_s3_key(
+    subbucket: str,
+    dp_meta: PackageMetadata | None = None,
+    study: str | None = None,
+    site: str | None = None,
+    data_package: str | None = None,
+    version: str | None = None,
+    filename: str | None = None,
+    subkey: bool = False,
+) -> str:
+    """Generates the appropriate key for a particular location in S3
+
+    :param subbucket: A root folder used in data processing.
+        Should be a member of enum.BucketPath
+    :param dp_meta: A PackageMetadata object.
+    :param study: The name of a study
+    :param site: The site uploading a specified file
+    :param data_package: the name of the specific table being uploaded
+    :param version: The version of the data package
+    :param filename: The filename of the data package
+    :returns: If file name is present, a full S3 key, otherwise, a path
+      to a given location
+
+    An important hidden property of these paths is that, for
+    paths that are meant to be targeted by a glue crawler, these file paths
+    should have a specific number of subfolders in them (4). Otherwise, the
+    crawler will not be able to correctly identify how to group data into tables.
+    """
+
+    # If no dp_meta is present, we'll make one; otherwise, we'll override a
+    # provided dp_meta with any additionally provided args
+    if dp_meta is None:
+        dp_meta = PackageMetadata(
+            site=site,
+            study=study,
+            data_package=data_package,
+            version=version,
+            filename=filename,
+        )
+    else:
+        dp_meta = dataclasses.replace(dp_meta)
+        dp_meta.site = site or dp_meta.site
+        dp_meta.study = study or dp_meta.study
+        dp_meta.data_package = data_package or dp_meta.data_package or data_package
+        dp_meta.version = version or dp_meta.version
+        dp_meta.filename = filename or dp_meta.filename
+    match subbucket:
+        case enums.BucketPath.AGGREGATE:
+            key = (
+                f"{subbucket}/{dp_meta.study}/{dp_meta.study}__{dp_meta.data_package}/"
+                f"{dp_meta.study}__{dp_meta.data_package}__{dp_meta.version}"
+            )
+        case (
+            enums.BucketPath.ERROR
+            | enums.BucketPath.LAST_VALID
+            | enums.BucketPath.LATEST
+            | enums.BucketPath.STUDY_META
+        ):
+            key = (
+                f"{subbucket}/{dp_meta.study}/{dp_meta.study}__{dp_meta.data_package}/"
+                f"{dp_meta.site}/{dp_meta.version}"
+            )
+
+        case enums.BucketPath.LATEST_FLAT | enums.BucketPath.FLAT:
+            key = (
+                f"{subbucket}/{dp_meta.study}/{dp_meta.site}/"
+                f"{dp_meta.study}__{dp_meta.data_package}__{dp_meta.site}__{dp_meta.version}"
+            )
+        case enums.BucketPath.UPLOAD:
+            key = (
+                f"{subbucket}/{dp_meta.study}/{dp_meta.data_package}/"
+                f"{dp_meta.site}/{dp_meta.version}"
+            )
+        case enums.BucketPath.UPLOAD_STAGING:
+            key = f"{subbucket}/{dp_meta.study}/{dp_meta.site}/{dp_meta.version}"
+        case enums.BucketPath.ARCHIVE:
+            key = (
+                f"{subbucket}/{dp_meta.study}/{dp_meta.site}/{dp_meta.version}/"
+                f"{datetime.now(UTC).isoformat()}"
+            )
+        case _:
+            raise errors.AggregatorS3Error(
+                f"{subbucket} does not correspond to a subbucket used for processing data packages"
+            )
+    if subkey:
+        key = key.replace(f"{subbucket}/", "")
+    if dp_meta.filename:
+        return f"{key}/{dp_meta.filename}"
+    return key

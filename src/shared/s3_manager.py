@@ -59,32 +59,33 @@ class S3Manager:
             self.site = dp_meta.site
             self.version = dp_meta.version
             self.metadata = functions.read_metadata(
-                self.s3_client, self.s3_bucket_name, meta_type=enums.JsonFilename.TRANSACTIONS.value
+                self.s3_client, self.s3_bucket_name, meta_type=enums.JsonFilename.TRANSACTIONS
             )
             self.types_metadata = functions.read_metadata(
                 self.s3_client,
                 self.s3_bucket_name,
-                meta_type=enums.JsonFilename.COLUMN_TYPES.value,
+                meta_type=enums.JsonFilename.COLUMN_TYPES,
             )
             # These two dictionaries should be shadow copies of the metadata dicts,
             # containing only the changes made in the lambda lifecycle.
             self.metadata_delta = {}
             self.types_metadata_delta = {}
 
-            self.parquet_aggregate_path = (
-                f"s3://{self.s3_bucket_name}/{enums.BucketPath.AGGREGATE.value}/"
-                f"{self.study}/{self.study}__{self.data_package}/"
-                f"{self.study}__{self.data_package}__{self.version}/"
-                f"{self.study}__{self.data_package}__aggregate.parquet"
+            self.parquet_aggregate_key = functions.construct_s3_key(
+                subbucket=enums.BucketPath.AGGREGATE,
+                study=self.study,
+                site=self.site,
+                data_package=self.data_package,
+                version=self.version,
+                filename=f"{self.study}__{self.data_package}__aggregate.parquet",
             )
-
-            # TODO: Taking out a folder layer to match the depth of non-site aggregates
-            # Revisit when targeted crawling is implemented
-            self.parquet_flat_key = (
-                f"{enums.BucketPath.FLAT.value}/"
-                f"{self.study}/{self.site}/"  # {self.study}__{self.data_package}/"
-                f"{self.study}__{self.data_package}__{self.site}__{self.version}/"
-                f"{self.study}__{self.data_package}__{self.site}__flat.parquet"
+            self.parquet_flat_key = functions.construct_s3_key(
+                subbucket=enums.BucketPath.FLAT,
+                study=self.study,
+                site=self.site,
+                data_package=self.data_package,
+                version=self.version,
+                filename=f"{self.study}__{self.data_package}__{self.site}__flat.parquet",
             )
         if study:
             self.study = study
@@ -96,7 +97,7 @@ class S3Manager:
             self.version = version
         if self.site and self.study:
             self.transaction = (
-                f"{enums.BucketPath.META.value}/transactions/{self.site}__{self.study}.json"
+                f"{enums.BucketPath.META}/transactions/{self.site}__{self.study}.json"
             )
 
     def error_handler(
@@ -112,11 +113,13 @@ class S3Manager:
         """
         logger.error("Error processing file %s: %s", s3_path, str(error))
         logger.error(traceback.print_exc())
+        # Note - this can take either latest or last valid, and may be from
+        # another site, so don't replace this with functions.construct_s3_key
         self.move_file(
             s3_path.replace(f"s3://{self.s3_bucket_name}/", ""),
-            f"{enums.BucketPath.ERROR.value}/{subbucket_path}",
+            f"{enums.BucketPath.ERROR}/{subbucket_path}",
         )
-        self.update_local_metadata(enums.TransactionKeys.LAST_ERROR.value)
+        self.update_local_metadata(enums.TransactionKeys.LAST_ERROR)
 
     # S3 Filesystem operations
     def put_file(self, path: str, payload: str | dict) -> None:
@@ -221,15 +224,15 @@ class S3Manager:
             Subject="check_completeness",
         )
 
-    def write_parquet(self, df: pandas.DataFrame, path=None) -> None:
+    def write_parquet(self, df: pandas.DataFrame, key=None) -> None:
         """Writes a dataframe as parquet to s3 and sends an SNS cache event if new
 
         :param df: pandas dataframe
         :param is_new_data_package: if true, will dispatch a cache SNS event after copy is completed
         :param path: an S3 path to write to (default: aggregate path)"""
-        if path is None:
-            path = self.parquet_aggregate_path
-        awswrangler.s3.to_parquet(df, path, index=False)
+        if key is None:
+            key = self.parquet_aggregate_key
+        awswrangler.s3.to_parquet(df, f"s3://{self.s3_bucket_name}/{key}", index=False)
         self.cache_api()
 
     # metadata
@@ -239,7 +242,7 @@ class S3Manager:
         *,
         site=None,
         value=None,
-        meta_type: str | None = enums.JsonFilename.TRANSACTIONS.value,
+        meta_type: str | None = enums.JsonFilename.TRANSACTIONS,
         extra_items: dict | None = None,
     ):
         """Updates the local cache of a json metadata dictionary
@@ -260,8 +263,7 @@ class S3Manager:
         if extra_items is None:
             extra_items = {}
         if site is None and (
-            meta_type != enums.JsonFilename.COLUMN_TYPES.value
-            or extra_items.get("type", "") == "flat"
+            meta_type != enums.JsonFilename.COLUMN_TYPES or extra_items.get("type", "") == "flat"
         ):
             site = self.site
         if extra_items.get("type", "") == "flat":
@@ -269,10 +271,10 @@ class S3Manager:
         else:
             version = f"{self.study}__{self.data_package}__{self.version}"
         match meta_type:
-            case enums.JsonFilename.TRANSACTIONS.value:
+            case enums.JsonFilename.TRANSACTIONS:
                 metadata = self.metadata
                 meta_delta = self.metadata_delta
-            case enums.JsonFilename.COLUMN_TYPES.value:
+            case enums.JsonFilename.COLUMN_TYPES:
                 metadata = self.types_metadata
                 meta_delta = self.types_metadata_delta
         for meta_dict in (metadata, meta_delta):
@@ -294,11 +296,11 @@ class S3Manager:
         :param metadata: the specific dictionary to write. Default: transactions
         :param meta_type: The enum representing the name of the metadata type. Default: Transactions
         """
-        meta_type = meta_type or enums.JsonFilename.TRANSACTIONS.value
+        meta_type = meta_type or enums.JsonFilename.TRANSACTIONS
         match meta_type:
-            case enums.JsonFilename.TRANSACTIONS.value:
+            case enums.JsonFilename.TRANSACTIONS:
                 metadata = self.metadata_delta
-            case enums.JsonFilename.COLUMN_TYPES.value:
+            case enums.JsonFilename.COLUMN_TYPES:
                 metadata = self.types_metadata_delta
 
         functions.write_metadata(
