@@ -432,7 +432,7 @@ def construct_s3_key(
         dp_meta = dataclasses.replace(dp_meta)
         dp_meta.site = site or dp_meta.site
         dp_meta.study = study or dp_meta.study
-        dp_meta.data_package = data_package or dp_meta.data_package or data_package
+        dp_meta.data_package = data_package or dp_meta.data_package
         dp_meta.version = version or dp_meta.version
         dp_meta.filename = filename or dp_meta.filename
     match subbucket:
@@ -474,7 +474,7 @@ def construct_s3_key(
                 f"{subbucket} does not correspond to a subbucket used for processing data packages"
             )
     if subkey:
-        key = key.replace(f"{subbucket}/", "")
+        key = key.removeprefix(f"{subbucket}/")
     if dp_meta.filename:
         return f"{key}/{dp_meta.filename}"
     return key

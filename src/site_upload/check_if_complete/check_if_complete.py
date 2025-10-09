@@ -22,7 +22,7 @@ def check_if_complete(message) -> (bool, dict):
         transaction = functions.get_s3_json_as_dict(
             bucket=os.environ.get("BUCKET_NAME"),
             key=(
-                f"{enums.BucketPath.META.value}/transactions/{message['site']}__{message['study']}.json"
+                f"{enums.BucketPath.META}/transactions/{message['site']}__{message['study']}.json"
             ),
             s3_client=s3_client,
         )
@@ -30,9 +30,9 @@ def check_if_complete(message) -> (bool, dict):
         return False, None
     upload_time = datetime.datetime.fromisoformat(transaction["uploaded_at"])
     for filetype, source, suffix in [
-        ("cube", enums.BucketPath.AGGREGATE.value, "aggregate"),
-        ("annotated_cube", enums.BucketPath.AGGREGATE.value, "aggregate"),
-        ("flat", enums.BucketPath.FLAT.value, "flat"),
+        ("cube", enums.BucketPath.AGGREGATE, "aggregate"),
+        ("annotated_cube", enums.BucketPath.AGGREGATE, "aggregate"),
+        ("flat", enums.BucketPath.FLAT, "flat"),
     ]:
         filenames = transaction.get(filetype, [])
         for filename in filenames:
@@ -93,7 +93,7 @@ def has_new_packages(message, transaction) -> bool:
 
 
 def cleanup_transaction(message) -> bool:
-    key = f"{enums.BucketPath.META.value}/transactions/{message['site']}__{message['study']}.json"
+    key = f"{enums.BucketPath.META}/transactions/{message['site']}__{message['study']}.json"
     # The delete_object function :should: be returning a dict with a flag
     # that can be used to determine if the delete was successful or not, but
     # as of this writing (boto 1.35.30) it does not. So we use the head_object
@@ -157,7 +157,7 @@ def check_if_complete_handler(event, context):
         sns_client.publish(
             TopicArn=topic_sns_arn,
             Message=message["study"],
-            Subject=enums.JsonFilename.DATA_PACKAGES.value,
+            Subject=enums.JsonFilename.DATA_PACKAGES,
         )
         return functions.http_response(
             200, f"Crawl for {message!s} not required, directly invoked caching"
