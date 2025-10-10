@@ -335,3 +335,43 @@ def test_construct_s3_key_modifiers():
         enums.BucketPath.UPLOAD, dp_meta, filename="filename", subkey=True
     )
     assert key == "study/data_package/site/version/filename"
+
+
+@pytest.mark.parametrize(
+    "subbucket,expected_file,expected_table,raises",
+    [
+        (
+            enums.BucketPath.AGGREGATE,
+            "study__data_package__aggregate.parquet",
+            "study__data_package__version",
+            does_not_raise(),
+        ),
+        (
+            enums.BucketPath.FLAT,
+            "study__data_package__site__flat.parquet",
+            "study__data_package__site__version",
+            does_not_raise(),
+        ),
+        (
+            enums.BucketPath.TEMP,
+            "",
+            "",
+            pytest.raises(errors.AggregatorS3Error),
+        ),
+    ],
+)
+def test_metadata_get_names(
+    subbucket,
+    expected_file,
+    expected_table,
+    raises,
+):
+    with raises:
+        dp_meta = functions.PackageMetadata(
+            site="site", study="study", data_package="data_package", version="version"
+        )
+        name = dp_meta.get_filename(subbucket=subbucket)
+        assert name == expected_file
+        name = dp_meta.get_tablename(subbucket=subbucket)
+        assert name == expected_table
+        assert functions.construct_s3_key(subbucket=subbucket, dp_meta=dp_meta).endswith(name)

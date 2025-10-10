@@ -2,6 +2,7 @@
 
 import copy
 import dataclasses
+import enum
 import io
 import json
 import logging
@@ -314,16 +315,27 @@ class PackageMetadata:
     data_package: str | None = None
     filename: str | None = None
 
-    def __eq__(self, other):
-        if not isinstance(other, PackageMetadata):
-            return NotImplemented
-        return (
-            self.study == other.study
-            and self.site == other.site
-            and self.data_package == other.data_package
-            and self.version == other.version
-            and self.filename == other.filename
-        )
+    def get_filename(self, subbucket: enum.StrEnum):
+        match subbucket:
+            case enums.BucketPath.AGGREGATE:
+                return f"{self.study}__{self.data_package}__aggregate.parquet"
+            case enums.BucketPath.FLAT:
+                return f"{self.study}__{self.data_package}__{self.site}__flat.parquet"
+            case _:
+                raise errors.AggregatorS3Error(
+                    f"Files in {subbucket} do not have an expected filename"
+                )
+
+    def get_tablename(self, subbucket: enum.StrEnum):
+        match subbucket:
+            case enums.BucketPath.AGGREGATE:
+                return f"{self.study}__{self.data_package}__{self.version}"
+            case enums.BucketPath.FLAT:
+                return f"{self.study}__{self.data_package}__{self.site}__{self.version}"
+            case _:
+                raise errors.AggregatorS3Error(
+                    f"Files in {subbucket} do not have an expected table name"
+                )
 
 
 def parse_s3_key(key: str) -> PackageMetadata:

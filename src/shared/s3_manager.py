@@ -48,16 +48,17 @@ class S3Manager:
         self.data_package = None
         self.version = None
         self.transaction = None
+        self.dp_meta = None
         # If the event is an SNS type event, we're in the aggregation pipeline and set up
         # some convenience values.
         if event is not None and "Records" in event and "Sns" in event["Records"][0]:
             self.event_source = event["Records"][0]["Sns"]["TopicArn"]
             self.s3_key = event["Records"][0]["Sns"]["Message"]
-            dp_meta = functions.parse_s3_key(self.s3_key)
-            self.study = dp_meta.study
-            self.data_package = dp_meta.data_package
-            self.site = dp_meta.site
-            self.version = dp_meta.version
+            self.dp_meta = functions.parse_s3_key(self.s3_key)
+            self.study = self.dp_meta.study
+            self.data_package = self.dp_meta.data_package
+            self.site = self.dp_meta.site
+            self.version = self.dp_meta.version
             self.metadata = functions.read_metadata(
                 self.s3_client, self.s3_bucket_name, meta_type=enums.JsonFilename.TRANSACTIONS
             )
@@ -73,19 +74,13 @@ class S3Manager:
 
             self.parquet_aggregate_key = functions.construct_s3_key(
                 subbucket=enums.BucketPath.AGGREGATE,
-                study=self.study,
-                site=self.site,
-                data_package=self.data_package,
-                version=self.version,
-                filename=f"{self.study}__{self.data_package}__aggregate.parquet",
+                dp_meta=self.dp_meta,
+                filename=self.dp_meta.get_filename(enums.BucketPath.AGGREGATE),
             )
             self.parquet_flat_key = functions.construct_s3_key(
                 subbucket=enums.BucketPath.FLAT,
-                study=self.study,
-                site=self.site,
-                data_package=self.data_package,
-                version=self.version,
-                filename=f"{self.study}__{self.data_package}__{self.site}__flat.parquet",
+                dp_meta=self.dp_meta,
+                filename=self.dp_meta.get_filename(enums.BucketPath.FLAT),
             )
         if study:
             self.study = study

@@ -36,18 +36,16 @@ def check_if_complete(message) -> (bool, dict):
     ]:
         filenames = transaction.get(filetype, [])
         for filename in filenames:
-            dp = filename.split("__")[1].split(".")[0]
-            if suffix == "flat":
-                filename = f"{message['study']}__{dp}__{message['site']}__{suffix}.parquet"
-            else:
-                filename = f"{message['study']}__{dp}__{suffix}.parquet"
-            key = functions.construct_s3_key(
-                subbucket=source,
+            dp_meta = functions.PackageMetadata(
                 study=message["study"],
                 site=message["site"],
-                data_package=dp,
+                data_package=filename.split("__")[1].split(".")[0],
                 version=transaction["version"],
-                filename=filename,
+            )
+            key = functions.construct_s3_key(
+                subbucket=source,
+                dp_meta=dp_meta,
+                filename=dp_meta.get_filename(source),
             )
             try:
                 head = s3_client.head_object(Bucket=os.environ.get("BUCKET_NAME"), Key=key)
@@ -83,10 +81,15 @@ def has_new_packages(message, transaction) -> bool:
 
         for filename in filenames:
             dp = filename.split("__")[1].split(".")[0]
-            if dp_type == "flat":
-                name = f"{message['study']}__{dp}__{message['site']}__{transaction['version']}"
-            else:
-                name = f"{message['study']}__{dp}__{transaction['version']}"
+            dp_meta = functions.PackageMetadata(
+                study=message["study"],
+                site=message["site"],
+                data_package=dp,
+                version=transaction["version"],
+            )
+            name = dp_meta.get_tablename(
+                enums.BucketPath.FLAT if dp_type == "FLAT" else enums.BucketPath.AGGREGATE
+            )
             if name not in tables:
                 return True
     return False
