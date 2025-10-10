@@ -89,8 +89,8 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
     logger.info(f"Proccessing data package at {manager.s3_key}")
     # initializing this early in case an empty file causes us to never set it
     df = pandas.DataFrame()
-    latest_file_list = manager.get_data_package_list(enums.BucketPath.LATEST.value)
-    last_valid_file_list = manager.get_data_package_list(enums.BucketPath.LAST_VALID.value)
+    latest_file_list = manager.get_data_package_list(enums.BucketPath.LATEST)
+    last_valid_file_list = manager.get_data_package_list(enums.BucketPath.LAST_VALID)
     for last_valid_path in last_valid_file_list:
         if manager.version not in last_valid_path:
             continue
@@ -98,87 +98,87 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
         if manager.site in last_valid_path:
             continue
         last_valid_metadata = functions.parse_s3_key(last_valid_path)
-        subbucket_path = (
-            f"{manager.study}/{manager.data_package}/{last_valid_metadata.site}/{manager.version}"
+        last_valid_subkey = functions.construct_s3_key(
+            subbucket=enums.BucketPath.LAST_VALID, dp_meta=last_valid_metadata, subkey=True
         )
         # If the latest uploads don't include this site, we'll use the last-valid
         # one instead
         try:
-            if not any(subbucket_path in x for x in latest_file_list):
+            if not any(last_valid_subkey in x for x in latest_file_list):
                 df = expand_and_concat_powersets(df, last_valid_path, last_valid_metadata.site)
                 manager.update_local_metadata(
-                    enums.TransactionKeys.LAST_AGGREGATION.value, site=last_valid_metadata.site
+                    enums.TransactionKeys.LAST_AGGREGATION, site=last_valid_metadata.site
                 )
         except MergeError as e:
             # This is expected to trigger if there's an issue in expand_and_concat_powersets;
             # this usually means there's a data problem.
             manager.error_handler(
                 e.filename,
-                subbucket_path,
+                last_valid_subkey,
                 e,
             )
     for latest_path in latest_file_list:
         if manager.version not in latest_path:
             continue
         latest_metadata = functions.parse_s3_key(latest_path)
-
-        # Noting since this introduced a bug previously:
-        # the latest/last_data paths reflect the date format used by the upload script,
-        # which uses a bare version. This is different than the aggregates, which have
-        # a compound version that's really more of an ID.
-        # TODO: move path handling for the various subbuckets to a centralized location,
-        # this is a brittle pattern right now
-
-        subbucket_path = (
-            f"{manager.study}/{manager.study}__{manager.data_package}/{latest_metadata.site}/"
-            f"{manager.version}"
+        latest_subkey = functions.construct_s3_key(
+            subbucket=enums.BucketPath.LATEST,
+            study=latest_metadata.study,
+            site=latest_metadata.site,
+            data_package=latest_metadata.data_package,
+            version=latest_metadata.version,
+            subkey=True,
         )
-        archived_files = []
+        temp_files = []
         try:
-            # if we're going to replace a file in last_valid, archive the old data
+            # if we're going to replace a file in last_valid, remove the old data
             date_str = datetime.datetime.now(datetime.UTC).isoformat()
-            for match in filter(lambda x: subbucket_path in x, last_valid_file_list):
+            for match in filter(lambda x: latest_subkey in x, last_valid_file_list):
                 match_filename = functions.get_filename_from_s3_path(match)
                 match_timestamped_filename = f"{date_str}.{match_filename}"
-                archive_target = (
-                    f"{enums.BucketPath.ARCHIVE.value}/{subbucket_path}/"
-                    f"{match_timestamped_filename}"
+                temp_target = (
+                    f"{enums.BucketPath.TEMP}/{latest_subkey}/{match_timestamped_filename}"
                 )
-                manager.move_file(match, archive_target)
-                archived_files.append((archive_target, match))
+                manager.move_file(match, temp_target)
+                temp_files.append((temp_target, match))
             # otherwise, this is the first instance - after it's in the database,
             # we'll generate a new list of valid tables for the dashboard
             df = expand_and_concat_powersets(df, latest_path, manager.site)
-            filename = functions.get_filename_from_s3_path(latest_path)
             manager.move_file(
-                functions.get_s3_key_from_path(latest_path),
-                f"{enums.BucketPath.LAST_VALID.value}/{subbucket_path}/{filename}",
+                functions.construct_s3_key(
+                    subbucket=enums.BucketPath.LATEST,
+                    dp_meta=latest_metadata,
+                ),
+                functions.construct_s3_key(
+                    subbucket=enums.BucketPath.LAST_VALID,
+                    dp_meta=latest_metadata,
+                ),
             )
 
             manager.update_local_metadata(
-                enums.TransactionKeys.LAST_DATA_UPDATE.value, site=latest_metadata.site
+                enums.TransactionKeys.LAST_DATA_UPDATE, site=latest_metadata.site
             )
             manager.update_local_metadata(
-                enums.TransactionKeys.LAST_AGGREGATION.value, site=latest_metadata.site
+                enums.TransactionKeys.LAST_AGGREGATION, site=latest_metadata.site
             )
         except Exception as e:
             manager.error_handler(
                 latest_path,
-                subbucket_path,
+                latest_subkey,
                 e,
             )
             # Undo any archiving we tried to do
-            for archive in archived_files:
+            for archive in temp_files:
                 manager.move_file(archive[0], archive[1])
             # if a new file fails, we want to replace it with the last valid
             # for purposes of aggregation
-            for match in filter(lambda x: subbucket_path in x, last_valid_file_list):
+            for match in filter(lambda x: latest_subkey in x, last_valid_file_list):
                 df = expand_and_concat_powersets(
                     df,
                     match,
                     manager.site,
                 )
-                manager.update_local_metadata(enums.TransactionKeys.LAST_AGGREGATION.value)
+                manager.update_local_metadata(enums.TransactionKeys.LAST_AGGREGATION)
 
     if df.empty:
         raise OSError("File not found")
@@ -188,22 +188,27 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
     # Updating the typing dict for the column type API
     column_dict = pandas_functions.get_column_datatypes(df)
     manager.update_local_metadata(
-        enums.ColumnTypesKeys.COLUMNS.value,
+        enums.ColumnTypesKeys.COLUMNS,
         value=column_dict,
-        meta_type=enums.JsonFilename.COLUMN_TYPES.value,
-        extra_items={"total": int(df["cnt"][0]), "s3_path": manager.parquet_aggregate_path},
+        meta_type=enums.JsonFilename.COLUMN_TYPES,
+        extra_items={
+            "total": int(df["cnt"][0]),
+            "s3_path": f"s3://{manager.s3_bucket_name}/{manager.parquet_aggregate_key}",
+        },
     )
     manager.update_local_metadata(
-        enums.ColumnTypesKeys.LAST_DATA_UPDATE.value,
+        enums.ColumnTypesKeys.LAST_DATA_UPDATE,
         value=column_dict,
-        meta_type=enums.JsonFilename.COLUMN_TYPES.value,
+        meta_type=enums.JsonFilename.COLUMN_TYPES,
     )
     manager.write_local_metadata(
-        meta_type=enums.JsonFilename.COLUMN_TYPES.value,
+        meta_type=enums.JsonFilename.COLUMN_TYPES,
     )
 
     # write out the aggregate and send a notification to the metadata queue
     manager.write_parquet(df)
+    for file in temp_files:
+        manager.delete_file(file[0])
 
 
 @decorators.generic_error_handler(msg="Error merging powersets")

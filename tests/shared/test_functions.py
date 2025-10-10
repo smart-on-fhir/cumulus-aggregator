@@ -11,6 +11,7 @@ from contextlib import nullcontext as does_not_raise
 from unittest import mock
 
 import boto3
+import freezegun
 import pandas
 import pytest
 
@@ -117,7 +118,7 @@ def test_latest_data_package_version(mock_bucket):
 
 
 @pytest.mark.parametrize(
-    "path,expected,raises",
+    "key,expected,raises",
     [
         (
             f"{enums.BucketPath.AGGREGATE.value}/{mock_utils.EXISTING_STUDY}/"
@@ -125,10 +126,13 @@ def test_latest_data_package_version(mock_bucket):
             f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_VERSION}/"
             f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__aggregate.parquet",
             functions.PackageMetadata(
-                mock_utils.EXISTING_STUDY,
-                None,
-                mock_utils.EXISTING_DATA_P,
-                mock_utils.EXISTING_VERSION,
+                study=mock_utils.EXISTING_STUDY,
+                site=None,
+                data_package=mock_utils.EXISTING_DATA_P,
+                version=mock_utils.EXISTING_VERSION,
+                filename=(
+                    f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__aggregate.parquet"
+                ),
             ),
             does_not_raise(),
         ),
@@ -138,22 +142,28 @@ def test_latest_data_package_version(mock_bucket):
             f"{mock_utils.EXISTING_SITE}/{mock_utils.EXISTING_VERSION}/"
             f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__aggregate.parquet",
             functions.PackageMetadata(
-                mock_utils.EXISTING_STUDY,
-                mock_utils.EXISTING_SITE,
-                mock_utils.EXISTING_DATA_P,
-                mock_utils.EXISTING_VERSION,
+                study=mock_utils.EXISTING_STUDY,
+                site=mock_utils.EXISTING_SITE,
+                data_package=mock_utils.EXISTING_DATA_P,
+                version=mock_utils.EXISTING_VERSION,
+                filename=(
+                    f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__aggregate.parquet"
+                ),
             ),
             does_not_raise(),
         ),
         (
-            f"{enums.BucketPath.LAST_VALID.value}/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_SITE}/"
+            f"{enums.BucketPath.LATEST_FLAT.value}/{mock_utils.EXISTING_STUDY}/{mock_utils.EXISTING_SITE}/"
             f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_VERSION}/"
             f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__flat.parquet",
             functions.PackageMetadata(
-                mock_utils.EXISTING_STUDY,
-                mock_utils.EXISTING_SITE,
-                mock_utils.EXISTING_DATA_P,
-                mock_utils.EXISTING_VERSION,
+                study=mock_utils.EXISTING_STUDY,
+                site=mock_utils.EXISTING_SITE,
+                data_package=mock_utils.EXISTING_DATA_P,
+                version=mock_utils.EXISTING_VERSION,
+                filename=(
+                    f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__flat.parquet"
+                ),
             ),
             does_not_raise(),
         ),
@@ -164,10 +174,13 @@ def test_latest_data_package_version(mock_bucket):
             f"{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_VERSION}/"
             f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__aggregate.parquet",
             functions.PackageMetadata(
-                mock_utils.EXISTING_STUDY,
-                mock_utils.EXISTING_SITE,
-                mock_utils.EXISTING_DATA_P,
-                mock_utils.EXISTING_VERSION,
+                study=mock_utils.EXISTING_STUDY,
+                site=mock_utils.EXISTING_SITE,
+                data_package=mock_utils.EXISTING_DATA_P,
+                version=mock_utils.EXISTING_VERSION,
+                filename=(
+                    f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__aggregate.parquet"
+                ),
             ),
             does_not_raise(),
         ),
@@ -177,10 +190,13 @@ def test_latest_data_package_version(mock_bucket):
             f"{mock_utils.EXISTING_VERSION}/"
             f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__aggregate.parquet",
             functions.PackageMetadata(
-                mock_utils.EXISTING_STUDY,
-                mock_utils.EXISTING_SITE,
-                mock_utils.EXISTING_DATA_P,
-                mock_utils.EXISTING_VERSION,
+                study=mock_utils.EXISTING_STUDY,
+                site=mock_utils.EXISTING_SITE,
+                data_package=mock_utils.EXISTING_DATA_P,
+                version=mock_utils.EXISTING_VERSION,
+                filename=(
+                    f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__aggregate.parquet"
+                ),
             ),
             does_not_raise(),
         ),
@@ -197,7 +213,165 @@ def test_latest_data_package_version(mock_bucket):
         ),
     ],
 )
-def test_parse_s3_key(path, expected, raises):
+def test_parse_s3_key(key, expected, raises):
     with raises:
-        package = functions.parse_s3_key(path)
-        assert package == expected
+        dp_meta = functions.parse_s3_key(key)
+        assert dp_meta == expected
+        new_key = functions.construct_s3_key(subbucket=key.split("/")[0], dp_meta=dp_meta)
+        assert key == new_key
+
+
+@pytest.mark.parametrize(
+    "subbucket,expected,raises",
+    [
+        (
+            enums.BucketPath.ADMIN,
+            "",
+            pytest.raises(errors.AggregatorS3Error),
+        ),
+        (
+            enums.BucketPath.AGGREGATE,
+            "aggregates/study/study__data_package/study__data_package__version/filename",
+            does_not_raise(),
+        ),
+        (
+            enums.BucketPath.ARCHIVE,
+            "archive/study/site/version/2020-01-01T00:00:00+00:00/filename",
+            does_not_raise(),
+        ),
+        (
+            enums.BucketPath.CACHE,
+            "",
+            pytest.raises(errors.AggregatorS3Error),
+        ),
+        (
+            enums.BucketPath.ERROR,
+            "error/study/study__data_package/site/version/filename",
+            does_not_raise(),
+        ),
+        (
+            enums.BucketPath.FLAT,
+            "flat/study/site/study__data_package__site__version/filename",
+            does_not_raise(),
+        ),
+        (
+            enums.BucketPath.LAST_VALID,
+            "last_valid/study/study__data_package/site/version/filename",
+            does_not_raise(),
+        ),
+        (
+            enums.BucketPath.LATEST_FLAT,
+            "latest_flat/study/site/study__data_package__site__version/filename",
+            does_not_raise(),
+        ),
+        (
+            enums.BucketPath.LATEST,
+            "latest/study/study__data_package/site/version/filename",
+            does_not_raise(),
+        ),
+        (
+            enums.BucketPath.META,
+            "",
+            pytest.raises(errors.AggregatorS3Error),
+        ),
+        (
+            enums.BucketPath.STUDY_META,
+            "study_metadata/study/study__data_package/site/version/filename",
+            does_not_raise(),
+        ),
+        (
+            enums.BucketPath.TEMP,
+            "",
+            pytest.raises(errors.AggregatorS3Error),
+        ),
+        (
+            enums.BucketPath.UPLOAD,
+            "site_upload/study/data_package/site/version/filename",
+            does_not_raise(),
+        ),
+        (
+            enums.BucketPath.UPLOAD_STAGING,
+            "upload_staging/study/site/version/filename",
+            does_not_raise(),
+        ),
+    ],
+)
+@freezegun.freeze_time("2020-01-01")
+def test_construct_s3_key(subbucket, expected, raises):
+    with raises:
+        site = "site" if subbucket != enums.BucketPath.AGGREGATE else None
+        dp = "data_package" if subbucket != enums.BucketPath.UPLOAD_STAGING else None
+        dp_meta = functions.PackageMetadata(
+            site=site, study="study", data_package=dp, version="version", filename="filename"
+        )
+        key = functions.construct_s3_key(subbucket=subbucket, dp_meta=dp_meta)
+        assert key == expected
+        key = functions.construct_s3_key(
+            subbucket=subbucket,
+            site=site,
+            study="study",
+            data_package=dp,
+            version="version",
+            filename="filename",
+        )
+        assert key == expected
+        if subbucket != enums.BucketPath.ARCHIVE:
+            dp_from_key = functions.parse_s3_key(key)
+            assert dp_from_key == dp_meta
+
+
+def test_construct_s3_key_modifiers():
+    dp_meta = functions.PackageMetadata(
+        site="site",
+        study="study",
+        data_package="data_package",
+        version="version",
+    )
+    key = functions.construct_s3_key(enums.BucketPath.UPLOAD, dp_meta, filename="filename")
+    assert key == "site_upload/study/data_package/site/version/filename"
+    key = functions.construct_s3_key(enums.BucketPath.UPLOAD, dp_meta)
+    assert key == "site_upload/study/data_package/site/version"
+    key = functions.construct_s3_key(
+        enums.BucketPath.UPLOAD, dp_meta, filename="filename", subkey=True
+    )
+    assert key == "study/data_package/site/version/filename"
+
+
+@pytest.mark.parametrize(
+    "subbucket,expected_file,expected_table,raises",
+    [
+        (
+            enums.BucketPath.AGGREGATE,
+            "study__data_package__aggregate.parquet",
+            "study__data_package__version",
+            does_not_raise(),
+        ),
+        (
+            enums.BucketPath.FLAT,
+            "study__data_package__site__flat.parquet",
+            "study__data_package__site__version",
+            does_not_raise(),
+        ),
+        (
+            enums.BucketPath.TEMP,
+            "",
+            "",
+            pytest.raises(errors.AggregatorS3Error),
+        ),
+    ],
+)
+def test_metadata_get_names(
+    subbucket,
+    expected_file,
+    expected_table,
+    raises,
+):
+    with raises:
+        dp_meta = functions.PackageMetadata(
+            site="site", study="study", data_package="data_package", version="version"
+        )
+        name = dp_meta.get_filename(subbucket=subbucket)
+        assert name == expected_file
+        name = dp_meta.get_tablename(subbucket=subbucket)
+        assert name == expected_table
+        assert functions.construct_s3_key(subbucket=subbucket, dp_meta=dp_meta).endswith(name)

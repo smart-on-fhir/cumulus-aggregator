@@ -8,4 +8,3 @@ repos:
         args: [ --fix ]
       - name: Ruff formatting
         id: ruff-format
-        stages: [pre-push]

@@ -1,6 +1,5 @@
 """Lambda for moving data to processing locations"""
 
-import datetime
 import logging
 import os
 import zipfile
@@ -41,34 +40,28 @@ def unzip_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> Non
     # extract it last in all cases
     # TODO: decide on extract location for manifests
     new_keys = []
-    for file_list in [files, ["manifest.toml"]]:
+    for file_list in [files]:
         for file in file_list:
             data_package = file.split(".")[0]
-            target_folder = (
-                functions.get_folder_from_s3_path(s3_key)
-                .replace(
-                    f"{enums.BucketPath.UPLOAD_STAGING.value}/", f"{enums.BucketPath.UPLOAD.value}/"
-                )
-                .replace(
-                    f"/{metadata.study}/", f"/{metadata.study}/{metadata.study}__{data_package}/"
-                )
-                .replace(
-                    f"/{metadata.version}/",
-                    f"/{metadata.study}__{data_package}__{metadata.version}",
-                )
+            if "__" in data_package:
+                data_package = data_package.split("__")[1]
+            key = functions.construct_s3_key(
+                subbucket=enums.BucketPath.UPLOAD,
+                dp_meta=metadata,
+                data_package=data_package,
+                filename=file,
             )
-            s3_client.upload_fileobj(
-                archive.open(file), Bucket=s3_bucket_name, Key=f"{target_folder}/{file}"
-            )
-            new_keys.append(f"{target_folder}/{file}")
-    archive_key = s3_key.replace(
-        f"{enums.BucketPath.UPLOAD_STAGING.value}/", f"{enums.BucketPath.ARCHIVE.value}/"
+            s3_client.upload_fileobj(archive.open(file), Bucket=s3_bucket_name, Key=key)
+            new_keys.append(key)
+    archive_key = functions.construct_s3_key(
+        subbucket=enums.BucketPath.ARCHIVE,
+        dp_meta=metadata,
     )
     functions.move_s3_file(
         s3_client=s3_client,
         s3_bucket_name=s3_bucket_name,
         old_key=s3_key,
-        new_key=f"{archive_key}.{datetime.datetime.now(datetime.UTC).isoformat()}",
+        new_key=archive_key,
     )
     topic_sns_arn = os.environ.get("TOPIC_PROCESS_UPLOADS_ARN")
     sns_subject = "Process file unzip event"

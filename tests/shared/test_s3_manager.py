@@ -59,14 +59,9 @@ def test_init_manager(mock_bucket):
         f"{enums.BucketPath.META.value}/transactions/"
         f"{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_STUDY}.json"
     )
-    assert (
-        manager.parquet_aggregate_path
-        == "s3://cumulus-aggregator-site-counts-test/aggregates/study/study__encounter/study__encounter__099/study__encounter__aggregate.parquet"
-    )
-    assert manager.parquet_flat_key == (
-        f"flat/study/{mock_utils.EXISTING_SITE}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}"
-        f"__{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_VERSION}/"
-        f"{mock_utils.EXISTING_STUDY}__encounter__{mock_utils.EXISTING_SITE}__flat.parquet"
+    assert manager.parquet_aggregate_key == (
+        "aggregates/study/study__encounter/study__encounter__099/"
+        "study__encounter__aggregate.parquet"
     )
     assert manager.parquet_flat_key == (
         f"flat/study/{mock_utils.EXISTING_SITE}/{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}"
@@ -213,8 +208,8 @@ def test_write_parquet(mock_cache, mock_bucket):
     )
     manager.write_parquet(
         df,
-        path=(
-            f"s3://{mock_utils.TEST_BUCKET}/aggregates/study/study__encounter/"
+        key=(
+            "aggregates/study/study__encounter/"
             "study__encounter__099/study__encounter__aggregate.parquet"
         ),
     )

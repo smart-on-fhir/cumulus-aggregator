@@ -3,7 +3,7 @@
 import enum
 
 
-class BucketPath(enum.Enum):
+class BucketPath(enum.StrEnum):
     """stores root level subbuckets for managing data processing state"""
 
     ADMIN = "admin"
@@ -13,6 +13,7 @@ class BucketPath(enum.Enum):
     ERROR = "error"
     FLAT = "flat"
     LAST_VALID = "last_valid"
+    LATEST_FLAT = "latest_flat"
     LATEST = "latest"
     META = "metadata"
     STATIC = "static"
@@ -22,7 +23,7 @@ class BucketPath(enum.Enum):
     UPLOAD_STAGING = "upload_staging"
 
 
-class ColumnTypesKeys(enum.Enum):
+class ColumnTypesKeys(enum.StrEnum):
     """stores names of expected keys in the study period metadata dictionary"""
 
     COLUMN_TYPES_FORMAT_VERSION = "column_types_format_version"
@@ -30,7 +31,7 @@ class ColumnTypesKeys(enum.Enum):
     LAST_DATA_UPDATE = "last_data_update"
 
 
-class JsonFilename(enum.Enum):
+class JsonFilename(enum.StrEnum):
     """stores names of expected kinds of persisted S3 JSON files"""
 
     COLUMN_TYPES = "column_types"
@@ -40,7 +41,7 @@ class JsonFilename(enum.Enum):
     STUDY_PERIODS = "study_periods"
 
 
-class StudyPeriodMetadataKeys(enum.Enum):
+class StudyPeriodMetadataKeys(enum.StrEnum):
     """stores names of expected keys in the study period metadata dictionary"""
 
     STUDY_PERIOD_FORMAT_VERSION = "study_period_format_version"
@@ -49,7 +50,7 @@ class StudyPeriodMetadataKeys(enum.Enum):
     LAST_DATA_UPDATE = "last_data_update"
 
 
-class TransactionKeys(enum.Enum):
+class TransactionKeys(enum.StrEnum):
     """stores names of expected keys in the transaction dictionary"""
 
     TRANSACTION_FORMAT_VERSION = "transaction_format_version"

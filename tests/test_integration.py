@@ -159,10 +159,10 @@ def test_integration(
             pathlib.Path(__file__).parent / "test_data/meta_date.parquet",
             arcname="meta_date.parquet",
         )
-    upload_key = f"{enums.BucketPath.UPLOAD_STAGING.value}/{study}/{site}/{version}/upload.zip"
+    upload_key = f"{enums.BucketPath.UPLOAD_STAGING}/{study}/{site}/{version}/upload.zip"
     s3_client.put_object(
         Bucket=mock_utils.TEST_BUCKET,
-        Key=f"{enums.BucketPath.META.value}/transactions/{site}__{study}.json",
+        Key=f"{enums.BucketPath.META}/transactions/{site}__{study}.json",
         Body=json.dumps(
             {"id": "12345", "uploaded_at": datetime.datetime.now(datetime.UTC).isoformat()}
         ).encode("UTF-8"),
@@ -207,9 +207,7 @@ def test_integration(
     assert unzip_res["statusCode"] == 200
 
     # Mock running the upload processing for the unzipped files
-    files = s3_client.list_objects_v2(
-        Bucket=mock_utils.TEST_BUCKET, Prefix=enums.BucketPath.UPLOAD.value
-    )
+    files = s3_client.list_objects_v2(Bucket=mock_utils.TEST_BUCKET, Prefix=enums.BucketPath.UPLOAD)
     keys = list(file["Key"] for file in files["Contents"])
     for key in keys:
         if "manifest.toml" not in key:
@@ -223,12 +221,11 @@ def test_integration(
             }
             upload_res = process_upload.process_upload_handler(upload_event, {})
             assert upload_res["statusCode"] == 200
-
     # We'll need to construct events from the moto sns mock message backend, which looks like this:
     # [(event_id, s3_key, event id, unused field, unused field)]
     # Then we'll pass to the appropriate handler based on type
 
-    if upload_type == enums.UploadTypes.CUBE.value:
+    if upload_type == enums.UploadTypes.CUBE:
         counts_sns = sns_backend.topics[mock_utils.TEST_PROCESS_COUNTS_ARN].sent_notifications
         counts_event = {
             "Records": [
@@ -243,7 +240,7 @@ def test_integration(
         merge_res = powerset_merge.powerset_merge_handler(counts_event, {})
         assert merge_res["statusCode"] == 200
 
-    elif upload_type == enums.UploadTypes.FLAT.value:
+    elif upload_type == enums.UploadTypes.FLAT:
         counts_sns = sns_backend.topics[mock_utils.TEST_PROCESS_FLAT_ARN].sent_notifications
         counts_event = {
             "Records": [
@@ -252,6 +249,9 @@ def test_integration(
         }
         merge_res = process_flat.process_flat_handler(counts_event, {})
         assert merge_res["statusCode"] == 200
+
+    files = s3_client.list_objects_v2(Bucket=mock_utils.TEST_BUCKET)
+    keys = list(file["Key"] for file in files["Contents"])
 
     # we have some items in the FIFO queue we'll need to process to get into the caches,
     # so we'll grab the queue contents and run them through the update processor
@@ -264,12 +264,12 @@ def test_integration(
 
     # The cache is triggered by an S3 event set up in the cloudformation template. We'll have
     # to mock this event as well by expected file path
-    cache_event = {"Records": [{"Sns": {"Subject": enums.JsonFilename.DATA_PACKAGES.value}}]}
+    cache_event = {"Records": [{"Sns": {"Subject": enums.JsonFilename.DATA_PACKAGES}}]}
     # Add an extra table to the list if we've created one, and mock the table list for cache_api
-    if upload_type == enums.UploadTypes.CUBE.value:
+    if upload_type == enums.UploadTypes.CUBE:
         if f"{study}__{data_package}__{version}" not in tables:
             tables.append(f"{study}__{data_package}__{version}")
-    elif upload_type == enums.UploadTypes.FLAT.value:
+    elif upload_type == enums.UploadTypes.FLAT:
         if f"{study}__{data_package}__{site}__{version}" not in tables:
             tables.append(f"{study}__{data_package}__{site}__{version}")
     with mock.patch(
@@ -289,9 +289,9 @@ def test_integration(
     else:
         len(dp_after) == len(dp_before) + 1
         match upload_type:
-            case enums.UploadTypes.CUBE.value:
+            case enums.UploadTypes.CUBE:
                 expected_id = f"{study}__{data_package}__{version}"
-            case enums.UploadTypes.FLAT.value:
+            case enums.UploadTypes.FLAT:
                 expected_id = f"{study}__{data_package}__{site}__{version}"
         if not any(x["id"] == expected_id for x in dp_after):
             raise KeyError("Expected data package id not found")
@@ -299,19 +299,19 @@ def test_integration(
         assert CURRENT_COL_TYPES_VERSION == dp["column_types_format_version"]
         assert len(dp["id"].split("__")) == 3 or len(dp["id"].split("__")) == 4
         if (
-            upload_type == enums.UploadTypes.CUBE.value
+            upload_type == enums.UploadTypes.CUBE
             and dp["id"] == f"{study}__{data_package}__{version}"
         ) or (
-            upload_type == enums.UploadTypes.FLAT.value
+            upload_type == enums.UploadTypes.FLAT
             and dp["id"] == f"{study}__{data_package}__{site}__{version}"
         ):
             assert version == dp["version"]
             assert study == dp["study"]
             match upload_type:
-                case enums.UploadTypes.CUBE.value:
+                case enums.UploadTypes.CUBE:
                     assert data_package == dp["name"]
                     assert (reference_df["cnt"].max()) == dp["total"]
-                case enums.UploadTypes.FLAT.value:
+                case enums.UploadTypes.FLAT:
                     assert data_package == f"{dp['name'].split('__')[0]}"
             for column in dp["columns"]:
                 assert dp["columns"][column]["type"] in (
@@ -327,7 +327,7 @@ def test_integration(
                 )
                 if (
                     not (column.startswith("cnt") or column == "site")
-                    and upload_type == enums.UploadTypes.CUBE.value
+                    and upload_type == enums.UploadTypes.CUBE
                 ):
                     assert (
                         reference_df[column].nunique()
@@ -375,7 +375,7 @@ def test_integration(
     # through all the stratifier combinations to make sure we have valid
     # looking column/stratifier names
     match upload_type:
-        case enums.UploadTypes.CUBE.value:
+        case enums.UploadTypes.CUBE:
             chart_event = {
                 "queryStringParameters": {"column": "site"},
                 "multiValueQueryStringParameters": {},
@@ -384,7 +384,7 @@ def test_integration(
             with mock.patch("awswrangler.athena.read_sql_query", parse_select):
                 chart_res = get_chart_data.chart_data_handler(chart_event, {})
             assert chart_res["statusCode"] == 200
-            if upload_type == enums.UploadTypes.FLAT.value:
+            if upload_type == enums.UploadTypes.FLAT:
                 return
             for column in chart_cols:
                 if column == "cnt":
@@ -409,7 +409,7 @@ def test_integration(
                             assert row[0] in expected_vals
 
         # Or, if it's flat, we'll just check to make sure that it's the originally uploaded file
-        case enums.UploadTypes.FLAT.value:
+        case enums.UploadTypes.FLAT:
             parquet_event = {
                 "queryStringParameters": {"type": "csv", "s3_path": s3_path},
                 "multiValueQueryStringParameters": {},
