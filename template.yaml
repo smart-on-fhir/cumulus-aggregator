@@ -1190,6 +1190,13 @@ Resources:
       FifoQueue: True
       ContentBasedDeduplication: True
 
+  SQSMetadataUpdateEventSource:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt SQSMetadataUpdate.Arn
+      FunctionName:
+        !Ref ProcessMetadataFunction
+
 # EventBridge rules
 
   GlueCrawlCompleteRule:
