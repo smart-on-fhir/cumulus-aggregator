@@ -417,6 +417,11 @@ Resources:
       Environment:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+      Events:
+        MetadataUpdateSQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt SQSMetadataUpdate.Arn
       Policies:
         - S3CrudPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
