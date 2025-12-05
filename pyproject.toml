@@ -9,7 +9,7 @@ dependencies= [
     "arrow >=1.2.3",
     "awswrangler >=3.5, <4",
     "boto3",
-    "cumulus-library >=4.1",
+    "cumulus-library <5",
     "Jinja2 >=3.1.4, <4",
     "pandas >=2.3.3, <3",
     "numpy==2.2.1", # GCC version compatibility pin - see https://github.com/numpy/numpy/issues/29150
