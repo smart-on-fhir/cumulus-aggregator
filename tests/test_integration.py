@@ -359,9 +359,17 @@ def test_integration(
 
     # We'll approximate a sql query by slicing and returning unique values from
     # the post_process df
-    def parse_select(query, database, s3_output, workgroup):
+    def _parse_select(query, database, s3_output, workgroup):
+        def _clean_col(col):
+            # if we're aggregating for a case with filters for cols outside of
+            # the charted columns, just return the column alias
+            col = col.strip()
+            if col.startswith("sum("):
+                col = col.split(" ")[-1].strip("'")
+            return col
+
         cols = query.split("SELECT")[1].split("FROM")[0].replace('"', "").split(",")
-        cols = [x.strip() for x in cols]
+        cols = [_clean_col(x) for x in cols]
         selected = post_process_df[cols].drop_duplicates()
         na_fills = {}
         for column in selected.columns:
@@ -381,7 +389,7 @@ def test_integration(
                 "multiValueQueryStringParameters": {},
                 "pathParameters": {"data_package_id": f"{study}__{data_package}__{version}"},
             }
-            with mock.patch("awswrangler.athena.read_sql_query", parse_select):
+            with mock.patch("awswrangler.athena.read_sql_query", _parse_select):
                 chart_res = get_chart_data.chart_data_handler(chart_event, {})
             assert chart_res["statusCode"] == 200
             if upload_type == enums.UploadTypes.FLAT:
@@ -399,7 +407,7 @@ def test_integration(
                             "data_package_id": f"{study}__{data_package}__{version}"
                         },
                     }
-                    with mock.patch("awswrangler.athena.read_sql_query", parse_select):
+                    with mock.patch("awswrangler.athena.read_sql_query", _parse_select):
                         chart_res = get_chart_data.chart_data_handler(chart_event, {})
                     assert chart_res["statusCode"] == 200
                     body = json.loads(chart_res["body"])

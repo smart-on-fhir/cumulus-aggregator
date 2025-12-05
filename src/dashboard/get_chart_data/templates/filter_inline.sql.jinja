@@ -98,6 +98,10 @@ date_trunc('year',from_iso8601_timestamp("{{ data }}")) > date_trunc('year',from
 {%- elif filter_type == 'isNotFalse' -%}
 "{{ data }}" IS NOT FALSE AND "{{ data }}" IS NOT NULL
 {#- Null filters -#}
+{%- elif filter_type == 'isNone' -%}
+regexp_like(CAST("{{ data }}" AS VARCHAR), '(?i)^cumulus__none$')
+{%- elif filter_type == 'isNotNone' -%}
+NOT regexp_like(CAST("{{ data }}" AS VARCHAR), '(?i)^cumulus__none$')
 {%- elif filter_type == 'isNull' -%}
 "{{ data }}" IS NULL
 {%- elif filter_type == 'isNotNull' -%}

@@ -148,7 +148,7 @@ def mock_get_table_cols_results(name):
         (
             {"column": "nato"},
             ["greek:strEq:alpha,numeric:eq:2.2", "greek:strEq:beta,numeric:eq:1.1"],
-            [("alfa", 10), ("alfa", 10)],
+            [("alfa", 20)],
         ),
         # validating all potential filter types
         ## strings
@@ -180,22 +180,22 @@ def mock_get_table_cols_results(name):
         (
             {"column": "nato"},
             ["timestamp:sameDayOrBefore:2022-02-02"],
-            [("alfa", 40), ("alfa", 10), ("bravo", 10)],
+            [("alfa", 50), ("bravo", 10)],
         ),
         (
             {"column": "nato"},
             ["timestamp:sameWeekOrBefore:2022-02-03"],
-            [("alfa", 40), ("alfa", 10), ("bravo", 10)],
+            [("alfa", 50), ("bravo", 10)],
         ),
         (
             {"column": "nato"},
             ["timestamp:sameMonthOrBefore:2022-02-21"],
-            [("alfa", 40), ("alfa", 10), ("bravo", 10)],
+            [("alfa", 50), ("bravo", 10)],
         ),
         (
             {"column": "nato"},
             ["timestamp:sameYearOrBefore:2022-03-03"],
-            [("alfa", 40), ("alfa", 10), ("bravo", 10)],
+            [("alfa", 50), ("bravo", 10)],
         ),
         ({"column": "nato"}, ["timestamp:sameDayOrAfter:2022-02-02"], [("alfa", 10)]),
         ({"column": "nato"}, ["timestamp:sameWeekOrAfter:2022-02-03"], [("alfa", 10)]),
@@ -215,14 +215,16 @@ def mock_get_table_cols_results(name):
         ({"column": "nato"}, ["numeric:gt:2.1"], [("alfa", 10)]),
         ({"column": "nato"}, ["numeric:gte:2.2"], [("alfa", 10)]),
         ({"column": "nato"}, ["numeric:lt:2.2"], [("alfa", 40), ("bravo", 10)]),
-        ({"column": "nato"}, ["numeric:lte:2.2"], [("alfa", 40), ("alfa", 10), ("bravo", 10)]),
+        ({"column": "nato"}, ["numeric:lte:2.2"], [("alfa", 50), ("bravo", 10)]),
         # Boolean
         ({"column": "nato"}, ["bool:isTrue"], [("alfa", 10)]),
         ({"column": "nato"}, ["bool:isNotTrue"], [("alfa", 40), ("bravo", 10)]),
         ({"column": "nato"}, ["bool:isNotFalse"], [("alfa", 10)]),
         ({"column": "nato"}, ["bool:isFalse"], [("alfa", 40), ("bravo", 10)]),
         ({"column": "nato"}, ["bool:isNull"], [("alfa", 50), ("bravo", 10)]),
-        ({"column": "nato"}, ["bool:isNotNull"], [("alfa", 40), ("alfa", 10), ("bravo", 10)]),
+        ({"column": "nato"}, ["bool:isNotNull"], [("alfa", 50), ("bravo", 10)]),
+        ({"column": "nato"}, ["bool:isNone"], []),
+        ({"column": "nato"}, ["bool:isNotNone"], [("alfa", 50), ("bravo", 10)]),
     ],
 )
 @mock.patch(
