@@ -217,13 +217,13 @@ def mock_db(tmp_path):
         "regexp_like",
         _compat_regexp_like,
         None,
-        duckdb.typing.BOOLEAN,
+        duckdb.sqltypes.BOOLEAN,
     )
     db.create_function(
         "from_iso8601_timestamp",
         _compat_from_iso8601_timestamp,
         None,
-        duckdb.typing.TIMESTAMP,
+        duckdb.sqltypes.TIMESTAMP,
     )
     yield db
 
