@@ -1,15 +1,19 @@
 {%- import 'syntax.sql.jinja' as syntax -%}
 {%- import 'filter_inline.sql.jinja' as inline -%}
 SELECT 
-    {%- if stratifier_column %}
+    {%- if stratifier_column and not ungraphed_stratifier%}
         "{{ stratifier_column }}",
     {%- endif %}
     "{{ data_column }}"
     {%- if count_columns %},{%- endif %}
-{%- for column in count_columns %}
+    {%- for column in count_columns %}
+    {%- if ungraphed_stratifier %}
+    sum("{{ column }}") AS '{{ column }}'
+    {%- else %}
     "{{ column }}"
-{{ syntax.comma_delineate(loop) }}
-{%- endfor %}
+    {%- endif %}
+    {{ syntax.comma_delineate(loop) }}
+    {%- endfor %}
 FROM "{{ schema }}"."{{ data_package_id }}"
 WHERE
     {%- if coalesce_columns %} COALESCE(
@@ -41,8 +45,11 @@ WHERE
     {%- if stratifier_column %}
         AND "{{ stratifier_column }}" IS NOT NULL
     {%- endif %}
+    {%- if ungraphed_stratifier %}
+GROUP BY "{{ data_column }}"
+    {%- endif %}
 ORDER BY
-    {%- if stratifier_column %}
+    {%- if stratifier_column and not ungraphed_stratifier %}
         "{{ stratifier_column }}", "{{ data_column }}"
     {%- else %}
     "{{ data_column }}"

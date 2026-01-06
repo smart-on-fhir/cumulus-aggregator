@@ -70,6 +70,8 @@ INLINE_FILTERS = (
     # null filters (one param only)
     "isNull",
     "isNotNull",
+    "isNone",
+    "isNotNone",
     # numeric filters
     "eq",
     "ne",
@@ -105,6 +107,8 @@ NONE_FILTERS = (
     "notMatchesCI",
     "isNull",
     "isNotNull",
+    "isNone",
+    "isNotNone",
 )
 
 
@@ -139,6 +143,7 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
         These should look like ['col:arg:optionalvalue,...','']
     :path path_params: URL specific arguments, as a convenience
     """
+    ungraphed_stratifier = False
     dp_id = path_params["data_package_id"]
     columns = _get_table_cols(dp_id)
     inline_configs = []
@@ -183,6 +188,8 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
         columns.remove(query_params["column"])
     if query_params.get("stratifier") in columns:
         columns.remove(query_params["stratifier"])
+    else:
+        ungraphed_stratifier = True
 
     with open(pathlib.Path(__file__).parent / "templates/get_chart_data.sql.jinja") as file:
         template = file.read()
@@ -197,6 +204,7 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
             coalesce_columns=columns,
             inline_configs=inline_configs,
             none_configs=none_configs,
+            ungraphed_stratifier=ungraphed_stratifier,
         )
     return query_str, count_col
 

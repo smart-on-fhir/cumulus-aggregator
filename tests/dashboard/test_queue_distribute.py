@@ -96,5 +96,4 @@ def test_process_github(
     if tag == "tag":
         files = [p for p in (tmp_path / f"studies/{name}").iterdir() if p.is_file()]
         files = [file.stem for file in files]
-        print(type(files[0]))
         assert "tag" not in files
