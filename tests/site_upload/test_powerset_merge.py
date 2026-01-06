@@ -255,7 +255,6 @@ def test_powerset_merge_single_upload(
         transactions = json.loads(sqs_res["Messages"][0]["Body"])
         assert transactions["key"] == "metadata/transactions.json"
         t_updates = json.loads(transactions["updates"])
-        print(t_updates)
         assert (
             t_updates[site][study][data_package][dp_id]["last_data_update"]
             == datetime.now(UTC).isoformat()

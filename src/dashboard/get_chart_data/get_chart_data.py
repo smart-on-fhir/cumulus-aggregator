@@ -70,6 +70,8 @@ INLINE_FILTERS = (
     # null filters (one param only)
     "isNull",
     "isNotNull",
+    "isNone",  # we treat this as an alias for "strEqCI"
+    "isNotNone",  # we treat this as an alias for "strEqCI"
     # numeric filters
     "eq",
     "ne",
@@ -103,8 +105,8 @@ NONE_FILTERS = (
     "strNotStartsWithCI",
     "strNotEndsWithCI",
     "notMatchesCI",
-    "isNull",
     "isNotNull",
+    "isNull",
 )
 
 
@@ -139,6 +141,7 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
         These should look like ['col:arg:optionalvalue,...','']
     :path path_params: URL specific arguments, as a convenience
     """
+    ungraphed_stratifier = False
     dp_id = path_params["data_package_id"]
     columns = _get_table_cols(dp_id)
     inline_configs = []
@@ -159,13 +162,16 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
                     params["bound"] = filter_config[2]
                 config_params.append(params)
                 if filter_config[1] in NONE_FILTERS or filter_config[0] != query_params["column"]:
-                    if params.get("bound", "").casefold() == "none":
+                    if params.get("bound", "").casefold() == "none" or filter_config[1] in [
+                        "isNone",
+                        "isNotNone",
+                    ]:
                         params["bound"] = "cumulus__none"
                     none_params.append(params)
                 if filter_config[0] in columns:
                     columns.remove(filter_config[0])
             else:
-                raise errors.AggregatorFilterError(
+                raise errors.AggregatorFilterError(  # pragma: no cover
                     f"Invalid filter type {filter_config[1]} requested."
                 )
         if config_params != []:
@@ -175,7 +181,7 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
     count_col = next((c for c in columns if c.startswith("cnt")), False)
     if count_col:
         columns.remove(count_col)
-    else:
+    else:  # pragma: no cover
         count_col = "cnt"
     # these 'if in' checks is meant to handle the case where the selected column is also
     # present in the filter logic and has already been removed
@@ -183,6 +189,8 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
         columns.remove(query_params["column"])
     if query_params.get("stratifier") in columns:
         columns.remove(query_params["stratifier"])
+    else:
+        ungraphed_stratifier = True
 
     with open(pathlib.Path(__file__).parent / "templates/get_chart_data.sql.jinja") as file:
         template = file.read()
@@ -197,6 +205,7 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
             coalesce_columns=columns,
             inline_configs=inline_configs,
             none_configs=none_configs,
+            ungraphed_stratifier=ungraphed_stratifier,
         )
     return query_str, count_col
 
@@ -295,7 +304,7 @@ def chart_data_handler(event, context):
         )
         res = _format_payload(df, query_params, filter_groups, count_col)
         res = functions.http_response(200, res, alt_log="Chart data succesfully retrieved")
-    except errors.AggregatorS3Error:
+    except errors.AggregatorS3Error:  # pragma: no cover
         # while the API is publicly accessible, we've been asked to not pass
         # helpful error messages back. revisit when dashboard is in AWS.
         res = functions.http_response(
