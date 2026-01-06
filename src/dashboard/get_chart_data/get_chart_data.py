@@ -160,13 +160,12 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
                 params = {"data": filter_config[0], "filter_type": filter_config[1]}
                 if len(filter_config) == 3:
                     params["bound"] = filter_config[2]
-                if filter_config[1] != "isNull":
-                    config_params.append(params)
+                config_params.append(params)
                 if filter_config[1] in NONE_FILTERS or filter_config[0] != query_params["column"]:
-                    if (
-                        params.get("bound", "").casefold() == "none"
-                        or filter_config[1] == "isNotNull"
-                    ):
+                    if params.get("bound", "").casefold() == "none" or filter_config[1] in [
+                        "isNone",
+                        "isNotNone",
+                    ]:
                         params["bound"] = "cumulus__none"
                     none_params.append(params)
                 if filter_config[0] in columns:
@@ -182,7 +181,7 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
     count_col = next((c for c in columns if c.startswith("cnt")), False)
     if count_col:
         columns.remove(count_col)
-    else:
+    else:  # pragma: no cover
         count_col = "cnt"
     # these 'if in' checks is meant to handle the case where the selected column is also
     # present in the filter logic and has already been removed
@@ -305,7 +304,7 @@ def chart_data_handler(event, context):
         )
         res = _format_payload(df, query_params, filter_groups, count_col)
         res = functions.http_response(200, res, alt_log="Chart data succesfully retrieved")
-    except errors.AggregatorS3Error:
+    except errors.AggregatorS3Error:  # pragma: no cover
         # while the API is publicly accessible, we've been asked to not pass
         # helpful error messages back. revisit when dashboard is in AWS.
         res = functions.http_response(

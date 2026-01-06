@@ -137,92 +137,92 @@ def mock_get_table_cols_results(name):
 @pytest.mark.parametrize(
     "query_params,filter_groups,expected",
     [
-        # # filtering on display column
-        # ({"column": "nato"}, ["nato:strEq:alfa"], [("alfa", 50)]),
-        # # General check on joins with non-included columns
-        # ({"column": "nato"}, ["nato:strEq:alfa,greek:strEq:alpha"], [("alfa", 40)]),
-        # ({"column": "nato"}, ["nato:strEq:alfa,greek:strEq:beta"], [("alfa", 10)]),
-        # # filtering on non-included columns only
-        # ({"column": "nato"}, ["greek:strEq:beta"], [("alfa", 10)]),
-        # # checking joins on AND/OR
-        # (
-        #     {"column": "nato"},
-        #     ["greek:strEq:alpha,numeric:eq:2.2", "greek:strEq:beta,numeric:eq:1.1"],
-        #     [("alfa", 20)],
-        # ),
-        # # validating all potential filter types
-        # ## strings
-        # ({"column": "nato"}, ["nato:strEq:bravo"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:strContains:bravo"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:strStartsWith:bravo"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:strEndsWith:bravo"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:matches:bravo"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:strEqCI:bravo"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:strContainsCI:bravo"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:strStartsWithCI:bravo"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:strEndsWithCI:bravo"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:matchesCI:bravo"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:strNotEq:alfa"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:strNotContains:alfa"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:strNotStartsWith:alfa"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:strNotEndsWith:alfa"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:notMatches:alfa"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:strNotEqCI:alfa"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:strNotContainsCI:alfa"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:strNotStartsWithCI:alfa"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:strNotEndsWithCI:alfa"], [("bravo", 10)]),
-        # ({"column": "nato"}, ["nato:notMatchesCI:alfa"], [("bravo", 10)]),
-        # # Date handling
-        # ({"column": "nato"}, ["timestamp:sameDay:2022-02-02"], [("alfa", 10)]),
-        # ({"column": "nato"}, ["timestamp:sameWeek:2022-02-03"], [("alfa", 10)]),
-        # ({"column": "nato"}, ["timestamp:sameMonth:2022-02-21"], [("alfa", 10)]),
-        # ({"column": "nato"}, ["timestamp:sameYear:2022-03-03"], [("alfa", 10)]),
-        # (
-        #     {"column": "nato"},
-        #     ["timestamp:sameDayOrBefore:2022-02-02"],
-        #     [("alfa", 50), ("bravo", 10)],
-        # ),
-        # (
-        #     {"column": "nato"},
-        #     ["timestamp:sameWeekOrBefore:2022-02-03"],
-        #     [("alfa", 50), ("bravo", 10)],
-        # ),
-        # (
-        #     {"column": "nato"},
-        #     ["timestamp:sameMonthOrBefore:2022-02-21"],
-        #     [("alfa", 50), ("bravo", 10)],
-        # ),
-        # (
-        #     {"column": "nato"},
-        #     ["timestamp:sameYearOrBefore:2022-03-03"],
-        #     [("alfa", 50), ("bravo", 10)],
-        # ),
-        # ({"column": "nato"}, ["timestamp:sameDayOrAfter:2022-02-02"], [("alfa", 10)]),
-        # ({"column": "nato"}, ["timestamp:sameWeekOrAfter:2022-02-03"], [("alfa", 10)]),
-        # ({"column": "nato"}, ["timestamp:sameMonthOrAfter:2022-02-21"], [("alfa", 10)]),
-        # ({"column": "nato"}, ["timestamp:sameYearOrAfter:2022-03-03"], [("alfa", 10)]),
-        # ({"column": "nato"}, ["timestamp:beforeDay:2022-02-02"], [("alfa", 40), ("bravo", 10)]),
-        # ({"column": "nato"}, ["timestamp:beforeWeek:2022-02-03"], [("alfa", 40), ("bravo", 10)]),
-        # ({"column": "nato"}, ["timestamp:beforeMonth:2022-02-21"], [("alfa", 40), ("bravo", 10)]),
-        # ({"column": "nato"}, ["timestamp:beforeYear:2022-03-03"], [("alfa", 40), ("bravo", 10)]),
-        # ({"column": "nato"}, ["timestamp:afterDay:2022-02-01"], [("alfa", 10)]),
-        # ({"column": "nato"}, ["timestamp:afterWeek:2022-01-20"], [("alfa", 10)]),
-        # ({"column": "nato"}, ["timestamp:afterMonth:2022-01-01"], [("alfa", 10)]),
-        # ({"column": "nato"}, ["timestamp:afterYear:2021-03-03"], [("alfa", 10)]),
-        # # numeric
-        # ({"column": "nato"}, ["numeric:eq:2.2"], [("alfa", 10)]),
-        # ({"column": "nato"}, ["numeric:ne:1.1"], [("alfa", 10)]),
-        # ({"column": "nato"}, ["numeric:gt:2.1"], [("alfa", 10)]),
-        # ({"column": "nato"}, ["numeric:gte:2.2"], [("alfa", 10)]),
-        # ({"column": "nato"}, ["numeric:lt:2.2"], [("alfa", 40), ("bravo", 10)]),
-        # ({"column": "nato"}, ["numeric:lte:2.2"], [("alfa", 50), ("bravo", 10)]),
-        # # Boolean
-        # ({"column": "nato"}, ["bool:isTrue"], [("alfa", 10)]),
-        # ({"column": "nato"}, ["bool:isNotTrue"], [("alfa", 40), ("bravo", 10)]),
-        # ({"column": "nato"}, ["bool:isNotFalse"], [("alfa", 10)]),
-        # ({"column": "nato"}, ["bool:isFalse"], [("alfa", 40), ("bravo", 10)]),
-        # ({"column": "nato"}, ["bool:isNull"], [("alfa", 50), ("bravo", 10)]),
-        # ({"column": "nato"}, ["bool:isNotNull"], [("alfa", 50), ("bravo", 10)]),
+        # filtering on display column
+        ({"column": "nato"}, ["nato:strEq:alfa"], [("alfa", 50)]),
+        # General check on joins with non-included columns
+        ({"column": "nato"}, ["nato:strEq:alfa,greek:strEq:alpha"], [("alfa", 40)]),
+        ({"column": "nato"}, ["nato:strEq:alfa,greek:strEq:beta"], [("alfa", 10)]),
+        # filtering on non-included columns only
+        ({"column": "nato"}, ["greek:strEq:beta"], [("alfa", 10)]),
+        # checking joins on AND/OR
+        (
+            {"column": "nato"},
+            ["greek:strEq:alpha,numeric:eq:2.2", "greek:strEq:beta,numeric:eq:1.1"],
+            [("alfa", 20)],
+        ),
+        # validating all potential filter types
+        ## strings
+        ({"column": "nato"}, ["nato:strEq:bravo"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:strContains:bravo"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:strStartsWith:bravo"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:strEndsWith:bravo"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:matches:bravo"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:strEqCI:bravo"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:strContainsCI:bravo"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:strStartsWithCI:bravo"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:strEndsWithCI:bravo"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:matchesCI:bravo"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:strNotEq:alfa"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:strNotContains:alfa"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:strNotStartsWith:alfa"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:strNotEndsWith:alfa"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:notMatches:alfa"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:strNotEqCI:alfa"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:strNotContainsCI:alfa"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:strNotStartsWithCI:alfa"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:strNotEndsWithCI:alfa"], [("bravo", 10)]),
+        ({"column": "nato"}, ["nato:notMatchesCI:alfa"], [("bravo", 10)]),
+        # Date handling
+        ({"column": "nato"}, ["timestamp:sameDay:2022-02-02"], [("alfa", 10)]),
+        ({"column": "nato"}, ["timestamp:sameWeek:2022-02-03"], [("alfa", 10)]),
+        ({"column": "nato"}, ["timestamp:sameMonth:2022-02-21"], [("alfa", 10)]),
+        ({"column": "nato"}, ["timestamp:sameYear:2022-03-03"], [("alfa", 10)]),
+        (
+            {"column": "nato"},
+            ["timestamp:sameDayOrBefore:2022-02-02"],
+            [("alfa", 50), ("bravo", 10)],
+        ),
+        (
+            {"column": "nato"},
+            ["timestamp:sameWeekOrBefore:2022-02-03"],
+            [("alfa", 50), ("bravo", 10)],
+        ),
+        (
+            {"column": "nato"},
+            ["timestamp:sameMonthOrBefore:2022-02-21"],
+            [("alfa", 50), ("bravo", 10)],
+        ),
+        (
+            {"column": "nato"},
+            ["timestamp:sameYearOrBefore:2022-03-03"],
+            [("alfa", 50), ("bravo", 10)],
+        ),
+        ({"column": "nato"}, ["timestamp:sameDayOrAfter:2022-02-02"], [("alfa", 10)]),
+        ({"column": "nato"}, ["timestamp:sameWeekOrAfter:2022-02-03"], [("alfa", 10)]),
+        ({"column": "nato"}, ["timestamp:sameMonthOrAfter:2022-02-21"], [("alfa", 10)]),
+        ({"column": "nato"}, ["timestamp:sameYearOrAfter:2022-03-03"], [("alfa", 10)]),
+        ({"column": "nato"}, ["timestamp:beforeDay:2022-02-02"], [("alfa", 40), ("bravo", 10)]),
+        ({"column": "nato"}, ["timestamp:beforeWeek:2022-02-03"], [("alfa", 40), ("bravo", 10)]),
+        ({"column": "nato"}, ["timestamp:beforeMonth:2022-02-21"], [("alfa", 40), ("bravo", 10)]),
+        ({"column": "nato"}, ["timestamp:beforeYear:2022-03-03"], [("alfa", 40), ("bravo", 10)]),
+        ({"column": "nato"}, ["timestamp:afterDay:2022-02-01"], [("alfa", 10)]),
+        ({"column": "nato"}, ["timestamp:afterWeek:2022-01-20"], [("alfa", 10)]),
+        ({"column": "nato"}, ["timestamp:afterMonth:2022-01-01"], [("alfa", 10)]),
+        ({"column": "nato"}, ["timestamp:afterYear:2021-03-03"], [("alfa", 10)]),
+        # numeric
+        ({"column": "nato"}, ["numeric:eq:2.2"], [("alfa", 10)]),
+        ({"column": "nato"}, ["numeric:ne:1.1"], [("alfa", 10)]),
+        ({"column": "nato"}, ["numeric:gt:2.1"], [("alfa", 10)]),
+        ({"column": "nato"}, ["numeric:gte:2.2"], [("alfa", 10)]),
+        ({"column": "nato"}, ["numeric:lt:2.2"], [("alfa", 40), ("bravo", 10)]),
+        ({"column": "nato"}, ["numeric:lte:2.2"], [("alfa", 50), ("bravo", 10)]),
+        # Boolean
+        ({"column": "nato"}, ["bool:isTrue"], [("alfa", 10)]),
+        ({"column": "nato"}, ["bool:isNotTrue"], [("alfa", 40), ("bravo", 10)]),
+        ({"column": "nato"}, ["bool:isNotFalse"], [("alfa", 10)]),
+        ({"column": "nato"}, ["bool:isFalse"], [("alfa", 40), ("bravo", 10)]),
+        ({"column": "nato"}, ["bool:isNull"], [("alfa", 50), ("bravo", 10)]),
+        ({"column": "nato"}, ["bool:isNotNull"], [("alfa", 50), ("bravo", 10)]),
         ({"column": "nato"}, ["greek:isNone"], [("alfa", 5)]),
         ({"column": "nato"}, ["greek:isNotNone"], [("alfa", 50), ("bravo", 10)]),
     ],
@@ -240,7 +240,6 @@ def test_query_results(mock_db, mock_bucket, query_params, filter_groups, expect
         query_params, filter_groups, {"data_package_id": "test__cube__001"}
     )
     res = mock_db.execute(query).fetchall()
-    print(query)
     assert len(res) == len(expected)
     for i in range(0, len(res)):
         assert res[i] == expected[i]
