@@ -1,30 +1,30 @@
 {%- import 'syntax.sql.jinja' as syntax -%}
 {%- import 'filter_inline.sql.jinja' as inline -%}
 SELECT 
-    {%- if stratifier_column and not ungraphed_stratifier%}
+{%- if stratifier_column and not ungraphed_stratifier %}
         "{{ stratifier_column }}",
     {%- endif %}
     "{{ data_column }}"
     {%- if count_columns %},{%- endif %}
-    {%- for column in count_columns %}
+{%- for column in count_columns %}
     {%- if ungraphed_stratifier %}
-    sum("{{ column }}") AS '{{ column }}'
+        sum("{{ column }}") AS '{{ column }}'
     {%- else %}
     "{{ column }}"
     {%- endif %}
-    {{ syntax.comma_delineate(loop) }}
-    {%- endfor %}
+{{ syntax.comma_delineate(loop) }}
+{%- endfor %}
 FROM "{{ schema }}"."{{ data_package_id }}"
 WHERE
-    {%- if coalesce_columns %} COALESCE(
+    {%- if coalesce_columns %} coalesce(
         {%- for column in coalesce_columns %}
-            CAST("{{ column }}" AS VARCHAR){{ syntax.comma_delineate(loop) }} 
+            cast("{{ column }}" AS VARCHAR){{ syntax.comma_delineate(loop) }} 
         {%- endfor %}
     ) IS NULL
     AND{%- endif %} "{{ data_column }}" IS NOT NULL
     AND (
         (
-            CAST("{{ data_column }}" AS VARCHAR) != 'cumulus__none'
+            cast("{{ data_column }}" AS VARCHAR) != 'cumulus__none'
             {%- if inline_configs|length > 0 %}
                 AND
                 (
@@ -33,7 +33,7 @@ WHERE
             {%- endif %}
         )
         OR (
-            CAST("{{ data_column }}" AS VARCHAR) = 'cumulus__none'
+            cast("{{ data_column }}" AS VARCHAR) = 'cumulus__none'
             {%- if none_configs|length > 0 %}
                 AND
                 (
@@ -45,12 +45,12 @@ WHERE
     {%- if stratifier_column %}
         AND "{{ stratifier_column }}" IS NOT NULL
     {%- endif %}
-    {%- if ungraphed_stratifier %}
-GROUP BY "{{ data_column }}"
-    {%- endif %}
+{%- if ungraphed_stratifier %}
+    GROUP BY "{{ data_column }}"
+{%- endif %}
 ORDER BY
     {%- if stratifier_column and not ungraphed_stratifier %}
         "{{ stratifier_column }}", "{{ data_column }}"
     {%- else %}
-    "{{ data_column }}"
+        "{{ data_column }}"
     {%- endif %}

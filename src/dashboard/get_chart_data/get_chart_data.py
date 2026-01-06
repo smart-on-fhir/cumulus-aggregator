@@ -70,8 +70,8 @@ INLINE_FILTERS = (
     # null filters (one param only)
     "isNull",
     "isNotNull",
-    "isNone",
-    "isNotNone",
+    "isNone",  # we treat this as an alias for "strEqCI"
+    "isNotNone",  # we treat this as an alias for "strEqCI"
     # numeric filters
     "eq",
     "ne",
@@ -105,10 +105,8 @@ NONE_FILTERS = (
     "strNotStartsWithCI",
     "strNotEndsWithCI",
     "notMatchesCI",
-    "isNull",
     "isNotNull",
-    "isNone",
-    "isNotNone",
+    "isNull",
 )
 
 
@@ -162,9 +160,13 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
                 params = {"data": filter_config[0], "filter_type": filter_config[1]}
                 if len(filter_config) == 3:
                     params["bound"] = filter_config[2]
-                config_params.append(params)
+                if filter_config[1] != "isNull":
+                    config_params.append(params)
                 if filter_config[1] in NONE_FILTERS or filter_config[0] != query_params["column"]:
-                    if params.get("bound", "").casefold() == "none":
+                    if (
+                        params.get("bound", "").casefold() == "none"
+                        or filter_config[1] == "isNotNull"
+                    ):
                         params["bound"] = "cumulus__none"
                     none_params.append(params)
                 if filter_config[0] in columns:
