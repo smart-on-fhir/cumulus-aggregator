@@ -171,7 +171,7 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
                 if filter_config[0] in columns:
                     columns.remove(filter_config[0])
             else:
-                raise errors.AggregatorFilterError(
+                raise errors.AggregatorFilterError(  # pragma: no cover
                     f"Invalid filter type {filter_config[1]} requested."
                 )
         if config_params != []:
