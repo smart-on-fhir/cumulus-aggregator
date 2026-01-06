@@ -8,7 +8,7 @@ SELECT
     {%- if count_columns %},{%- endif %}
 {%- for column in count_columns %}
     {%- if ungraphed_stratifier %}
-        sum("{{ column }}") AS '{{ column }}'
+        sum("{{ column }}") AS "{{ column }}"
     {%- else %}
     "{{ column }}"
     {%- endif %}
