@@ -1,7 +1,7 @@
 {%- import 'syntax.sql.jinja' as syntax -%}
 {%- import 'filter_inline.sql.jinja' as inline -%}
 SELECT 
-{%- if stratifier_column %}
+    {%- if stratifier_column %}
         "{{ stratifier_column }}",
     {%- endif %}
     "{{ data_column }}"
