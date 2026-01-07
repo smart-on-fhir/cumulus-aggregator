@@ -59,7 +59,6 @@ def mock_data_frame(query_params, filter_groups):
 def test_format_payload(query_params, filter_groups, expected_payload):
     df = mock_data_frame(query_params, filter_groups)
     payload = get_chart_data._format_payload(df, query_params, filter_groups, "cnt")
-    print(payload)
     assert payload == expected_payload
 
 
@@ -97,48 +96,112 @@ def test_get_data_cols_err(mock_client):
         get_chart_data._get_table_cols(table_id)
 
 
-@mock.patch(
-    "src.dashboard.get_chart_data.get_chart_data._build_query",
-    lambda query_params, filter_groups, path_params: (
+@pytest.mark.parametrize(
+    "event,expected",
+    [
         (
-            "SELECT gender, sum(cnt) as cnt"
-            f'FROM "{TEST_GLUE_DB}"."test_study" '
-            "WHERE COALESCE (race) IS NOT NULL AND gender IS NOT NULL "
-            "AND gender LIKE 'female' "
-            "GROUP BY gender",
-            "cnt",
-        )
-    ),
+            {
+                "queryStringParameters": {"column": "nato"},
+                "multiValueQueryStringParameters": {},
+                "pathParameters": {"data_package_id": "test__cube__001"},
+            },
+            {
+                "column": "nato",
+                "filters": [],
+                "rowCount": 2,
+                "totalCount": 60,
+                "data": [{"rows": [["alfa", 50.0], ["bravo", 10.0]]}],
+            },
+        ),
+        (
+            {
+                "queryStringParameters": {"column": "nato"},
+                "multiValueQueryStringParameters": {"filter": ["greek:strEq:alpha"]},
+                "pathParameters": {"data_package_id": "test__cube__001"},
+            },
+            {
+                "column": "nato",
+                "filters": ["greek:strEq:alpha"],
+                "rowCount": 2,
+                "totalCount": 50,
+                "data": [{"rows": [["alfa", 40.0], ["bravo", 10.0]]}],
+            },
+        ),
+        (
+            {
+                "queryStringParameters": {"column": "nato", "stratifier": "bool"},
+                "multiValueQueryStringParameters": {},
+                "pathParameters": {"data_package_id": "test__cube__001"},
+            },
+            {
+                "column": "nato",
+                "filters": [],
+                "rowCount": 3,
+                "totalCount": 60,
+                "stratifier": "bool",
+                "counts": {"alfa": 50, "bravo": 10},
+                "data": [
+                    {"stratifier": "False", "rows": [["alfa", 40], ["bravo", 10]]},
+                    {"stratifier": "True", "rows": [["alfa", 10]]},
+                ],
+            },
+        ),
+        (
+            {
+                "queryStringParameters": {"column": "nato", "stratifier": "bool"},
+                "multiValueQueryStringParameters": {"filter": ["greek:strEq:alpha"]},
+                "pathParameters": {"data_package_id": "test__cube__001"},
+            },
+            {
+                "column": "nato",
+                "filters": ["greek:strEq:alpha"],
+                "rowCount": 3,
+                "totalCount": 50,
+                "stratifier": "bool",
+                "counts": {"alfa": 40.0, "bravo": 10.0},
+                "data": [
+                    {"stratifier": "False", "rows": [["alfa", 30.0], ["bravo", 10.0]]},
+                    {"stratifier": "True", "rows": [["alfa", 10.0]]},
+                ],
+            },
+        ),
+        (
+            {
+                "queryStringParameters": {"column": "nato", "stratifier": "bool"},
+                "multiValueQueryStringParameters": {"filter": ["greek:strEq:alpha,numeric:eq:1.1"]},
+                "pathParameters": {"data_package_id": "test__cube__001"},
+            },
+            {
+                "column": "nato",
+                "filters": ["greek:strEq:alpha,numeric:eq:1.1"],
+                "rowCount": 3,
+                "totalCount": 40,
+                "stratifier": "bool",
+                "counts": {"alfa": 30.0, "bravo": 10.0},
+                "data": [
+                    {"stratifier": "False", "rows": [["alfa", 20.0], ["bravo", 10.0]]},
+                    {"stratifier": "True", "rows": [["alfa", 10.0]]},
+                ],
+            },
+        ),
+    ],
 )
+@mock.patch("src.dashboard.get_chart_data.get_chart_data._get_table_cols")
 @mock.patch(
-    "awswrangler.athena.read_sql_query",
-    lambda query, database, s3_output, workgroup: pandas.DataFrame(
-        data={"gender": ["male", "female"], "cnt": [10, 10]}
-    ),
+    "awswrangler.athena",
 )
-def test_handler():
-    event = {
-        "queryStringParameters": {"column": "gender"},
-        "multiValueQueryStringParameters": {"filter": ["gender:strEq:female"]},
-        "pathParameters": {},
-    }
+def test_handler(mock_athena, mock_get_cols, mock_db, mock_bucket, event, expected):
+    file = "./tests/test_data/mock_cube_col_types.parquet"
+    mock_db.execute(f'CREATE TABLE test__cube__001 AS SELECT * FROM read_parquet("{file}")')
+
+    def mock_read(query, database, s3_output, workgroup):
+        return mock_db.execute(query.replace(TEST_GLUE_DB, "main")).df()
+
+    mock_athena.read_sql_query = mock_read
+    mock_get_cols.return_value = list(pandas.read_parquet(file).columns)
+
     res = get_chart_data.chart_data_handler(event, {})
-    assert res["body"] == (
-        '{"column": "gender", "filters": ["gender:strEq:female"], '
-        '"rowCount": 2, "totalCount": 20, "data": [{"rows": [["male", 10], '
-        '["female", 10]]}]}'
-    )
-    event = {
-        "queryStringParameters": {"column": "gender", "filter": "gender:strEq:female"},
-        "multiValueQueryStringParameters": {},
-        "pathParameters": {},
-    }
-    res = get_chart_data.chart_data_handler(event, {})
-    assert res["body"] == (
-        '{"column": "gender", "filters": ["gender:strEq:female"], '
-        '"rowCount": 2, "totalCount": 20, "data": [{"rows": [["male", 10], '
-        '["female", 10]]}]}'
-    )
+    assert json.loads(res["body"]) == expected
 
 
 def mock_get_table_cols_results(name):
@@ -162,7 +225,7 @@ def mock_get_table_cols_results(name):
             [("alfa", 20)],
         ),
         # validating all potential filter types
-        ## strings
+        # strings
         ({"column": "nato"}, ["nato:strEq:bravo"], [("bravo", 10)]),
         ({"column": "nato"}, ["nato:strContains:bravo"], [("bravo", 10)]),
         ({"column": "nato"}, ["nato:strStartsWith:bravo"], [("bravo", 10)]),

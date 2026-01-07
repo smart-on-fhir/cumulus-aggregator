@@ -141,7 +141,7 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
         These should look like ['col:arg:optionalvalue,...','']
     :path path_params: URL specific arguments, as a convenience
     """
-    ungraphed_stratifier = False
+    ungraphed_filter = False
     dp_id = path_params["data_package_id"]
     columns = _get_table_cols(dp_id)
     inline_configs = []
@@ -168,8 +168,8 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
                     ]:
                         params["bound"] = "cumulus__none"
                     none_params.append(params)
-                if filter_config[0] in columns:
-                    columns.remove(filter_config[0])
+                if filter_config[0] not in [query_params["column"], query_params.get("stratifier")]:
+                    ungraphed_filter = True
             else:
                 raise errors.AggregatorFilterError(  # pragma: no cover
                     f"Invalid filter type {filter_config[1]} requested."
@@ -189,8 +189,10 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
         columns.remove(query_params["column"])
     if query_params.get("stratifier") in columns:
         columns.remove(query_params["stratifier"])
-    else:
-        ungraphed_stratifier = True
+    for filter_group in filter_groups:
+        for filter_config in filter_group.split(","):
+            filter_col = filter_config.split(":")[0]
+            columns.remove(filter_col) if filter_col in columns else None
 
     with open(pathlib.Path(__file__).parent / "templates/get_chart_data.sql.jinja") as file:
         template = file.read()
@@ -205,7 +207,7 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
             coalesce_columns=columns,
             inline_configs=inline_configs,
             none_configs=none_configs,
-            ungraphed_stratifier=ungraphed_stratifier,
+            ungraphed_filter=ungraphed_filter,
         )
     return query_str, count_col
 
@@ -257,26 +259,25 @@ def _format_payload(
                 ) or pandas.api.types.is_bool_dtype(df.dtypes[column]):
                     df[column] = df[column].astype("string")
         # check if strats in df
-        if query_params["stratifier"] in df.columns:
-            stratifiers = df[query_params["stratifier"]].unique()
-            df = df.groupby([query_params["stratifier"], query_params["column"]]).agg(
-                {count_col: ["sum"]}
-            )
-            for stratifier in stratifiers:
-                # We have a multiindex dataframe here, so we're going to get the slice
-                # corresponding to the individual stratifier. The second part of the index
-                # contains all our data labels. We'll then join the index and the values
-                # into a list of two element lists for the dashboard payload
-                df_slice = df.loc[stratifier, :]
-                df_slice = [df_slice.columns.tolist()], *df_slice.reset_index().values.tolist()
+        stratifiers = df[query_params["stratifier"]].unique()
+        df = df.groupby([query_params["stratifier"], query_params["column"]]).agg(
+            {count_col: ["sum"]}
+        )
+        for stratifier in stratifiers:
+            # We have a multiindex dataframe here, so we're going to get the slice
+            # corresponding to the individual stratifier. The second part of the index
+            # contains all our data labels. We'll then join the index and the values
+            # into a list of two element lists for the dashboard payload
+            df_slice = df.loc[stratifier, :]
+            df_slice = [df_slice.columns.tolist()], *df_slice.reset_index().values.tolist()
 
-                data.append(
-                    {
-                        "stratifier": stratifier,
-                        # The first element here is columns of the dataframe, which we don't need
-                        "rows": list(df_slice[1:]),
-                    }
-                )
+            data.append(
+                {
+                    "stratifier": stratifier,
+                    # The first element here is columns of the dataframe, which we don't need
+                    "rows": list(df_slice[1:]),
+                }
+            )
         payload["data"] = data
     else:
         rows = df.values.tolist()

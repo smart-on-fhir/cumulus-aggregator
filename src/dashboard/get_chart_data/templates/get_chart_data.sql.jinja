@@ -1,13 +1,13 @@
 {%- import 'syntax.sql.jinja' as syntax -%}
 {%- import 'filter_inline.sql.jinja' as inline -%}
 SELECT 
-{%- if stratifier_column and not ungraphed_stratifier %}
+{%- if stratifier_column %}
         "{{ stratifier_column }}",
     {%- endif %}
     "{{ data_column }}"
     {%- if count_columns %},{%- endif %}
 {%- for column in count_columns %}
-    {%- if ungraphed_stratifier %}
+    {%- if ungraphed_filter %}
         sum("{{ column }}") AS "{{ column }}"
     {%- else %}
     "{{ column }}"
@@ -45,11 +45,15 @@ WHERE
     {%- if stratifier_column %}
         AND "{{ stratifier_column }}" IS NOT NULL
     {%- endif %}
-{%- if ungraphed_stratifier %}
-    GROUP BY "{{ data_column }}"
+{%- if ungraphed_filter %}
+    {%- if stratifier_column %}
+        GROUP BY "{{ stratifier_column }}", "{{ data_column }}"
+    {%- else %}
+        GROUP BY "{{ data_column }}"
+    {%- endif %}
 {%- endif %}
 ORDER BY
-    {%- if stratifier_column and not ungraphed_stratifier %}
+    {%- if stratifier_column %}
         "{{ stratifier_column }}", "{{ data_column }}"
     {%- else %}
         "{{ data_column }}"
