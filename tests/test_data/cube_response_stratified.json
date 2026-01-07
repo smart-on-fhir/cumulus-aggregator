@@ -1,13 +1,13 @@
 {
-    "column": "gender",
+    "column": "nato",
     "filters": [],
-    "rowCount": 15,
-    "totalCount": 151974,
-    "stratifier": "race",
+    "rowCount": 113,
+    "totalCount": 1925,
+    "stratifier": "bool",
     "counts": {
-        "": 75987,
-        "male": 42148,
-        "female": 33839
+        "": 960,
+        "alfa": 805,
+        "bravo": 160
     },
     "data": [
         {
@@ -15,90 +15,45 @@
             "rows": [
                 [
                     "",
-                    37990
+                    480
                 ],
                 [
-                    "female",
-                    16917
-                    
+                    "alfa",
+                    405
                 ],
                 [
-                    "male",
-                    21073
-
+                    "bravo",
+                    80
                 ]
             ]
         },
         {
-            "stratifier": "White",
+            "stratifier": "false",
             "rows": [
                 [
                     "",
-                    32392
+                    400
                 ],
                 [
-                    "female",
-                    14105
-                    
+                    "alfa",
+                    320
                 ],
                 [
-                    "male",
-                    18287
-
+                    "bravo",
+                    80
                 ]
             ]
         },
         {
-            "stratifier": "Black or African American",
+            "stratifier": "true",
             "rows": [
                 [
                     "",
-                    3870
+                    80
                 ],
                 [
-                    "female",
-                    2055
-                    
-                ],
-                [
-                    "male",
-                    1815
-
-                ]
-            ]
-        },
-        {
-            "stratifier": "Asian",
-            "rows": [
-                [
-                    "",
-                    1675
-                ],
-                [
-                    "female",
-                    735
-                ],
-                [
-                    "male",
-                    940
-                ]
-            ]
-        },
-        {
-            "stratifier": "American Indian or Alaska Native",
-            "rows": [
-                [
-                    "",
-                    60
-
-                ],
-                [
-                    "female",
-                    27
-                ],
-                [
-                    "male",
-                    33
+                    "alfa",
+                    80
                 ]
             ]
         }
