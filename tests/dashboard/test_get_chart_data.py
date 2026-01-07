@@ -115,8 +115,8 @@ def test_get_data_cols_err(mock_client):
         ),
         (
             {
-                "queryStringParameters": {"column": "nato"},
-                "multiValueQueryStringParameters": {"filter": ["greek:strEq:alpha"]},
+                "queryStringParameters": {"column": "nato", "filter": "greek:strEq:alpha"},
+                "multiValueQueryStringParameters": {},
                 "pathParameters": {"data_package_id": "test__cube__001"},
             },
             {
