@@ -1,57 +1,61 @@
 {
-    "column": "gender",
+    "column": "nato",
     "filters": [
-        "gender:strEq:female"
+        "greek:strEq:alpha"
     ],
-    "rowCount": 5,
-    "totalCount": 33839,
-    "stratifier": "race",
+    "rowCount": 48,
+    "totalCount": 800,
+    "stratifier": "bool",
     "counts": {
-        "female": 33839
+        "": 400,
+        "alfa": 320,
+        "bravo": 80
     },
     "data": [
         {
             "stratifier": "",
             "rows": [
                 [
-                    "female",
-                    16917
+                    "",
+                    200
+                ],
+                [
+                    "alfa",
+                    160
+                ],
+                [
+                    "bravo",
+                    40
                 ]
             ]
         },
         {
-            "stratifier": "White",
+            "stratifier": "false",
             "rows": [
                 [
-                    "female",
-                    14105
+                    "",
+                    160
+                ],
+                [
+                    "alfa",
+                    120
+                ],
+                [
+                    "bravo",
+                    40
                 ]
             ]
         },
         {
-            "stratifier": "Black or African American",
+            "stratifier": "true",
             "rows": [
                 [
-                    "female",
-                    2055
-                ]
-            ]
-        },
-        {
-            "stratifier": "Asian",
-            "rows": [
+                    "",
+                    40
+                ],
                 [
-                    "female",
-                    735
-                ]
-            ]
-        },
-        {
-            "stratifier": "American Indian or Alaska Native",
-            "rows": [
-                [
-                    "female",
-                    27
+                    "alfa",
+                    40
                 ]
             ]
         }

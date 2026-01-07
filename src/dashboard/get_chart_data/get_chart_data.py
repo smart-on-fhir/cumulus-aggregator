@@ -249,34 +249,35 @@ def _format_payload(
         #   after adding `cumulus_none`
         # - Booleans being converted to strings after adding `cumulus_none`
         for column in [query_params["column"], query_params["stratifier"]]:
-            if pandas.api.types.is_datetime64_ns_dtype(df.dtypes[column]):
-                df[column] = df[column].dt.strftime("%Y-%m-%d")
-            elif pandas.api.types.is_object_dtype(
-                df.dtypes[column]
-            ) or pandas.api.types.is_bool_dtype(df.dtypes[column]):
-                df[column] = df[column].astype("string")
-
-        stratifiers = df[query_params["stratifier"]].unique()
-        df = df.groupby([query_params["stratifier"], query_params["column"]]).agg(
-            {count_col: ["sum"]}
-        )
-        for stratifier in stratifiers:
-            # We have a multiindex dataframe here, so we're going to get the slice
-            # corresponding to the individual stratifier. The second part of the index
-            # contains all our data labels. We'll then join the index and the values
-            # into a list of two element lists for the dashboard payload
-            df_slice = df.loc[stratifier, :]
-            df_slice = [df_slice.columns.tolist()], *df_slice.reset_index().values.tolist()
-
-            data.append(
-                {
-                    "stratifier": stratifier,
-                    # The first element here is the columns of the dataframe, which we don't need
-                    "rows": list(df_slice[1:]),
-                }
+            if column in df.columns:
+                if pandas.api.types.is_datetime64_ns_dtype(df.dtypes[column]):
+                    df[column] = df[column].dt.strftime("%Y-%m-%d")
+                elif pandas.api.types.is_object_dtype(
+                    df.dtypes[column]
+                ) or pandas.api.types.is_bool_dtype(df.dtypes[column]):
+                    df[column] = df[column].astype("string")
+        # check if strats in df
+        if query_params["stratifier"] in df.columns:
+            stratifiers = df[query_params["stratifier"]].unique()
+            df = df.groupby([query_params["stratifier"], query_params["column"]]).agg(
+                {count_col: ["sum"]}
             )
-        payload["data"] = data
+            for stratifier in stratifiers:
+                # We have a multiindex dataframe here, so we're going to get the slice
+                # corresponding to the individual stratifier. The second part of the index
+                # contains all our data labels. We'll then join the index and the values
+                # into a list of two element lists for the dashboard payload
+                df_slice = df.loc[stratifier, :]
+                df_slice = [df_slice.columns.tolist()], *df_slice.reset_index().values.tolist()
 
+                data.append(
+                    {
+                        "stratifier": stratifier,
+                        # The first element here is columns of the dataframe, which we don't need
+                        "rows": list(df_slice[1:]),
+                    }
+                )
+        payload["data"] = data
     else:
         rows = df.values.tolist()
         payload["data"] = [{"rows": rows}]

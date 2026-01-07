@@ -1,37 +1,204 @@
 {
-    "column": "gender",
+    "column": "nato",
     "filters": [
-        "gender:strEq:female"
+        "greek:strEq:alpha"
     ],
-    "rowCount": 5,
-    "totalCount": 33839,
+    "rowCount": 48,
+    "totalCount": 800,
     "data": [
         {
             "rows": [
                 [
-                    16917,
-                    "female",
+                    50,
                     ""
                 ],
                 [
-                    14105,
-                    "female",
-                    "White"
+                    40,
+                    ""
                 ],
                 [
-                    2055,
-                    "female",
-                    "Black or African American"
+                    40,
+                    "alfa"
                 ],
                 [
-                    735,
-                    "female",
-                    "Asian"
+                    40,
+                    ""
                 ],
                 [
-                    27,
-                    "female",
-                    "American Indian or Alaska Native"
+                    40,
+                    ""
+                ],
+                [
+                    30,
+                    ""
+                ],
+                [
+                    30,
+                    "alfa"
+                ],
+                [
+                    30,
+                    "alfa"
+                ],
+                [
+                    30,
+                    ""
+                ],
+                [
+                    30,
+                    "alfa"
+                ],
+                [
+                    30,
+                    ""
+                ],
+                [
+                    20,
+                    "alfa"
+                ],
+                [
+                    20,
+                    "alfa"
+                ],
+                [
+                    20,
+                    "alfa"
+                ],
+                [
+                    20,
+                    ""
+                ],
+                [
+                    10,
+                    ""
+                ],
+                [
+                    10,
+                    "bravo"
+                ],
+                [
+                    10,
+                    "alfa"
+                ],
+                [
+                    10,
+                    "alfa"
+                ],
+                [
+                    10,
+                    ""
+                ],
+                [
+                    10,
+                    "alfa"
+                ],
+                [
+                    10,
+                    ""
+                ],
+                [
+                    10,
+                    "bravo"
+                ],
+                [
+                    10,
+                    "alfa"
+                ],
+                [
+                    10,
+                    ""
+                ],
+                [
+                    10,
+                    "bravo"
+                ],
+                [
+                    10,
+                    "alfa"
+                ],
+                [
+                    10,
+                    ""
+                ],
+                [
+                    10,
+                    "bravo"
+                ],
+                [
+                    10,
+                    "alfa"
+                ],
+                [
+                    10,
+                    "alfa"
+                ],
+                [
+                    10,
+                    "alfa"
+                ],
+                [
+                    10,
+                    ""
+                ],
+                [
+                    10,
+                    "bravo"
+                ],
+                [
+                    10,
+                    "alfa"
+                ],
+                [
+                    10,
+                    "alfa"
+                ],
+                [
+                    10,
+                    "alfa"
+                ],
+                [
+                    10,
+                    ""
+                ],
+                [
+                    10,
+                    ""
+                ],
+                [
+                    10,
+                    ""
+                ],
+                [
+                    10,
+                    ""
+                ],
+                [
+                    10,
+                    "bravo"
+                ],
+                [
+                    10,
+                    "bravo"
+                ],
+                [
+                    10,
+                    "alfa"
+                ],
+                [
+                    10,
+                    "alfa"
+                ],
+                [
+                    10,
+                    ""
+                ],
+                [
+                    10,
+                    ""
+                ],
+                [
+                    10,
+                    "bravo"
                 ]
             ]
         }

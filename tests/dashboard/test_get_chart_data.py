@@ -14,10 +14,20 @@ from tests.mock_utils import (
 )
 
 
-def mock_data_frame(filter_param):
-    df = pandas.read_csv("tests/test_data/cube_simple_example.csv", na_filter=False)
-    if filter_param != []:
-        df = df[df["gender"] == "female"]
+def mock_data_frame(query_params, filter_groups):
+    df = pandas.read_csv("tests/test_data/mock_cube_col_types.csv", na_filter=False)
+    expected_columns = {query_params["column"], "cnt"}
+    if "stratifier" in query_params:
+        expected_columns.add(query_params["stratifier"])
+    if filter_groups != []:
+        # for purposes of mocking, we are assuming filters are of an equality comparison type
+        for filter_param in filter_groups:
+            filter_param = filter_param.split(":")
+            df = df[df[filter_param[0]] == filter_param[2]]
+    for column in df.columns:
+        if column not in expected_columns:
+            df = df.loc[df[column].notnull()]
+            df = df.drop([column], axis=1)
     return df
 
 
@@ -25,30 +35,31 @@ def mock_data_frame(filter_param):
     "query_params,filter_groups,expected_payload",
     [
         (
-            {"column": "gender"},
+            {"column": "nato"},
             [],
             json.load(open("tests/test_data/cube_response.json")),
         ),
         (
-            {"column": "gender", "stratifier": "race"},
+            {"column": "nato", "stratifier": "bool"},
             [],
             json.load(open("tests/test_data/cube_response_stratified.json")),
         ),
         (
-            {"column": "gender"},
-            ["gender:strEq:female"],
+            {"column": "nato"},
+            ["greek:strEq:alpha"],
             json.load(open("tests/test_data/cube_response_filtered.json")),
         ),
         (
-            {"column": "gender", "stratifier": "race"},
-            ["gender:strEq:female"],
+            {"column": "nato", "stratifier": "bool"},
+            ["greek:strEq:alpha"],
             json.load(open("tests/test_data/cube_response_filtered_stratified.json")),
         ),
     ],
 )
 def test_format_payload(query_params, filter_groups, expected_payload):
-    df = mock_data_frame(filter_groups)
+    df = mock_data_frame(query_params, filter_groups)
     payload = get_chart_data._format_payload(df, query_params, filter_groups, "cnt")
+    print(payload)
     assert payload == expected_payload
 
 
