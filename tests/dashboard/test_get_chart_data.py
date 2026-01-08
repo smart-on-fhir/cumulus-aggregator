@@ -185,6 +185,27 @@ def test_get_data_cols_err(mock_client):
                 ],
             },
         ),
+        (
+            {
+                "queryStringParameters": {"column": "nato", "stratifier": "bool"},
+                "multiValueQueryStringParameters": {
+                    "filter": ["greek:strEq:alpha", "numeric:eq:1.1"]
+                },
+                "pathParameters": {"data_package_id": "test__cube__001"},
+            },
+            {
+                "column": "nato",
+                "filters": ["greek:strEq:alpha", "numeric:eq:1.1"],
+                "rowCount": 3,
+                "totalCount": 160,
+                "stratifier": "bool",
+                "counts": {"alfa": 130.0, "bravo": 30.0},
+                "data": [
+                    {"stratifier": "False", "rows": [["alfa", 100.0], ["bravo", 30.0]]},
+                    {"stratifier": "True", "rows": [["alfa", 30.0]]},
+                ],
+            },
+        ),
         # `cumulus__none` filtering cases
         (
             {
@@ -265,6 +286,7 @@ def test_handler(mock_athena, mock_get_cols, mock_db, mock_bucket, event, expect
     mock_athena.read_sql_query = mock_read
     mock_get_cols.return_value = list(pandas.read_parquet(file).columns)
     res = get_chart_data.chart_data_handler(event, {})
+    print(res)
     assert json.loads(res["body"]) == expected
 
 

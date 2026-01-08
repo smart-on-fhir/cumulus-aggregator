@@ -10,421 +10,364 @@ import pytest
         # Checking individual conversions
         (
             ["col:strEq:str"],
-            """
-        (
-            CAST("col" AS VARCHAR) LIKE 'str'
-                    )""",
+            """ (
+                    CAST("col" AS VARCHAR) LIKE 'str'
+                )""",
         ),
         (
             ["col:strContains:str"],
-            """
-        (
-            CAST("col" AS VARCHAR) LIKE '%str%'
-                    )""",
+            """ (
+                    CAST("col" AS VARCHAR) LIKE '%str%'
+                )""",
         ),
         (
             ["col:strStartsWith:str"],
-            """
-        (
-            CAST("col" AS VARCHAR) LIKE 'str%'
-                    )""",
+            """ (
+                    CAST("col" AS VARCHAR) LIKE 'str%'
+                )""",
         ),
         (
             ["col:strEndsWith:str"],
-            """
-        (
-            CAST("col" AS VARCHAR) LIKE '%str'
-                    )""",
+            """ (
+                    CAST("col" AS VARCHAR) LIKE '%str'
+                )""",
         ),
         (
             ["col:matches:str"],
-            """
-        (
-            regexp_like(CAST("col" AS VARCHAR), 'str')
-                    )""",
+            """ (
+                    regexp_like(CAST("col" AS VARCHAR), 'str')
+                )""",
         ),
         (
             ["col:strEqCI:str"],
-            """
-        (
-            regexp_like(CAST("col" AS VARCHAR), '(?i)^str$')
-                    )""",
+            """ (
+                    regexp_like(CAST("col" AS VARCHAR), '(?i)^str$')
+                )""",
         ),
         (
             ["col:strContainsCI:str"],
-            """
-        (
-            regexp_like(CAST("col" AS VARCHAR), '(?i)str')
-                    )""",
+            """ (
+                    regexp_like(CAST("col" AS VARCHAR), '(?i)str')
+                )""",
         ),
         (
             ["col:strStartsWithCI:str"],
-            """
-        (
-            regexp_like(CAST("col" AS VARCHAR), '(?i)^str')
-                    )""",
+            """ (
+                    regexp_like(CAST("col" AS VARCHAR), '(?i)^str')
+                )""",
         ),
         (
             ["col:strEndsWithCI:str"],
-            """
-        (
-            regexp_like(CAST("col" AS VARCHAR), '(?i)str$')
-                    )""",
+            """ (
+                    regexp_like(CAST("col" AS VARCHAR), '(?i)str$')
+                )""",
         ),
         (
             ["col:matchesCI:str"],
-            """
-        (
-            regexp_like(CAST("col" AS VARCHAR), '(?i)str')
-                    )""",
+            """ (
+                    regexp_like(CAST("col" AS VARCHAR), '(?i)str')
+                )""",
         ),
         (
             ["col:strNotEq:str"],
-            """
-        (
-            CAST("col" AS VARCHAR) NOT LIKE 'str'
-                    )""",
+            """ (
+                    CAST("col" AS VARCHAR) NOT LIKE 'str'
+                )""",
         ),
         (
             ["col:strNotContains:str"],
-            """
-        (
-            CAST("col" AS VARCHAR) NOT LIKE '%str%'
-                    )""",
+            """ (
+                    CAST("col" AS VARCHAR) NOT LIKE '%str%'
+                )""",
         ),
         (
             ["col:strNotStartsWith:str"],
-            """
-        (
-            CAST("col" AS VARCHAR) NOT LIKE 'str%'
-                    )""",
+            """ (
+                    CAST("col" AS VARCHAR) NOT LIKE 'str%'
+                )""",
         ),
         (
             ["col:strNotEndsWith:str"],
-            """
-        (
-            CAST("col" AS VARCHAR) NOT LIKE '%str'
-                    )""",
+            """ (
+                    CAST("col" AS VARCHAR) NOT LIKE '%str'
+                )""",
         ),
         (
             ["col:notMatches:str"],
-            """
-        (
-            NOT regexp_like(CAST("col" AS VARCHAR), 'str')
-                    )""",
+            """ (
+                    NOT regexp_like(CAST("col" AS VARCHAR), 'str')
+                )""",
         ),
         (
             ["col:strNotEqCI:str"],
-            """
-        (
-            NOT regexp_like(CAST("col" AS VARCHAR), '(?i)^str$')
-                    )""",
+            """ (
+                    NOT regexp_like(CAST("col" AS VARCHAR), '(?i)^str$')
+                )""",
         ),
         (
             ["col:strNotContainsCI:str"],
-            """
-        (
-            NOT regexp_like(CAST("col" AS VARCHAR), '(?i)str')
-                    )""",
+            """ (
+                    NOT regexp_like(CAST("col" AS VARCHAR), '(?i)str')
+                )""",
         ),
         (
             ["col:strNotStartsWithCI:str"],
-            """
-        (
-            NOT regexp_like(CAST("col" AS VARCHAR), '(?i)^str')
-                    )""",
+            """ (
+                    NOT regexp_like(CAST("col" AS VARCHAR), '(?i)^str')
+                )""",
         ),
         (
             ["col:strNotEndsWithCI:str"],
-            """
-        (
-            NOT regexp_like(CAST("col" AS VARCHAR), '(?i)str$')
-                    )""",
+            """ (
+                    NOT regexp_like(CAST("col" AS VARCHAR), '(?i)str$')
+                )""",
         ),
         (
             ["col:notMatchesCI:str"],
-            """
-        (
-            NOT regexp_like(CAST("col" AS VARCHAR), '(?i)str')
-                    )""",
+            """ (
+                    NOT regexp_like(CAST("col" AS VARCHAR), '(?i)str')
+                )""",
         ),
         (
             ["col:eq:10.2"],
-            """
-        (
-            "col" = 10.2
-                    )""",
+            """ (
+                    "col" = 10.2
+                )""",
         ),
         (
             ["col:ne:10.2"],
-            """
-        (
-            "col" != 10.2
-                    )""",
+            """ (
+                    "col" != 10.2
+                )""",
         ),
         (
             ["col:gt:10.2"],
-            """
-        (
-            "col" > 10.2
-                    )""",
+            """ (
+                    "col" > 10.2
+                )""",
         ),
         (
             ["col:gte:10.2"],
-            """
-        (
-            "col" >= 10.2
-                    )""",
+            """ (
+                    "col" >= 10.2
+                )""",
         ),
         (
             ["col:lt:10.2"],
-            """
-        (
-            "col" < 10.2
-                    )""",
+            """ (
+                    "col" < 10.2
+                )""",
         ),
         (
             ["col:lte:10.2"],
-            """
-        (
-            "col" <= 10.2
-                    )""",
+            """ (
+                    "col" <= 10.2
+                )""",
         ),
         (
             ["col:isTrue"],
-            """
-        (
-            "col" IS TRUE AND "col" IS NOT NULL
-                    )""",
+            """ (
+                    "col" IS TRUE AND "col" IS NOT NULL
+                )""",
         ),
         (
             ["col:isNotTrue"],
-            """
-        (
-            "col" IS NOT TRUE AND "col" IS NOT NULL
-                    )""",
+            """ (
+                    "col" IS NOT TRUE AND "col" IS NOT NULL
+                )""",
         ),
         (
             ["col:isFalse"],
-            """
-        (
-            "col" IS FALSE AND "col" IS NOT NULL
-                    )""",
+            """ (
+                    "col" IS FALSE AND "col" IS NOT NULL
+                )""",
         ),
         (
             ["col:isNotFalse"],
-            """
-        (
-            "col" IS NOT FALSE AND "col" IS NOT NULL
-                    )""",
+            """ (
+                    "col" IS NOT FALSE AND "col" IS NOT NULL
+                )""",
         ),
         (
             ["col:isNull"],
-            """
-        (
-            "col" IS NULL
-                    )""",
+            """ (
+                    "col" IS NULL
+                )""",
         ),
         (
             ["col:isNotNull"],
-            """
-        (
-            "col" IS NOT NULL
-                    )""",
+            """ (
+                    "col" IS NOT NULL
+                )""",
         ),
         (
             ["column:sameDay:1900-01-01"],
-            """
-        (
-            from_iso8601_timestamp("column") = """
+            """ (
+                    from_iso8601_timestamp("column") = """
             """date_trunc('day',from_iso8601_timestamp('1900-01-01'))
-                    )""",
+                )""",
         ),
         (
             ["column:sameWeek:1900-01-01"],
-            """
-        (
-            date_trunc('week',from_iso8601_timestamp("column")) = """
+            """ (
+                    date_trunc('week',from_iso8601_timestamp("column")) = """
             """date_trunc('week',from_iso8601_timestamp('1900-01-01'))
-                    )""",
+                )""",
         ),
         (
             ["column:sameMonth:1900-01-01"],
-            """
-        (
-            date_trunc('month',from_iso8601_timestamp("column")) = """
+            """ (
+                    date_trunc('month',from_iso8601_timestamp("column")) = """
             """date_trunc('month',from_iso8601_timestamp('1900-01-01'))
-                    )""",
+                )""",
         ),
         (
             ["column:sameYear:1900-01-01"],
-            """
-        (
-            date_trunc('year',from_iso8601_timestamp("column")) = """
+            """ (
+                    date_trunc('year',from_iso8601_timestamp("column")) = """
             """date_trunc('year',from_iso8601_timestamp('1900-01-01'))
-                    )""",
+                )""",
         ),
         (
             ["column:sameDayOrBefore:1900-01-01"],
-            """
-        (
-            from_iso8601_timestamp("column") <= """
+            """ (
+                    from_iso8601_timestamp("column") <= """
             """date_trunc('day',from_iso8601_timestamp('1900-01-01'))
-                    )""",
+                )""",
         ),
         (
             ["column:sameWeekOrBefore:1900-01-01"],
-            """
-        (
-            date_trunc('week',from_iso8601_timestamp("column")) <= """
+            """ (
+                    date_trunc('week',from_iso8601_timestamp("column")) <= """
             """date_trunc('week',from_iso8601_timestamp('1900-01-01'))
-                    )""",
+                )""",
         ),
         (
             ["column:sameMonthOrBefore:1900-01-01"],
             (
-                """
-        (
-            date_trunc('month',from_iso8601_timestamp("column")) <= """
+                """ (
+                    date_trunc('month',from_iso8601_timestamp("column")) <= """
                 """date_trunc('month',from_iso8601_timestamp('1900-01-01'))
-                    )"""
+                )"""
             ),
         ),
         (
             ["column:sameYearOrBefore:1900-01-01"],
-            """
-        (
-            date_trunc('year',from_iso8601_timestamp("column")) <= """
+            """ (
+                    date_trunc('year',from_iso8601_timestamp("column")) <= """
             """date_trunc('year',from_iso8601_timestamp('1900-01-01'))
-                    )""",
+                )""",
         ),
         (
             ["column:sameDayOrAfter:1900-01-01"],
-            """
-        (
-            from_iso8601_timestamp("column") >= """
+            """ (
+                    from_iso8601_timestamp("column") >= """
             """date_trunc('day',from_iso8601_timestamp('1900-01-01'))
-                    )""",
+                )""",
         ),
         (
             ["column:sameWeekOrAfter:1900-01-01"],
-            """
-        (
-            date_trunc('week',from_iso8601_timestamp("column")) >= """
+            """ (
+                    date_trunc('week',from_iso8601_timestamp("column")) >= """
             """date_trunc('week',from_iso8601_timestamp('1900-01-01'))
-                    )""",
+                )""",
         ),
         (
             ["column:sameMonthOrAfter:1900-01-01"],
             (
-                """
-        (
-            date_trunc('month',from_iso8601_timestamp("column")) >= """
+                """ (
+                    date_trunc('month',from_iso8601_timestamp("column")) >= """
                 """date_trunc('month',from_iso8601_timestamp('1900-01-01'))
-                    )"""
+                )"""
             ),
         ),
         (
             ["column:sameYearOrAfter:1900-01-01"],
-            """
-        (
-            date_trunc('year',from_iso8601_timestamp("column")) >= """
+            """ (
+                    date_trunc('year',from_iso8601_timestamp("column")) >= """
             """date_trunc('year',from_iso8601_timestamp('1900-01-01'))
-                    )""",
+                )""",
         ),
         (
             ["column:beforeDay:1900-01-01"],
-            """
-        (
-            from_iso8601_timestamp("column") < """
+            """ (
+                    from_iso8601_timestamp("column") < """
             """date_trunc('day',from_iso8601_timestamp('1900-01-01'))
-                    )""",
+                )""",
         ),
         (
             ["column:beforeWeek:1900-01-01"],
-            """
-        (
-            date_trunc('week',from_iso8601_timestamp("column")) < """
+            """ (
+                    date_trunc('week',from_iso8601_timestamp("column")) < """
             """date_trunc('week',from_iso8601_timestamp('1900-01-01'))
-                    )""",
+                )""",
         ),
         (
             ["column:beforeMonth:1900-01-01"],
-            """
-        (
-            date_trunc('month',from_iso8601_timestamp("column")) < """
+            """ (
+                    date_trunc('month',from_iso8601_timestamp("column")) < """
             """date_trunc('month',from_iso8601_timestamp('1900-01-01'))
-                    )""",
+                )""",
         ),
         (
             ["column:beforeYear:1900-01-01"],
-            """
-        (
-            date_trunc('year',from_iso8601_timestamp("column")) < """
+            """ (
+                    date_trunc('year',from_iso8601_timestamp("column")) < """
             """date_trunc('year',from_iso8601_timestamp('1900-01-01'))
-                    )""",
+                )""",
         ),
         (
             ["column:afterDay:1900-01-01"],
-            """
-        (
-            from_iso8601_timestamp("column") > """
+            """ (
+                    from_iso8601_timestamp("column") > """
             """date_trunc('day',from_iso8601_timestamp('1900-01-01'))
-                    )""",
+                )""",
         ),
         (
             ["column:afterWeek:1900-01-01"],
-            """
-        (
-            date_trunc('week',from_iso8601_timestamp("column")) > """
+            """ (
+                    date_trunc('week',from_iso8601_timestamp("column")) > """
             """date_trunc('week',from_iso8601_timestamp('1900-01-01'))
-                    )""",
+                )""",
         ),
         (
             ["column:afterMonth:1900-01-01"],
-            """
-        (
-            date_trunc('month',from_iso8601_timestamp("column")) > """
+            """ (
+                    date_trunc('month',from_iso8601_timestamp("column")) > """
             """date_trunc('month',from_iso8601_timestamp('1900-01-01'))
-                    )""",
+                )""",
         ),
         (
             ["column:afterYear:1900-01-01"],
-            """
-        (
-            date_trunc('year',from_iso8601_timestamp("column")) > """
+            """ (
+                    date_trunc('year',from_iso8601_timestamp("column")) > """
             """date_trunc('year',from_iso8601_timestamp('1900-01-01'))
-                    )""",
+                )""",
         ),
         # Checking compound statements
         (
             ["col:strEq:str", "col:strEqCI:str"],
-            """
-        (
-            CAST("col" AS VARCHAR) LIKE 'str'
-                    )
-        OR (
-            regexp_like(CAST("col" AS VARCHAR), '(?i)^str$')
-                    )""",
+            """ (
+                    CAST("col" AS VARCHAR) LIKE 'str'
+                )OR  (
+                    regexp_like(CAST("col" AS VARCHAR), '(?i)^str$')
+                )""",
         ),
         (
             ["col:strEq:str,col:strEqCI:str"],
-            """
-        (
-            CAST("col" AS VARCHAR) LIKE 'str'
-            AND regexp_like(CAST("col" AS VARCHAR), '(?i)^str$')
-                    )""",
+            """ (
+                    CAST("col" AS VARCHAR) LIKE 'str'
+                    AND regexp_like(CAST("col" AS VARCHAR), '(?i)^str$')
+                )""",
         ),
         (
             ["col:strEq:str", "col:strEq:str,col:strEqCI:str"],
-            """
-        (
-            CAST("col" AS VARCHAR) LIKE 'str'
-                    )
-        OR (
-            CAST("col" AS VARCHAR) LIKE 'str'
-            AND regexp_like(CAST("col" AS VARCHAR), '(?i)^str$')
-                    )""",
+            """ (
+                    CAST("col" AS VARCHAR) LIKE 'str'
+                )OR  (
+                    CAST("col" AS VARCHAR) LIKE 'str'
+                    AND regexp_like(CAST("col" AS VARCHAR), '(?i)^str$')
+                )""",
         ),
     ],
 )
