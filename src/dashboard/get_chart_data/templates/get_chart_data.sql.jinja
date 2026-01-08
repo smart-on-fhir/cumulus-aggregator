@@ -22,28 +22,31 @@ WHERE
         {%- endfor %}
     ) IS NULL
     AND{%- endif %} "{{ data_column }}" IS NOT NULL
-    AND (
-        (
-            cast("{{ data_column }}" AS VARCHAR) != 'cumulus__none'
+    AND ( -- is {{ is_not_none }}, none {{ is_none }}
+        {%- if is_none is false %}
+            (
+                cast("{{ data_column }}" AS VARCHAR) != 'cumulus__none'
             {%- if inline_configs|length > 0 %}
                 AND
-                (
-                    {{ inline.get_filters(inline_configs) }}
-                )
+                {{- inline.get_filters(inline_configs) }}
             {%- endif %}
-        )
-        OR (
-            cast("{{ data_column }}" AS VARCHAR) = 'cumulus__none'
-            {%- if none_configs|length > 0 %}
+            )
+            {%- if is_not_none is false %}
+        OR
+            {%- endif %}
+        {%- endif %}
+        {%- if is_not_none is false %}
+            (
+                cast("{{ data_column }}" AS VARCHAR) = 'cumulus__none'
+                {%- if none_configs|length > 0 %}
                 AND
-                (
-                    {{ inline.get_filters(none_configs) }}
-                )
-            {%- endif %}
-        )
+                    {{- inline.get_filters(none_configs) }}
+                {%- endif %}
+            )
+        {%- endif %}
     )
     {%- if stratifier_column %}
-        AND "{{ stratifier_column }}" IS NOT NULL
+    AND "{{ stratifier_column }}" IS NOT NULL
     {%- endif %}
 {%- if ungraphed_filter %}
     {%- if stratifier_column %}

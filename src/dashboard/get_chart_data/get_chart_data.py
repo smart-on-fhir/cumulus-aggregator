@@ -142,6 +142,8 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
     :path path_params: URL specific arguments, as a convenience
     """
     ungraphed_filter = False
+    is_none = False
+    is_not_none = False
     dp_id = path_params["data_package_id"]
     columns = _get_table_cols(dp_id)
     inline_configs = []
@@ -156,6 +158,10 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
         none_params = []
         for filter_config in filter_group:
             filter_config = filter_config.split(":")
+            if filter_config[1] == "isNone" and filter_config[0] == query_params["column"]:
+                is_none = True
+            elif filter_config[1] == "isNotNone" and filter_config[0] == query_params["column"]:
+                is_not_none = True
             if filter_config[1] in INLINE_FILTERS:
                 params = {"data": filter_config[0], "filter_type": filter_config[1]}
                 if len(filter_config) == 3:
@@ -208,6 +214,8 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
             inline_configs=inline_configs,
             none_configs=none_configs,
             ungraphed_filter=ungraphed_filter,
+            is_none=is_none,
+            is_not_none=is_not_none,
         )
     return query_str, count_col
 

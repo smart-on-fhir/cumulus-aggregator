@@ -59,6 +59,7 @@ def mock_data_frame(query_params, filter_groups):
 def test_format_payload(query_params, filter_groups, expected_payload):
     df = mock_data_frame(query_params, filter_groups)
     payload = get_chart_data._format_payload(df, query_params, filter_groups, "cnt")
+    print(payload)
     assert payload == expected_payload
 
 
@@ -184,6 +185,70 @@ def test_get_data_cols_err(mock_client):
                 ],
             },
         ),
+        # `cumulus__none` filtering cases
+        (
+            {
+                "queryStringParameters": {"column": "greek"},
+                "multiValueQueryStringParameters": {"filter": ["greek:isNotNone"]},
+                "pathParameters": {"data_package_id": "test__cube__001"},
+            },
+            {
+                "column": "greek",
+                "filters": ["greek:isNotNone"],
+                "rowCount": 2,
+                "totalCount": 60,
+                "data": [{"rows": [["alpha", 50], ["beta", 10]]}],
+            },
+        ),
+        (
+            {
+                "queryStringParameters": {"column": "greek"},
+                "multiValueQueryStringParameters": {"filter": ["greek:isNone"]},
+                "pathParameters": {"data_package_id": "test__cube__001"},
+            },
+            {
+                "column": "greek",
+                "filters": ["greek:isNone"],
+                "rowCount": 1,
+                "totalCount": 5,
+                "data": [{"rows": [["cumulus__none", 5]]}],
+            },
+        ),
+        (
+            {
+                "queryStringParameters": {"column": "nato", "stratifier": "greek"},
+                "multiValueQueryStringParameters": {"filter": ["greek:isNotNone"]},
+                "pathParameters": {"data_package_id": "test__cube__001"},
+            },
+            {
+                "column": "nato",
+                "filters": ["greek:isNotNone"],
+                "rowCount": 3,
+                "totalCount": 60,
+                "stratifier": "greek",
+                "counts": {"alfa": 50, "bravo": 10},
+                "data": [
+                    {"stratifier": "alpha", "rows": [["alfa", 40], ["bravo", 10]]},
+                    {"stratifier": "beta", "rows": [["alfa", 10]]},
+                ],
+            },
+        ),
+        (
+            {
+                "queryStringParameters": {"column": "nato", "stratifier": "greek"},
+                "multiValueQueryStringParameters": {"filter": ["greek:isNone"]},
+                "pathParameters": {"data_package_id": "test__cube__001"},
+            },
+            {
+                "column": "nato",
+                "filters": ["greek:isNone"],
+                "rowCount": 1,
+                "totalCount": 5,
+                "stratifier": "greek",
+                "counts": {"alfa": 5},
+                "data": [{"stratifier": "cumulus__none", "rows": [["alfa", 5]]}],
+            },
+        ),
     ],
 )
 @mock.patch("src.dashboard.get_chart_data.get_chart_data._get_table_cols")
@@ -199,7 +264,6 @@ def test_handler(mock_athena, mock_get_cols, mock_db, mock_bucket, event, expect
 
     mock_athena.read_sql_query = mock_read
     mock_get_cols.return_value = list(pandas.read_parquet(file).columns)
-
     res = get_chart_data.chart_data_handler(event, {})
     assert json.loads(res["body"]) == expected
 

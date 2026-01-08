@@ -8,7 +8,9 @@ exclude_rules=
     structure.column_order,
     aliasing.unused,
     # this rule interferes with FHIR naming conventions
-    capitalisation.identifiers
+    capitalisation.identifiers,
+    # Sqlfluff just can't handle the nesting, the current format is most readable by humans
+    layout.indent
 max_line_length = 90
 
 [sqlfluff:rules:layout.long_lines]
@@ -28,6 +30,8 @@ count_columns=['cnt']
 schema='schema'
 data_package_id='study__table__001'
 coalesce_columns=['baz','foobar']
+is_none = False
+is_not_none= False
 inline_configs=[
         [
             {'data':'foo','type': 'matches': 'a'},

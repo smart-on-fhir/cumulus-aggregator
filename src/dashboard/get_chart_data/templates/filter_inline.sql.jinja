@@ -126,10 +126,10 @@ NOT regexp_like(CAST("{{ data }}" AS VARCHAR), '(?i)^cumulus__none$')
 
 {%- macro get_filters(aggregate_configs) -%}
     {%- for configs in aggregate_configs %}
-        {{ syntax.or_delineate(loop) }}(
+        {{- syntax.or_delineate(loop) }} (
         {%- for config in configs %}
-            {{ syntax.and_delineate(loop) }}{{ render_filter(config['data'],config['filter_type'],config['bound']) }}
+                    {{ syntax.and_delineate(loop) }}{{ render_filter(config['data'],config['filter_type'],config['bound']) }}
         {%- endfor %}
-                    )
+                )
     {%- endfor -%}
 {%- endmacro -%}
