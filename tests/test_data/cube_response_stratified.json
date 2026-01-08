@@ -1,11 +1,11 @@
 {
     "column": "nato",
     "filters": [],
-    "rowCount": 113,
-    "totalCount": 1925,
+    "rowCount": 114,
+    "totalCount": 1930,
     "stratifier": "bool",
     "counts": {
-        "": 960,
+        "": 965,
         "alfa": 805,
         "bravo": 160
     },
@@ -15,7 +15,7 @@
             "rows": [
                 [
                     "",
-                    480
+                    485
                 ],
                 [
                     "alfa",

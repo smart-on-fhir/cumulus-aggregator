@@ -1,8 +1,8 @@
 {
     "column": "nato",
     "filters": [],
-    "rowCount": 113,
-    "totalCount": 1925,
+    "rowCount": 114,
+    "totalCount": 1930,
     "data": [
         {
             "rows": [
@@ -457,6 +457,10 @@
                 [
                     5,
                     "alfa"
+                ],
+                [
+                    5,
+                    ""
                 ]
             ]
         }
