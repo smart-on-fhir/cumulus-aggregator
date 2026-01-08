@@ -22,7 +22,7 @@ WHERE
         {%- endfor %}
     ) IS NULL
     AND{%- endif %} "{{ data_column }}" IS NOT NULL
-    AND ( -- is {{ is_not_none }}, none {{ is_none }}
+    AND (
         {%- if is_none is false %}
             (
                 cast("{{ data_column }}" AS VARCHAR) != 'cumulus__none'
