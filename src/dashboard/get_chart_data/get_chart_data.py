@@ -11,7 +11,7 @@ import boto3
 import jinja2
 import pandas
 
-from shared import decorators, enums, errors, functions
+from shared import enums, errors, functions
 
 log_level = os.environ.get("LAMBDA_LOG_LEVEL", "INFO")
 logger = logging.getLogger()
@@ -134,7 +134,9 @@ def _get_table_cols(dp_id: str) -> list:
     raise errors.AggregatorS3Error
 
 
-def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> str:
+def _build_query(
+    query_params: dict, filter_groups: list, path_params: dict, ignore_stratifier: bool = False
+) -> str:
     """Creates a query from the dashboard API spec
     :arg queryparams: All arguments passed to the endpoint
     :arg filter_groups: Filter params used to generate filtering logic.
@@ -193,20 +195,24 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
     # present in the filter logic and has already been removed
     if query_params.get("column") in columns:
         columns.remove(query_params["column"])
-    if query_params.get("stratifier") in columns:
+    if query_params.get("stratifier") in columns and not ignore_stratifier:
         columns.remove(query_params["stratifier"])
     for filter_group in filter_groups:
         for filter_config in filter_group.split(","):
             filter_col = filter_config.split(":")[0]
             columns.remove(filter_col) if filter_col in columns else None
 
+    if query_params.get("stratifier") and not ignore_stratifier:
+        stratifier_column = query_params["stratifier"]
+    else:
+        stratifier_column = None
     with open(pathlib.Path(__file__).parent / "templates/get_chart_data.sql.jinja") as file:
         template = file.read()
         loader = jinja2.FileSystemLoader(pathlib.Path(__file__).parent / "templates/")
         env = jinja2.Environment(loader=loader).from_string(template)  # noqa: S701
         query_str = env.render(
             data_column=query_params.get("column"),
-            stratifier_column=query_params.get("stratifier", None),
+            stratifier_column=stratifier_column,
             count_columns=[count_col],
             schema=os.environ.get("GLUE_DB_NAME"),
             data_package_id=path_params["data_package_id"],
@@ -221,7 +227,11 @@ def _build_query(query_params: dict, filter_groups: list, path_params: dict) -> 
 
 
 def _format_payload(
-    df: pandas.DataFrame, query_params: dict, filter_groups: list, count_col: str
+    df: pandas.DataFrame,
+    total_df: pandas.DataFrame | None,
+    query_params: dict,
+    filter_groups: list,
+    count_col: str,
 ) -> dict:
     """Coerces query results into the return format defined by the dashboard
 
@@ -233,16 +243,16 @@ def _format_payload(
     payload["column"] = query_params["column"]
     payload["filters"] = filter_groups
     payload["rowCount"] = int(df.shape[0])
-    payload["totalCount"] = int(df["cnt"].sum())
+
     if "stratifier" in query_params.keys():
         payload["stratifier"] = query_params["stratifier"]
 
-        counts = df.groupby(query_params["column"]).agg({count_col: ["sum"]})
+        counts = total_df.groupby(query_params["column"]).agg({count_col: ["sum"]})
         # If the column index is a numpy type, json serialization breaks,
         # so let's convert it to a python primitive
         counts.index = counts.index.astype(str)
         payload["counts"] = counts.to_dict()[(count_col, "sum")]
-
+        payload["totalCount"] = int(counts["cnt"].sum())
         data = []
 
         # We are combining two values into a pandas index. This means that we've got
@@ -290,11 +300,11 @@ def _format_payload(
     else:
         rows = df.values.tolist()
         payload["data"] = [{"rows": rows}]
-
+        payload["totalCount"] = int(df["cnt"].sum())
     return payload
 
 
-@decorators.generic_error_handler(msg="Error retrieving chart data")
+# @decorators.generic_error_handler(msg="Error retrieving chart data")
 def chart_data_handler(event, context):
     """manages event from dashboard api call and retrieves data"""
     del context
@@ -305,14 +315,33 @@ def chart_data_handler(event, context):
     path_params = event["pathParameters"]
     boto3.setup_default_session(region_name="us-east-1")
     try:
-        query, count_col = _build_query(query_params, filter_groups, path_params)
+        main_query, count_col = _build_query(query_params, filter_groups, path_params)
         df = awswrangler.athena.read_sql_query(
-            query,
+            main_query,
             database=os.environ.get("GLUE_DB_NAME"),
             s3_output=f"s3://{os.environ.get('BUCKET_NAME')}/awswrangler",
             workgroup=os.environ.get("WORKGROUP_NAME"),
+            ctas_approach=False,
         )
-        res = _format_payload(df, query_params, filter_groups, count_col)
+        # If we have a stratifier, we want to run a second query to get the non-stratified
+        # values, which can then be used for calculating accurate percentages in the case
+        # where the stratifier allows the counted resource to be present in more than
+        # one stratification, and would thus inflate the total count if we calculated it
+        # directly from the stratified query
+        if "stratifier" in query_params.keys():
+            col_total_query, _ = _build_query(
+                query_params, filter_groups, path_params, ignore_stratifier=True
+            )
+            total_df = awswrangler.athena.read_sql_query(
+                col_total_query,
+                database=os.environ.get("GLUE_DB_NAME"),
+                s3_output=f"s3://{os.environ.get('BUCKET_NAME')}/awswrangler",
+                workgroup=os.environ.get("WORKGROUP_NAME"),
+                ctas_approach=False,
+            )
+        else:
+            total_df = None
+        res = _format_payload(df, total_df, query_params, filter_groups, count_col)
         res = functions.http_response(200, res, alt_log="Chart data succesfully retrieved")
     except errors.AggregatorS3Error:  # pragma: no cover
         # while the API is publicly accessible, we've been asked to not pass
