@@ -359,7 +359,7 @@ def test_integration(
 
     # We'll approximate a sql query by slicing and returning unique values from
     # the post_process df
-    def _parse_select(query, database, s3_output, workgroup):
+    def _parse_select(query, database, s3_output, workgroup, ctas_approach=True):
         def _clean_col(col):
             # if we're aggregating for a case with filters for cols outside of
             # the charted columns, just return the column alias

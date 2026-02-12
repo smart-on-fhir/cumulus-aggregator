@@ -11,7 +11,7 @@ import boto3
 import jinja2
 import pandas
 
-from shared import enums, errors, functions
+from shared import decorators, enums, errors, functions
 
 log_level = os.environ.get("LAMBDA_LOG_LEVEL", "INFO")
 logger = logging.getLogger()
@@ -252,7 +252,7 @@ def _format_payload(
         # so let's convert it to a python primitive
         counts.index = counts.index.astype(str)
         payload["counts"] = counts.to_dict()[(count_col, "sum")]
-        payload["totalCount"] = int(counts["cnt"].sum())
+        payload["totalCount"] = int(counts["cnt"].sum().iloc[0])
         data = []
 
         # We are combining two values into a pandas index. This means that we've got
@@ -304,7 +304,7 @@ def _format_payload(
     return payload
 
 
-# @decorators.generic_error_handler(msg="Error retrieving chart data")
+@decorators.generic_error_handler(msg="Error retrieving chart data")
 def chart_data_handler(event, context):
     """manages event from dashboard api call and retrieves data"""
     del context
