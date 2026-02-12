@@ -58,7 +58,11 @@ def mock_data_frame(query_params, filter_groups):
 )
 def test_format_payload(query_params, filter_groups, expected_payload):
     df = mock_data_frame(query_params, filter_groups)
-    payload = get_chart_data._format_payload(df, query_params, filter_groups, "cnt")
+    if "stratifier" in query_params:
+        total_df = mock_data_frame({"column": "nato"}, filter_groups)
+    else:
+        total_df = None
+    payload = get_chart_data._format_payload(df, total_df, query_params, filter_groups, "cnt")
     print(payload)
     assert payload == expected_payload
 
@@ -74,7 +78,7 @@ def test_format_payload_date_coercion():
             "cnt": [20, 15],
         }
     )
-    payload = get_chart_data._format_payload(df, {"column": "a", "stratifier": "b"}, [], "cnt")
+    payload = get_chart_data._format_payload(df, df, {"column": "a", "stratifier": "b"}, [], "cnt")
     assert payload["data"] == [{"stratifier": "2020-01-01", "rows": [["C", 20], ["D", 15]]}]
 
 
@@ -138,9 +142,9 @@ def test_get_data_cols_err(mock_client):
                 "column": "nato",
                 "filters": [],
                 "rowCount": 3,
-                "totalCount": 60,
+                "totalCount": 120,
                 "stratifier": "bool",
-                "counts": {"alfa": 50, "bravo": 10},
+                "counts": {"alfa": 100, "bravo": 20},
                 "data": [
                     {"stratifier": "False", "rows": [["alfa", 40], ["bravo", 10]]},
                     {"stratifier": "True", "rows": [["alfa", 10]]},
@@ -157,9 +161,9 @@ def test_get_data_cols_err(mock_client):
                 "column": "nato",
                 "filters": ["greek:strEq:alpha"],
                 "rowCount": 3,
-                "totalCount": 50,
+                "totalCount": 100,
                 "stratifier": "bool",
-                "counts": {"alfa": 40.0, "bravo": 10.0},
+                "counts": {"alfa": 80.0, "bravo": 20.0},
                 "data": [
                     {"stratifier": "False", "rows": [["alfa", 30.0], ["bravo", 10.0]]},
                     {"stratifier": "True", "rows": [["alfa", 10.0]]},
@@ -176,9 +180,9 @@ def test_get_data_cols_err(mock_client):
                 "column": "nato",
                 "filters": ["greek:strEq:alpha,numeric:eq:1.1"],
                 "rowCount": 3,
-                "totalCount": 40,
+                "totalCount": 80,
                 "stratifier": "bool",
-                "counts": {"alfa": 30.0, "bravo": 10.0},
+                "counts": {"alfa": 60.0, "bravo": 20.0},
                 "data": [
                     {"stratifier": "False", "rows": [["alfa", 20.0], ["bravo", 10.0]]},
                     {"stratifier": "True", "rows": [["alfa", 10.0]]},
@@ -197,9 +201,9 @@ def test_get_data_cols_err(mock_client):
                 "column": "nato",
                 "filters": ["greek:strEq:alpha", "numeric:eq:1.1"],
                 "rowCount": 3,
-                "totalCount": 160,
+                "totalCount": 320,
                 "stratifier": "bool",
-                "counts": {"alfa": 130.0, "bravo": 30.0},
+                "counts": {"alfa": 260.0, "bravo": 60.0},
                 "data": [
                     {"stratifier": "False", "rows": [["alfa", 100.0], ["bravo", 30.0]]},
                     {"stratifier": "True", "rows": [["alfa", 30.0]]},
@@ -280,13 +284,12 @@ def test_handler(mock_athena, mock_get_cols, mock_db, mock_bucket, event, expect
     file = "./tests/test_data/mock_cube_col_types.parquet"
     mock_db.execute(f'CREATE TABLE test__cube__001 AS SELECT * FROM read_parquet("{file}")')
 
-    def mock_read(query, database, s3_output, workgroup):
+    def mock_read(query, database, s3_output, workgroup, ctas_approach):
         return mock_db.execute(query.replace(TEST_GLUE_DB, "main")).df()
 
     mock_athena.read_sql_query = mock_read
     mock_get_cols.return_value = list(pandas.read_parquet(file).columns)
     res = get_chart_data.chart_data_handler(event, {})
-    print(res)
     assert json.loads(res["body"]) == expected
 
 
