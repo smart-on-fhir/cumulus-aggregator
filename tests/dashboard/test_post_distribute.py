@@ -6,7 +6,7 @@ from unittest import mock
 
 import pytest
 import responses
-from freezegun import freeze_time
+import time_machine
 
 from src.dashboard.post_distribute import post_distribute
 
@@ -45,7 +45,7 @@ from src.dashboard.post_distribute import post_distribute
     ],
 )
 @responses.activate
-@freeze_time("2020-01-01")
+@time_machine.travel("2020-01-01", tick=False)
 def test_process_github(mock_notification, tmp_path, name, url, tag, expected_status, monkeypatch):
     responses.add(responses.GET, "https://github.com/smart-on-fhir/test_study", status=200)
     responses.add(responses.GET, "https://github.com/smart-on-fhir/test_study/tree/tag", status=200)

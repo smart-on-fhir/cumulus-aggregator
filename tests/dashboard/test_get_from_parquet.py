@@ -5,7 +5,7 @@ from unittest import mock
 
 import boto3
 import pytest
-from freezegun import freeze_time
+import time_machine
 
 from src.dashboard.get_from_parquet import get_from_parquet
 from tests.mock_utils import MOCK_ENV, TEST_BUCKET
@@ -27,7 +27,7 @@ S3_PATH = f"s3://{TEST_BUCKET}/{S3_KEY}"
 S3_TEMP_PATH = f"https://{TEST_BUCKET}.s3.amazonaws.com/"
 
 
-@freeze_time("2020-01-01")
+@time_machine.travel("2020-01-01", tick=False)
 @pytest.mark.parametrize(
     "target,payload_type,code,length,first,last,schema",
     [

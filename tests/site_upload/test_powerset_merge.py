@@ -6,7 +6,7 @@ import awswrangler
 import boto3
 import pandas
 import pytest
-from freezegun import freeze_time
+import time_machine
 from pandas import read_parquet
 
 from src.shared import enums, functions
@@ -14,7 +14,7 @@ from src.site_upload.powerset_merge import powerset_merge
 from tests import mock_utils
 
 
-@freeze_time("2020-01-01")
+@time_machine.travel("2020-01-01", tick=False)
 @pytest.mark.parametrize(
     "upload_file,study,site,data_package,version,filename,archives,duplicates,status,expected_contents,expected_rows,first_row,last_row",
     [
@@ -271,7 +271,7 @@ def test_powerset_merge_single_upload(
         assert "column_types_format_version" in c_updates[study][data_package][dp_id].keys()
 
 
-@freeze_time("2020-01-01")
+@time_machine.travel("2020-01-01", tick=False)
 @pytest.mark.parametrize(
     "upload_file,archives,expected_errors",
     [
