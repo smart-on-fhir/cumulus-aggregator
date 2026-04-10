@@ -1,11 +1,10 @@
 import json
 import time
-from datetime import datetime
 from unittest import mock
 
 import boto3
 import pandas
-from freezegun import freeze_time
+import time_machine
 
 from src.shared import enums, functions
 from src.site_upload.check_if_complete import check_if_complete
@@ -62,7 +61,7 @@ def delete_transaction():
     s3_client.delete_object(Bucket=mock_utils.TEST_BUCKET, Key=transaction_key)
 
 
-@freeze_time("2020-01-01 12:00:00")
+@time_machine.travel("2020-01-01 12:00:00+00:00", tick=False)
 @mock.patch("src.site_upload.check_if_complete.check_if_complete.sleep", returns=time.sleep(1))
 def test_check_if_complete(mock_wait, mock_bucket, mock_notification, mock_glue):
     s3_client = boto3.client("s3", region_name="us-east-1")
@@ -90,7 +89,7 @@ def test_check_if_complete(mock_wait, mock_bucket, mock_notification, mock_glue)
                         }
                     ),
                     "TopicArn": mock_utils.TEST_COMPLETENESS_ARN,
-                    "Timestamp": datetime.now().isoformat(),
+                    "Timestamp": "2020-01-01 11:59:00+00:00",
                 },
             }
         ]
@@ -102,23 +101,23 @@ def test_check_if_complete(mock_wait, mock_bucket, mock_notification, mock_glue)
 
     # Upload a prior run of a study, but without the columns metadata - this function as
     # if a study has never been crawled before
-    with freeze_time("2019-12-12"):
+    with time_machine.travel("2019-12-12 12:00+00:00", tick=False):
         for file in transaction["cube"]:
             upload_file(file, mock_utils.EXISTING_VERSION, s3_client)
     res = check_if_complete.check_if_complete_handler(event, {})
     assert res["body"] == '"Processing not completed"'
 
     # one aggregate has finished, but another has not
-    with freeze_time("2020-01-01 12:01:00"):
+    with time_machine.travel("2020-01-01 12:01:00+00:00", tick=False):
         upload_file(transaction["cube"][0], mock_utils.EXISTING_VERSION, s3_client)
     res = check_if_complete.check_if_complete_handler(event, {})
     assert res["body"] == '"Processing not completed"'
 
     # All aggregates have finished, they are not in the db, so kick off a crawl
-    with freeze_time("2020-01-01 12:01:00"):
+    with time_machine.travel("2020-01-01 12:01:00+00:00", tick=False):
         for file in transaction["cube"] + transaction["flat"]:
             upload_file(file, mock_utils.EXISTING_VERSION, s3_client)
-    with freeze_time("2020-01-01 12:02:00"):
+    with time_machine.travel("2020-01-01 12:02:00+00:00", tick=False):
         with mock.patch("awswrangler.athena.read_sql_query") as query:
             query.return_value = pandas.DataFrame(data={"table_name": []})
             res = check_if_complete.check_if_complete_handler(event, {})
@@ -131,7 +130,7 @@ def test_check_if_complete(mock_wait, mock_bucket, mock_notification, mock_glue)
 
     # Throw an error when the crawler is stuck in the running state.
     reset_state(s3_client, transaction)
-    with freeze_time("2020-01-01 12:02:00"):
+    with time_machine.travel("2020-01-01 12:02:00+00:00", tick=False):
         with mock.patch("awswrangler.athena.read_sql_query") as query:
             query.return_value = pandas.DataFrame(data={"table_name": []})
             res = check_if_complete.check_if_complete_handler(event, {})
@@ -140,7 +139,7 @@ def test_check_if_complete(mock_wait, mock_bucket, mock_notification, mock_glue)
     # All aggregates have finished, they are not in the db, but a crawl has already started
 
     g_client.list_crawls(CrawlerName="cumulus-aggregator-test-crawler")
-    with freeze_time("2020-01-01 12:02:00"):
+    with time_machine.travel("2020-01-01 12:02:00+00:00", tick=False):
         with mock.patch("awswrangler.athena.read_sql_query") as query:
             with mock.patch(
                 "src.site_upload.check_if_complete.check_if_complete.mock_entrypoint"
@@ -159,7 +158,7 @@ def test_check_if_complete(mock_wait, mock_bucket, mock_notification, mock_glue)
 
     # The tables are now in the DB, so no crawl is required
     reset_state(s3_client, transaction)
-    with freeze_time("2020-01-01 12:02:00"):
+    with time_machine.travel("2020-01-01 12:02:00+00:00", tick=False):
         with mock.patch("awswrangler.athena.read_sql_query") as query:
             query.return_value = pandas.DataFrame(data={"table_name": expected_tables})
             res = check_if_complete.check_if_complete_handler(event, {})
@@ -175,9 +174,10 @@ def test_check_if_complete(mock_wait, mock_bucket, mock_notification, mock_glue)
     # moto's mocking of crawlers
     reset_state(s3_client, transaction)
     g_client.list_crawls(CrawlerName="cumulus-aggregator-test-crawler")
-    with mock.patch("awswrangler.athena.read_sql_query") as query:
-        query.return_value = pandas.DataFrame(data={"table_name": []})
-        res = check_if_complete.check_if_complete_handler(event, {})
+    with time_machine.travel("2020-01-01 12:02:00+00:00", tick=False):
+        with mock.patch("awswrangler.athena.read_sql_query") as query:
+            query.return_value = pandas.DataFrame(data={"table_name": []})
+            res = check_if_complete.check_if_complete_handler(event, {})
     body = (
         "Recrawl request for {"
         f"'site': '{mock_utils.EXISTING_SITE}', 'study': '{mock_utils.NEW_STUDY}'"
@@ -187,7 +187,7 @@ def test_check_if_complete(mock_wait, mock_bucket, mock_notification, mock_glue)
 
     # There are no new data packages, so we can skip crawling.
     reset_state(s3_client, transaction)
-    with freeze_time("2020-01-01 12:03:00"):
+    with time_machine.travel("2020-01-01 12:03:00", tick=False):
         with mock.patch("awswrangler.athena.read_sql_query") as query:
             query.return_value = pandas.DataFrame(data={"table_name": expected_tables})
             res = check_if_complete.check_if_complete_handler(event, {})
@@ -202,7 +202,7 @@ def test_check_if_complete(mock_wait, mock_bucket, mock_notification, mock_glue)
 
     reset_state(s3_client, transaction)
 
-    with freeze_time("2020-01-01 12:03:00"):
+    with time_machine.travel("2020-01-01 12:03:00+00:00", tick=False):
         with mock.patch("awswrangler.athena.read_sql_query") as query:
             with mock.patch(
                 "src.site_upload.check_if_complete.check_if_complete.mock_entrypoint"

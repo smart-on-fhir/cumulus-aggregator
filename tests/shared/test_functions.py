@@ -11,9 +11,9 @@ from contextlib import nullcontext as does_not_raise
 from unittest import mock
 
 import boto3
-import freezegun
 import pandas
 import pytest
+import time_machine
 
 from src.shared import enums, errors, functions, pandas_functions
 from tests import mock_utils
@@ -296,7 +296,7 @@ def test_parse_s3_key(key, expected, raises):
         ),
     ],
 )
-@freezegun.freeze_time("2020-01-01")
+@time_machine.travel("2020-01-01", tick=False)
 def test_construct_s3_key(subbucket, expected, raises):
     with raises:
         site = "site" if subbucket != enums.BucketPath.AGGREGATE else None

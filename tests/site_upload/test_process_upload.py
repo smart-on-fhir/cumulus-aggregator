@@ -3,14 +3,14 @@ from datetime import UTC, datetime
 
 import boto3
 import pytest
-from freezegun import freeze_time
+import time_machine
 
 from src.shared import enums, functions
 from src.site_upload.process_upload import process_upload
 from tests import mock_utils
 
 
-@freeze_time("2020-01-01")
+@time_machine.travel("2020-01-01", tick=False)
 @pytest.mark.parametrize(
     "upload_file,study,data_package,site,version,filename,status,expected_contents",
     [

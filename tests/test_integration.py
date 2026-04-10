@@ -17,8 +17,8 @@ from unittest import mock
 import boto3
 import pandas
 import pytest
+import time_machine
 import toml
-from freezegun import freeze_time
 from moto.core import DEFAULT_ACCOUNT_ID
 from moto.sns import sns_backends
 
@@ -38,7 +38,7 @@ from tests import mock_utils
 CURRENT_COL_TYPES_VERSION = "3"
 
 
-@freeze_time("2025-06-06")
+@time_machine.travel("2025-06-06", tick=False)
 @pytest.mark.parametrize(
     "upload_file,upload_type,study,site,data_package,version,existing,run_migration",
     [

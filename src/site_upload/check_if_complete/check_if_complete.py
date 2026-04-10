@@ -8,7 +8,7 @@ from time import sleep
 import awswrangler
 import boto3
 
-from shared import decorators, enums, errors, functions
+from shared import enums, errors, functions
 
 logger = logging.getLogger()
 logger.setLevel("INFO")
@@ -123,7 +123,7 @@ def mock_entrypoint():
     pass
 
 
-@decorators.generic_error_handler(msg="Error processing metadata events")
+# decorators.generic_error_handler(msg="Error processing metadata events")
 def check_if_complete_handler(event, context):
     del context
     message = json.loads(event["Records"][0]["Sns"]["Message"])

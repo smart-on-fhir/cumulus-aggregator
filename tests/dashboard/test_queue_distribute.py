@@ -7,7 +7,7 @@ from unittest import mock
 
 import pytest
 import responses
-from freezegun import freeze_time
+import time_machine
 
 from src.dashboard.queue_distribute import queue_distribute
 
@@ -43,7 +43,7 @@ def test_process_github(
     mock_notification, tmp_path, name, url, tag, expected_status, monkeypatch, fp
 ):
     fp.allow_unregistered(True)  # fp is provided by pytest-subprocess
-
+    print(tmp_path)
     args = ["--depth", "1", url, f"{tmp_path}/studies"]
     if tag:
         args = ["--branch", tag, *args]
@@ -64,7 +64,7 @@ def test_process_github(
     monkeypatch.setattr(queue_distribute, "BASE_DIR", tmp_path)
     mock_sns = mock.MagicMock()
     monkeypatch.setattr(queue_distribute, "sns_client", mock_sns)
-    with freeze_time("2020-01-01"):  # Don't use as a fixture for this test; collides with fp mock
+    with time_machine.travel("2020-01-01", tick=False):
         res = queue_distribute.queue_handler(
             {
                 "Records": [

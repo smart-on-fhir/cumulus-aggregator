@@ -5,9 +5,9 @@ from unittest import mock
 
 import boto3
 import botocore
-import freezegun
 import pandas
 import pytest
+import time_machine
 
 from src.shared import enums, functions, s3_manager
 from tests import mock_utils
@@ -347,7 +347,7 @@ def test_presigned_error_handling(mock_bucket):
         ),
     ],
 )
-@freezegun.freeze_time("2025-01-01")
+@time_machine.travel("2025-01-01", tick=False)
 def test_update_local_metadata(
     mock_bucket, site, study, data_package, version, metadata_type, target, extras, mock_queue
 ):

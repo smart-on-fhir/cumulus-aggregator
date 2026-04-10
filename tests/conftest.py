@@ -31,10 +31,13 @@ import boto3
 import duckdb
 import moto
 import pytest
+import time_machine
 
 from scripts import credential_management
 from src.shared import enums, functions
 from tests import mock_utils
+
+time_machine.naive_mode = time_machine.NaiveMode.UTC
 
 
 def _init_mock_data(s3_client, bucket, study, data_package, version):
