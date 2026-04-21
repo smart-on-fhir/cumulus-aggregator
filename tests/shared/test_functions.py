@@ -89,7 +89,7 @@ def test_get_s3_keys(mock_bucket):
     res = functions.get_s3_keys(s3_client, mock_utils.TEST_BUCKET, "", max_keys=2)
     assert len(res) == mock_utils.ITEM_COUNT
     res = functions.get_s3_keys(s3_client, mock_utils.TEST_BUCKET, "cache")
-    assert res == ["cache/data_packages.json"]
+    assert res == ["cache/data_packages.json", "cache/studies.json"]
     res = functions.get_s3_keys(s3_client, mock_utils.TEST_BUCKET, "nonexistant")
     assert res == []
 

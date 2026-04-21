@@ -1,0 +1,16 @@
+{
+    "study": {
+        "099": {
+            "site": "princeton_plainsboro_teaching_hospital",
+            "study_prefix": "study",
+            "description": "version 099 of study"
+        }
+    },
+    "other_study": {
+        "100": {
+            "site": "st_elsewhere",
+            "study_prefix": "other_study",
+            "description": "version 100 of other_study"
+        }
+    }
+}

@@ -13,6 +13,7 @@ TEST_GLUE_CRAWLER = "cumulus-aggregator-test-crawler"
 TEST_PROCESS_COUNTS_ARN = "arn:aws:sns:us-east-1:123456789012:test-counts"
 TEST_PROCESS_FLAT_ARN = "arn:aws:sns:us-east-1:123456789012:test-flat"
 TEST_PROCESS_STUDY_META_ARN = "arn:aws:sns:us-east-1:123456789012:test-meta"
+TEST_PROCESS_MANIFEST_ARN = "arn:aws:sns:us-east-1:123456789012:test-manifest"
 TEST_COMPLETENESS_ARN = "arn:aws:sns:us-east-1:123456789012:test-completeness"
 TEST_CACHE_API_ARN = "arn:aws:sns:us-east-1:123456789012:test-cache"
 TEST_PROCESS_UPLOADS_ARN = "arn:aws:sns:us-east-1:123456789012:test-uploads"
@@ -22,7 +23,7 @@ TEST_TRANSACTION_CLEANUP_URL = (
 TEST_TRANSACTION_CLEANUP_ARN = "arn:aws:sqs:us-east-1:123456789012:transaction-cleanup"
 TEST_METADATA_UPDATE_URL = "https://sqs.us-east-1.amazonaws.com/123456789012/test-metadata-update"
 TEST_METADATA_UPDATE_ARN = "arn:aws:sqs:us-east-1:123456789012:test-metadata-update"
-ITEM_COUNT = 11
+ITEM_COUNT = 14
 DATA_PACKAGE_COUNT = 3
 
 EXISTING_SITE = "princeton_plainsboro_teaching_hospital"
@@ -55,6 +56,7 @@ MOCK_ENV = {
     "TOPIC_PROCESS_STUDY_META_ARN": TEST_PROCESS_STUDY_META_ARN,
     "TOPIC_CACHE_API_ARN": TEST_CACHE_API_ARN,
     "TOPIC_COMPLETENESS_ARN": TEST_COMPLETENESS_ARN,
+    "TOPIC_PROCESS_MANIFEST_ARN": TEST_PROCESS_MANIFEST_ARN,
     "TOPIC_PROCESS_UPLOADS_ARN": TEST_PROCESS_UPLOADS_ARN,
     "QUEUE_TRANSACTION_CLEANUP": TEST_TRANSACTION_CLEANUP_URL,
     "QUEUE_METADATA_UPDATE": TEST_METADATA_UPDATE_URL,
@@ -111,6 +113,25 @@ def get_mock_metadata():
                         "deleted": None,
                     }
                 }
+            }
+        },
+    }
+
+
+def get_mock_study_data():
+    return {
+        EXISTING_STUDY: {
+            EXISTING_VERSION: {
+                "site": EXISTING_SITE,
+                "study_prefix": EXISTING_STUDY,
+                "description": f"version {EXISTING_VERSION} of {EXISTING_STUDY}",
+            }
+        },
+        OTHER_STUDY: {
+            NEW_VERSION: {
+                "site": OTHER_SITE,
+                "study_prefix": OTHER_STUDY,
+                "description": f"version {NEW_VERSION} of {OTHER_STUDY}",
             }
         },
     }

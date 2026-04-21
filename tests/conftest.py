@@ -40,7 +40,7 @@ from tests import mock_utils
 time_machine.naive_mode = time_machine.NaiveMode.UTC
 
 
-def _init_mock_data(s3_client, bucket, study, data_package, version):
+def _init_mock_data(s3_client, bucket, study, data_package, version, site):
     """Creates data in bucket for use in unit tests
 
     The following items are added:
@@ -70,14 +70,30 @@ def _init_mock_data(s3_client, bucket, study, data_package, version):
     s3_client.upload_file(
         "./tests/test_data/flat_synthea_q_date_recent.parquet",
         bucket,
-        f"{enums.BucketPath.FLAT.value}/{study}/{mock_utils.EXISTING_SITE}/"
-        f"{study}__c_{data_package}__{mock_utils.EXISTING_SITE}__{version}/"
+        f"{enums.BucketPath.FLAT.value}/{study}/{site}/"
+        f"{study}__c_{data_package}__{site}__{version}/"
         f"{study}__c_{data_package}__flat.parquet",
     )
     s3_client.upload_file(
         "./tests/test_data/data_packages_cache.json",
         bucket,
         f"{enums.BucketPath.CACHE.value}/{enums.JsonFilename.DATA_PACKAGES.value}.json",
+    )
+    s3_client.upload_file(
+        "./tests/test_data/studies_cache.json",
+        bucket,
+        f"{enums.BucketPath.CACHE.value}/{enums.JsonFilename.STUDIES.value}.json",
+    )
+
+    functions.put_s3_file(
+        s3_client=s3_client,
+        s3_bucket_name=bucket,
+        key=(f"{enums.BucketPath.MANIFEST.value}/{study}/{version}/manifest.json"),
+        payload={
+            "site": site,
+            "study_prefix": study,
+            "description": f"version {version} of {study}",
+        },
     )
 
 
@@ -101,11 +117,13 @@ def mock_bucket():
             mock_utils.EXISTING_STUDY,
             mock_utils.EXISTING_DATA_P,
             mock_utils.EXISTING_VERSION,
+            mock_utils.EXISTING_SITE,
         ],
         [
             mock_utils.OTHER_STUDY,
             mock_utils.EXISTING_DATA_P,
             mock_utils.EXISTING_VERSION,
+            mock_utils.OTHER_SITE,
         ],
     ]
     for param_list in aggregate_params:
@@ -147,6 +165,7 @@ def mock_notification():
     sns_client.create_topic(Name="test-payload")
     sns_client.create_topic(Name="test-uploads")
     sns_client.create_topic(Name="test-completeness")
+    sns_client.create_topic(Name="test-manifest")
     yield
     sns.stop()
 

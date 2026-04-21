@@ -42,11 +42,17 @@ def process_upload(s3_client, sns_client, sqs_client, s3_bucket_name: str, s3_ke
             s3_client.delete_object(Bucket=s3_bucket_name, Key=s3_key)
             logging.info(f"Deleted archive file at {s3_key}")
             return
-        else:
-            # TODO: Check for .cube.parquet prefix after older versions of the library phase out
+        elif s3_key.endswith(f".{enums.UploadTypes.CUBE}.parquet") or s3_key.endswith(
+            f".{enums.UploadTypes.ANNOTATED_CUBE}.parquet"
+        ):
             new_key = functions.construct_s3_key(enums.BucketPath.LATEST, dp_meta=dp_meta)
             topic_sns_arn = os.environ.get("TOPIC_PROCESS_COUNTS_ARN")
             sns_subject = "Process counts upload event"
+        else:
+            # If we get anything else unexpected, log and delete it
+            s3_client.delete_object(Bucket=s3_bucket_name, Key=s3_key)
+            logging.info(f"Deleted unexpected file at {s3_key}")
+            return
         functions.move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
         metadata = functions.update_metadata(
             metadata={},
@@ -61,6 +67,16 @@ def process_upload(s3_client, sns_client, sqs_client, s3_bucket_name: str, s3_ke
         functions.write_metadata(
             sqs_client=sqs_client, s3_bucket_name=s3_bucket_name, metadata=metadata
         )
+    elif s3_key.endswith(".toml"):
+        if "/discovery__" in s3_key or "/catalog__" in s3_key:
+            # For now, we don't care about the manifests for these studies
+            s3_client.delete_object(Bucket=s3_bucket_name, Key=s3_key)
+            return
+        new_key = functions.construct_s3_key(enums.BucketPath.MANIFEST, dp_meta=dp_meta)
+        topic_sns_arn = os.environ.get("TOPIC_PROCESS_MANIFEST_ARN")
+        sns_subject = "Process manifest event"
+        functions.move_s3_file(s3_client, s3_bucket_name, s3_key, new_key)
+        sns_client.publish(TopicArn=topic_sns_arn, Message=new_key, Subject=sns_subject)
     else:
         new_key = functions.construct_s3_key(
             subbucket=enums.BucketPath.ERROR,

@@ -15,6 +15,7 @@ class BucketPath(enum.StrEnum):
     LAST_VALID = "last_valid"
     LATEST_FLAT = "latest_flat"
     LATEST = "latest"
+    MANIFEST = "manifest"
     META = "metadata"
     STATIC = "static"
     STUDY_META = "study_metadata"
@@ -39,6 +40,7 @@ class JsonFilename(enum.StrEnum):
     DATA_PACKAGES = "data_packages"
     FLAT_PACKAGES = "flat_packages"
     STUDY_PERIODS = "study_periods"
+    STUDIES = "studies"
 
 
 class StudyPeriodMetadataKeys(enum.StrEnum):

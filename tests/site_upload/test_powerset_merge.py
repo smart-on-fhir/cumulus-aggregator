@@ -246,6 +246,7 @@ def test_powerset_merge_single_upload(
                 or item["Key"].startswith(enums.BucketPath.FLAT)
                 or item["Key"].startswith(enums.BucketPath.STUDY_META)
                 or item["Key"].startswith(enums.BucketPath.META)
+                or item["Key"].startswith(enums.BucketPath.MANIFEST)
             )
     if res["statusCode"] == 200:
         sqs_res = sqs_client.receive_message(

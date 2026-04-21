@@ -7,6 +7,7 @@ import io
 import json
 import logging
 import os
+import tomllib
 from datetime import UTC, datetime
 
 import boto3
@@ -286,6 +287,18 @@ def get_s3_json_as_dict(bucket, key: str, s3_client=None):
     return json.loads(bytes_buffer.getvalue().decode())
 
 
+def get_s3_toml_as_dict(bucket, key: str, s3_client=None):
+    """reads a toml object as dict (typically a manifest in this case)"""
+    s3_client = s3_client or boto3.client("s3")
+    bytes_buffer = io.BytesIO()
+    s3_client.download_fileobj(
+        Bucket=bucket,
+        Key=key,
+        Fileobj=bytes_buffer,
+    )
+    return tomllib.loads(bytes_buffer.getvalue().decode())
+
+
 def get_latest_data_package_version(bucket, prefix):
     """Returns the newest version in a data package folder"""
     s3_client = boto3.client("s3")
@@ -373,6 +386,14 @@ def parse_s3_key(key: str) -> PackageMetadata:
                     site=key_parts[2],
                     data_package=key_parts[3].split("__")[1],
                     version=key_parts[3].split("__")[3],
+                    filename=key_parts[4],
+                )
+            case enums.BucketPath.MANIFEST:
+                package = PackageMetadata(
+                    study=key_parts[1],
+                    site=key_parts[2],
+                    data_package=None,
+                    version=key_parts[3].split("__")[2],
                     filename=key_parts[4],
                 )
             case enums.BucketPath.UPLOAD:
@@ -468,6 +489,11 @@ def construct_s3_key(
             key = (
                 f"{subbucket}/{dp_meta.study}/{dp_meta.site}/"
                 f"{dp_meta.study}__{dp_meta.data_package}__{dp_meta.site}__{dp_meta.version}"
+            )
+        case enums.BucketPath.MANIFEST:
+            key = (
+                f"{subbucket}/{dp_meta.study}/{dp_meta.site}/"
+                f"{dp_meta.study}__{dp_meta.site}__{dp_meta.version}"
             )
         case enums.BucketPath.UPLOAD:
             key = (

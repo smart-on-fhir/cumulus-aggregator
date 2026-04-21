@@ -50,15 +50,15 @@ class S3Manager:
         self.transaction = None
         self.dp_meta = None
         # If the event is an SNS type event, we're in the aggregation pipeline and set up
-        # some convenience values.
+        # some convenience values, overriding other input values
         if event is not None and "Records" in event and "Sns" in event["Records"][0]:
             self.event_source = event["Records"][0]["Sns"]["TopicArn"]
             self.s3_key = event["Records"][0]["Sns"]["Message"]
             self.dp_meta = functions.parse_s3_key(self.s3_key)
-            self.study = self.dp_meta.study
-            self.data_package = self.dp_meta.data_package
-            self.site = self.dp_meta.site
-            self.version = self.dp_meta.version
+            self.study = study = self.dp_meta.study
+            self.data_package = data_package = self.dp_meta.data_package
+            self.site = site = self.dp_meta.site
+            self.version = version = self.dp_meta.version
             self.metadata = functions.read_metadata(
                 self.s3_client, self.s3_bucket_name, meta_type=enums.JsonFilename.TRANSACTIONS
             )
@@ -94,6 +94,8 @@ class S3Manager:
             self.transaction = (
                 f"{enums.BucketPath.META}/transactions/{self.site}__{self.study}.json"
             )
+        if self.site and self.version:
+            self.manifest = f"{enums.BucketPath.MANIFEST}/{self.study}/{self.version}/manifest.json"
 
     def error_handler(
         self,
@@ -343,3 +345,13 @@ class S3Manager:
 
     def delete_transaction(self):
         self.delete_file(self.transaction)
+
+    def get_manifest(self):
+        try:
+            return json.loads(
+                self.s3_client.get_object(Bucket=self.s3_bucket_name, Key=self.manifest)[
+                    "Body"
+                ].read()
+            )
+        except Exception:
+            return {}

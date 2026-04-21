@@ -19,7 +19,6 @@ def unzip_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> Non
     buffer = BytesIO(s3_client.get_object(Bucket=s3_bucket_name, Key=s3_key)["Body"].read())
     archive = zipfile.ZipFile(buffer)
     files = archive.namelist()
-    files.remove("manifest.toml")
 
     # We'll update the transaction data with the files we're going to process
     # (we can't use the manifest, because empty tables will not get uploaded),
@@ -31,14 +30,12 @@ def unzip_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> Non
         enums.UploadTypes.CUBE,
         enums.UploadTypes.FLAT,
         enums.UploadTypes.ANNOTATED_CUBE,
+        enums.UploadTypes.META,
     ]:
         transaction[f"{upload_type}"] = [file for file in files if f".{upload_type}." in file]
         transaction["version"] = metadata.version
     manager.put_file(path=manager.transaction, payload=transaction)
 
-    # The manifest may be used in future cases to handle metadata, so we'll
-    # extract it last in all cases
-    # TODO: decide on extract location for manifests
     new_keys = []
     for file_list in [files]:
         for file in file_list:
