@@ -11,7 +11,7 @@ logger.setLevel(log_level)
 
 def process_manifest(manager: s3_manager.S3Manager):
     key = manager.s3_key
-    manifest = manager.get_manifest()  # Debug this
+    manifest = manager.get_manifest()
     if manifest != {}:
         # Is this upload from someone other than the owning institution?
         if manifest["site"] != manager.site:

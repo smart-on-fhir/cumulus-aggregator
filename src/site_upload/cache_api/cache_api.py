@@ -82,17 +82,15 @@ def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None
     manifest_keys = [x for x in manifest_keys if x.endswith(".json")]
     studies = {}
     for key in manifest_keys:
-        _, study_name, version, _ = key.split("/")
-        if study_name not in studies.keys():
-            studies[study_name] = {}
-        if version not in studies[study_name]:
-            studies[study_name][version] = {}
-        studies[study_name][version] = functions.get_s3_json_as_dict(
+        dp = functions.parse_s3_key(key)
+        if dp.study not in studies.keys():
+            studies[dp.study] = {}
+        studies[dp.study][dp.version] = functions.get_s3_json_as_dict(
             bucket=s3_bucket_name, key=key, s3_client=s3_client
         )
         # For now, we'll exclude the build stages, but we may pull it back in the future
         # if we have a use case for it.
-        studies[study_name][version].pop("stages", None)
+        studies[dp.study][dp.version].pop("stages", None)
     s3_client.put_object(
         Bucket=s3_bucket_name,
         Key=f"{enums.BucketPath.CACHE.value}/{enums.JsonFilename.STUDIES.value}.json",
