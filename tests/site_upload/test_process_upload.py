@@ -132,7 +132,7 @@ from tests import mock_utils
             mock_utils.EXISTING_VERSION,
             "manifest.toml",
             200,
-            mock_utils.ITEM_COUNT + 1,
+            mock_utils.ITEM_COUNT,
         ),
     ],
 )

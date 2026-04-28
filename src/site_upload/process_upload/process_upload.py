@@ -68,7 +68,9 @@ def process_upload(s3_client, sns_client, sqs_client, s3_bucket_name: str, s3_ke
             sqs_client=sqs_client, s3_bucket_name=s3_bucket_name, metadata=metadata
         )
     elif s3_key.endswith(".toml"):
-        if "/discovery__" in s3_key or "/catalog__" in s3_key:
+        if s3_key.startswith(f"{enums.BucketPath.UPLOAD.value}/discovery/") or s3_key.startswith(
+            f"{enums.BucketPath.UPLOAD.value}/catalog/"
+        ):
             # For now, we don't care about the manifests for these studies
             s3_client.delete_object(Bucket=s3_bucket_name, Key=s3_key)
             return

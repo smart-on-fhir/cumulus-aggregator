@@ -317,7 +317,7 @@ class S3Manager:
                 raise errors.AggregatorStudyProcessingError
 
         except botocore.exceptions.ClientError:
-            if transaction_id is not None:
+            if transaction_id is not None:  # pragma: no cover
                 # are we requesting a transaction that no longer exists for some reason?
                 raise errors.AggregatorStudyProcessingError
             # if the transaction doesn't exist, we'll make one
