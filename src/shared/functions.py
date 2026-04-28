@@ -389,13 +389,22 @@ def parse_s3_key(key: str) -> PackageMetadata:
                     filename=key_parts[4],
                 )
             case enums.BucketPath.MANIFEST:
-                package = PackageMetadata(
-                    study=key_parts[1],
-                    site=key_parts[2],
-                    data_package=None,
-                    version=key_parts[3].split("__")[2],
-                    filename=key_parts[4],
-                )
+                if key_parts[-1] == "manifest.json":
+                    package = PackageMetadata(
+                        study=key_parts[1],
+                        site=None,
+                        data_package=None,
+                        version=key_parts[2],
+                        filename=key_parts[3],
+                    )
+                else:
+                    package = PackageMetadata(
+                        study=key_parts[1],
+                        site=key_parts[2],
+                        data_package=None,
+                        version=key_parts[3].split("__")[2],
+                        filename=key_parts[4],
+                    )
             case enums.BucketPath.UPLOAD:
                 package = PackageMetadata(
                     study=key_parts[1],
