@@ -20,7 +20,7 @@ from tests import mock_utils
             {
                 "study_prefix": mock_utils.EXISTING_STUDY,
                 "description": "test",
-                "site": mock_utils.EXISTING_SITE,
+                "study_owner": mock_utils.EXISTING_SITE,
             },
         ),
         (
@@ -31,7 +31,7 @@ from tests import mock_utils
             {
                 "study_prefix": mock_utils.NEW_STUDY,
                 "description": "test",
-                "site": mock_utils.NEW_SITE,
+                "study_owner": mock_utils.NEW_SITE,
             },
         ),
         # This should get discarded as a non-owning site upload, so the
@@ -44,7 +44,7 @@ from tests import mock_utils
             {
                 "study_prefix": mock_utils.EXISTING_STUDY,
                 "description": "version 099 of study",
-                "site": mock_utils.EXISTING_SITE,
+                "study_owner": mock_utils.EXISTING_SITE,
             },
         ),
         # This should get discarded as a non-manifest, so the
@@ -57,12 +57,13 @@ from tests import mock_utils
             {
                 "study_prefix": mock_utils.EXISTING_STUDY,
                 "description": "version 099 of study",
-                "site": mock_utils.EXISTING_SITE,
+                "study_owner": mock_utils.EXISTING_SITE,
             },
         ),
     ],
 )
 def test_process_manifest(mock_bucket, tmp_path, filename, study, site, version, expected):
+    print(tmp_path)
     dp_meta = functions.PackageMetadata(
         study=study,
         site=site,

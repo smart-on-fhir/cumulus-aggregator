@@ -122,14 +122,14 @@ def get_mock_study_data():
     return {
         EXISTING_STUDY: {
             EXISTING_VERSION: {
-                "site": EXISTING_SITE,
+                "study_owner": EXISTING_SITE,
                 "study_prefix": EXISTING_STUDY,
                 "description": f"version {EXISTING_VERSION} of {EXISTING_STUDY}",
             }
         },
         OTHER_STUDY: {
             NEW_VERSION: {
-                "site": OTHER_SITE,
+                "study_owner": OTHER_SITE,
                 "study_prefix": OTHER_STUDY,
                 "description": f"version {NEW_VERSION} of {OTHER_STUDY}",
             }

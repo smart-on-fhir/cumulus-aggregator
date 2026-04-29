@@ -90,7 +90,7 @@ def _init_mock_data(s3_client, bucket, study, data_package, version, site):
         s3_bucket_name=bucket,
         key=(f"{enums.BucketPath.MANIFEST.value}/{study}/{version}/manifest.json"),
         payload={
-            "site": site,
+            "study_owner": site,
             "study_prefix": study,
             "description": f"version {version} of {study}",
         },
