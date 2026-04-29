@@ -1,3 +1,5 @@
+import json
+
 import boto3
 import pytest
 import time_machine
@@ -76,7 +78,7 @@ def test_unzip_upload(
     res = unzip_upload.unzip_upload_handler(event, {})
     assert res["statusCode"] == status
     s3_res = s3_client.list_objects_v2(Bucket=mock_utils.TEST_BUCKET)
-    assert len(s3_res["Contents"]) == mock_utils.ITEM_COUNT + len(expected_contents) + 1
+    assert len(s3_res["Contents"]) == mock_utils.ITEM_COUNT + len(expected_contents) + 2
     s3_res = s3_client.list_objects_v2(
         Bucket=mock_utils.TEST_BUCKET, Prefix=enums.BucketPath.UPLOAD
     )
@@ -91,3 +93,13 @@ def test_unzip_upload(
         Bucket=mock_utils.TEST_BUCKET, Prefix=enums.BucketPath.ARCHIVE
     )
     assert s3_res["Contents"][0]["Key"] == archive_key
+    s3_res = s3_client.get_object(
+        Bucket=mock_utils.TEST_BUCKET,
+        Key=(
+            f"{enums.BucketPath.META}/transactions/"
+            f"{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_STUDY}.json"
+        ),
+    )
+    payload = json.load(s3_res["Body"])
+    assert payload["uploaded_at"] == "2020-01-01T00:00:00+00:00"
+    assert payload["cube"] == ["upload__count_synthea_patient.cube.parquet"]

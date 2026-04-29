@@ -1,4 +1,5 @@
 import copy
+import datetime
 import json
 import os
 from unittest import mock
@@ -418,6 +419,7 @@ def test_write_local_metadata(mock_bucket, mock_env, mock_queue):
     }
 
 
+@time_machine.travel("2025-01-01", tick=False)
 @mock.patch.dict(os.environ, mock_utils.MOCK_ENV)
 def test_validate_transaction(mock_bucket, mock_queue):
     manager = s3_manager.S3Manager(
@@ -435,16 +437,20 @@ def test_validate_transaction(mock_bucket, mock_queue):
         ).keys()
     )
     transaction = manager.request_or_validate_transaction()
+    s3_key = (
+        f"{enums.BucketPath.META.value}/transactions/"
+        f"{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_STUDY}.json"
+    )
     transaction = functions.get_s3_json_as_dict(
         manager.s3_bucket_name,
-        (
-            f"{enums.BucketPath.META.value}/transactions/"
-            f"{mock_utils.EXISTING_SITE}__{mock_utils.EXISTING_STUDY}.json"
-        ),
+        s3_key,
     )
     assert transaction == transaction
     transaction = manager.request_or_validate_transaction(transaction["id"])
     assert transaction == transaction
+    assert manager.get_last_modified_timestamp(s3_key) == datetime.datetime(
+        2025, 1, 1, 0, 0, tzinfo=datetime.UTC
+    )
     with pytest.raises(s3_manager.errors.AggregatorStudyProcessingError):
         manager.request_or_validate_transaction()
     with pytest.raises(s3_manager.errors.AggregatorStudyProcessingError):

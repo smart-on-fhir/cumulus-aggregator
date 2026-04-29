@@ -114,6 +114,26 @@ from tests import mock_utils
             200,
             mock_utils.ITEM_COUNT + 1,
         ),
+        (  # Adding a manifest
+            "./tests/test_data/manifest.toml",
+            "test",
+            mock_utils.EXISTING_DATA_P,
+            mock_utils.EXISTING_SITE,
+            mock_utils.EXISTING_VERSION,
+            "manifest.toml",
+            200,
+            mock_utils.ITEM_COUNT + 1,
+        ),
+        (  # Adding an ignored manifest
+            "./tests/test_data/manifest.toml",
+            "discovery",
+            mock_utils.EXISTING_DATA_P,
+            mock_utils.EXISTING_SITE,
+            mock_utils.EXISTING_VERSION,
+            "manifest.toml",
+            200,
+            mock_utils.ITEM_COUNT,
+        ),
     ],
 )
 def test_process_upload(
@@ -163,6 +183,8 @@ def test_process_upload(
     for item in s3_res["Contents"]:
         if item["Key"].endswith("aggregate.parquet"):
             assert item["Key"].startswith(enums.BucketPath.AGGREGATE)
+        elif item["Key"].endswith("manifest.toml"):
+            assert item["Key"].startswith(enums.BucketPath.MANIFEST)
         elif item["Key"].startswith(enums.BucketPath.STUDY_META):
             assert any(x in item["Key"] for x in ["_meta_", "/discovery__"])
         else:
@@ -177,8 +199,9 @@ def test_process_upload(
                 or item["Key"].startswith(enums.BucketPath.ARCHIVE)
                 or item["Key"].startswith(enums.BucketPath.STUDY_META)
                 or item["Key"].startswith(enums.BucketPath.META)
+                or item["Key"].startswith(enums.BucketPath.MANIFEST)
             )
-    if res["statusCode"] == 200:
+    if res["statusCode"] == 200 and filename != "manifest.toml":
         sqs_res = sqs_client.receive_message(
             QueueUrl=mock_utils.TEST_METADATA_UPDATE_URL, MaxNumberOfMessages=10
         )

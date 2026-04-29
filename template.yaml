@@ -217,6 +217,7 @@ Resources:
           TOPIC_PROCESS_COUNTS_ARN: !Ref SNSTopicProcessCounts
           TOPIC_PROCESS_FLAT_ARN: !Ref SNSTopicProcessFlat
           TOPIC_PROCESS_STUDY_META_ARN: !Ref SNSTopicProcessStudyMeta
+          TOPIC_PROCESS_MANIFEST_ARN: !Ref SNSTopicProcessManifest
           QUEUE_METADATA_UPDATE: !Ref SQSMetadataUpdate
       Events:
         ProcessUploadSNSEvent:
@@ -232,6 +233,8 @@ Resources:
            TopicName: !GetAtt SNSTopicProcessFlat.TopicName
         - SNSPublishMessagePolicy:
             TopicName: !GetAtt SNSTopicProcessStudyMeta.TopicName
+        - SNSPublishMessagePolicy:
+           TopicName: !GetAtt SNSTopicProcessManifest.TopicName
         - Statement:
           - Sid: KMSDecryptPolicy
             Effect: Allow
@@ -350,6 +353,56 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${ProcessFlatFunction}"
+      RetentionInDays: !Ref RetentionTime
+
+  ProcessManifestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggProcessManifest-${DeployStage}-${NetworkName}'
+      Layers: [arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:17]
+      CodeUri: ./src/site_upload/process_manifest
+      Handler: process_manifest.process_manifest_handler
+      Runtime: "python3.11"
+      LoggingConfig:
+        ApplicationLogLevel: !Ref LogLevel
+        LogFormat: !Ref LogFormat
+        LogGroup: !Sub "/aws/lambda/CumulusAggProcessManifest-${DeployStage}-${NetworkName}"
+      MemorySize: 8192
+      Timeout: 800
+      Description: Merges and aggregates powerset count data
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+          TOPIC_COMPLETENESS_ARN: !Ref SNSTopicCheckCompleteness
+          QUEUE_METADATA_UPDATE: !Ref SQSMetadataUpdate
+      Events:
+        ProcessManifestUploadSNSEvent:
+         Type: SNS
+         Properties:
+           Topic: !Ref SNSTopicProcessManifest
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt SNSTopicCheckCompleteness.TopicName
+        - Statement:
+          - Sid: KMSDecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
+        - Statement:
+          - Sid: QueuePolicy
+            Action:
+              - sqs:SendMessage
+            Effect: Allow
+            Resource: !GetAtt SQSMetadataUpdate.Arn
+
+  ProcessManifestLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ProcessManifestFunction}"
       RetentionInDays: !Ref RetentionTime
 
   StudyPeriodFunction:
@@ -762,6 +815,59 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${DashboardGetMetadataFunction}"
       RetentionInDays: !Ref RetentionTime
 
+  DashboardGetStudyDataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggDashboardGetStudyData-${DeployStage}-${NetworkName}'
+      CodeUri: ./src/dashboard/get_study_data
+      Handler: get_study_data.study_data_handler
+      Runtime: "python3.11"
+      LoggingConfig:
+        ApplicationLogLevel: !Ref LogLevel
+        LogFormat: !Ref LogFormat
+        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardGetStudyData-${DeployStage}-${NetworkName}"
+      MemorySize: 128
+      Timeout: 100
+      Description: Retrieve data about study descriptions
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+      Events:
+        GetStudyDataAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /study
+            Method: GET
+        GetStudyDataStudyAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /study/{study}
+            Method: GET
+        GetStudyDataStudyVersionAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /study/{study}/{version}
+            Method: GET
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+        - Statement:
+          - Sid: KMSDecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
+
+  DashboardGetStudyDataLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${DashboardGetStudyDataFunction}"
+      RetentionInDays: !Ref RetentionTime
+
   DashboardDataPackagesFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -1120,6 +1226,14 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub 'CumulusProcessStudyMeta-${DeployStage}-${NetworkName}'
+
+  SNSTopicProcessManifest:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'CumulusProcessManifest-${DeployStage}-${NetworkName}'
+      Tags:
+        - Key: Name
+          Value: !Sub 'CumulusProcessManifest-${DeployStage}-${NetworkName}'
 
   SNSTopicCheckCompleteness:
     Type: AWS::SNS::Topic

@@ -89,7 +89,7 @@ def test_get_s3_keys(mock_bucket):
     res = functions.get_s3_keys(s3_client, mock_utils.TEST_BUCKET, "", max_keys=2)
     assert len(res) == mock_utils.ITEM_COUNT
     res = functions.get_s3_keys(s3_client, mock_utils.TEST_BUCKET, "cache")
-    assert res == ["cache/data_packages.json"]
+    assert res == ["cache/data_packages.json", "cache/studies.json"]
     res = functions.get_s3_keys(s3_client, mock_utils.TEST_BUCKET, "nonexistant")
     assert res == []
 
@@ -366,12 +366,19 @@ def test_metadata_get_names(
     expected_table,
     raises,
 ):
+    dp_meta = functions.PackageMetadata(
+        site="site", study="study", data_package="data_package", version="version"
+    )
     with raises:
-        dp_meta = functions.PackageMetadata(
-            site="site", study="study", data_package="data_package", version="version"
-        )
         name = dp_meta.get_filename(subbucket=subbucket)
         assert name == expected_file
+    with raises:
         name = dp_meta.get_tablename(subbucket=subbucket)
         assert name == expected_table
+    with raises:
         assert functions.construct_s3_key(subbucket=subbucket, dp_meta=dp_meta).endswith(name)
+
+
+def test_get_folder_from_s3_path():
+    key = "bucket/subbucket/file.txt"
+    assert functions.get_folder_from_s3_path(key) == "bucket/subbucket"
