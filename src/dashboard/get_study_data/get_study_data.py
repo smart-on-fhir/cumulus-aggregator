@@ -25,12 +25,19 @@ def study_data_handler(event, context):
     # In the future, we'll want to cache this data someplace, and hydrate it with other
     # sources, like data package info.
     payload = functions.get_s3_json_as_dict(
-        bucket=s3_bucket, key=f"{enums.BucketPath.CACHE}/studies.json", s3_client=s3_client
+        bucket=s3_bucket,
+        key=f"{enums.BucketPath.CACHE}/{enums.JsonFilename.STUDIES.value}.json",
+        s3_client=s3_client,
     )
-    if study:
-        payload = payload[study]
-        if version:
-            payload = payload[version]
-
+    try:
+        if study:
+            payload = payload[study]
+            if version:
+                if version == "@latest":
+                    payload = payload[sorted(payload.keys())[-1]]
+                else:
+                    payload = payload[version]
+    except KeyError:
+        return functions.http_response(404, "Not found", allow_cors=True)
     res = functions.http_response(200, payload, allow_cors=True)
     return res

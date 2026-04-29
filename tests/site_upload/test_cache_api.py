@@ -6,13 +6,13 @@ import boto3
 import pandas
 import pytest
 
-from src.shared import enums
+from src.shared import enums, functions
 from src.site_upload.cache_api import cache_api
-from tests.mock_utils import MOCK_ENV, get_mock_data_packages_cache
+from tests import mock_utils
 
 
 def mock_data_packages(*args, **kwargs):
-    return pandas.DataFrame(get_mock_data_packages_cache(), columns=["table_name"])
+    return pandas.DataFrame(mock_utils.get_mock_data_packages_cache(), columns=["table_name"])
 
 
 def mock_event(source, subject, message):
@@ -57,7 +57,10 @@ def test_cache_api_data(mock_bucket):
     s3_bucket_name = os.environ.get("BUCKET_NAME")
     s3_client = boto3.client("s3")
     cache_api.cache_api_data(
-        s3_client, s3_bucket_name, MOCK_ENV["GLUE_DB_NAME"], enums.JsonFilename.DATA_PACKAGES.value
+        s3_client,
+        s3_bucket_name,
+        mock_utils.MOCK_ENV["GLUE_DB_NAME"],
+        enums.JsonFilename.DATA_PACKAGES.value,
     )
     cache = json.loads(
         s3_client.get_object(
@@ -88,3 +91,68 @@ def test_cache_api_data(mock_bucket):
             "version": "099",
         }
     ]
+
+
+def test_cache_study_data(mock_bucket):
+    s3_bucket_name = os.environ.get("BUCKET_NAME")
+    s3_client = boto3.client("s3")
+    functions.put_s3_file(
+        s3_client=s3_client,
+        s3_bucket_name=s3_bucket_name,
+        key=(
+            f"{enums.BucketPath.MANIFEST.value}/{mock_utils.EXISTING_STUDY}/"
+            f"{mock_utils.NEW_VERSION}/manifest.json"
+        ),
+        payload={
+            "study_prefix": "test",
+            "description": "latest version",
+            "stages": {
+                "default": [
+                    {
+                        "type": "export:counts",
+                        "tables": [
+                            {"name": "test_table", "description": "A test table"},
+                        ],
+                    }
+                ]
+            },
+            "study_owner": "princeton_plainsboro_teaching_hospital",
+        },
+    )
+    cache_api.cache_study_data(
+        s3_client,
+        s3_bucket_name,
+        mock_utils.MOCK_ENV["GLUE_DB_NAME"],
+    )
+    cache = json.loads(
+        s3_client.get_object(
+            Bucket=s3_bucket_name,
+            Key=f"{enums.BucketPath.CACHE.value}/{enums.JsonFilename.STUDIES.value}.json",
+        )["Body"]
+        .read()
+        .decode("UTF-8")
+    )
+    assert cache == {
+        "other_study": {
+            "099": {
+                "study_owner": "st_elsewhere",
+                "study_prefix": "other_study",
+                "description": "version 099 of other_study",
+                "tables": {},
+            }
+        },
+        "study": {
+            "099": {
+                "study_owner": "princeton_plainsboro_teaching_hospital",
+                "study_prefix": "study",
+                "description": "version 099 of study",
+                "tables": {},
+            },
+            "100": {
+                "study_prefix": "test",
+                "description": "latest version",
+                "study_owner": "princeton_plainsboro_teaching_hospital",
+                "tables": {"test_table": {"description": "A test table"}},
+            },
+        },
+    }

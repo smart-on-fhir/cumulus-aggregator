@@ -828,28 +828,34 @@ Resources:
         LogGroup: !Sub "/aws/lambda/CumulusAggDashboardGetStudyData-${DeployStage}-${NetworkName}"
       MemorySize: 128
       Timeout: 100
-      Description: Retrieve data about study descriptions
+      Description: Retrieve data about studies
       Environment:
         Variables:
           BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
       Events:
-        GetStudyDataAPI:
+        GetStudiesAPI:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /study
+            Path: /studies
             Method: GET
-        GetStudyDataStudyAPI:
+        GetStudStudyAPI:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /study/{study}
+            Path: /studies/{study}
             Method: GET
-        GetStudyDataStudyVersionAPI:
+        GetStudyVersionsAPI:
           Type: Api
           Properties:
             RestApiId: !Ref DashboardApiGateway
-            Path: /study/{study}/{version}
+            Path: /studies/{study}/versions/
+            Method: GET
+        GetStudyVersionAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /studies/{study}/versions/{version}
             Method: GET
       Policies:
         - S3ReadPolicy:
