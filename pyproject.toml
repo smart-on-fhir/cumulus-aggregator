@@ -6,6 +6,7 @@ version = "0.3.0"
 # The project dependencies are handled via AWS layers. These are only required for
 # local development.
 dependencies= [
+    "aiobotocore == 3.6.0", # version scanning for aiobotocore is causing issues in CI
     "arrow >=1.2.3",
     "awswrangler >=3.5, <4",
     "boto3 < 1.43.13", 
