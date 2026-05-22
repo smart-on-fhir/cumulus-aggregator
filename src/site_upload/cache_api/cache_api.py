@@ -9,20 +9,17 @@ import boto3
 from shared import decorators, enums, functions
 
 
-def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None:
-    """Performs caching of API data"""
-    if target == enums.JsonFilename.DATA_PACKAGES.value:
-        df = awswrangler.athena.read_sql_query(
-            (
-                f"SELECT table_name FROM information_schema.tables "  # noqa: S608
-                f"WHERE table_schema = '{db}'"  # nosec
-            ),
-            database=db,
-            s3_output=f"s3://{s3_bucket_name}/awswrangler",
-            workgroup=os.environ.get("WORKGROUP_NAME"),
-        )
-    else:
-        raise KeyError("Invalid API caching target")
+def cache_data_packages(s3_client, s3_bucket_name: str, db: str):
+    """Creates a cache of data package metadata information"""
+    df = awswrangler.athena.read_sql_query(
+        (
+            f"SELECT table_name FROM information_schema.tables "  # noqa: S608
+            f"WHERE table_schema = '{db}'"  # nosec
+        ),
+        database=db,
+        s3_output=f"s3://{s3_bucket_name}/awswrangler",
+        workgroup=os.environ.get("WORKGROUP_NAME"),
+    )
     # this filters out system tables
     data_packages = df[df["table_name"].str.contains("__")].iloc[:, 0]
     column_types = functions.get_s3_json_as_dict(
@@ -96,6 +93,48 @@ def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None
         Key=f"{enums.BucketPath.CACHE.value}/{enums.JsonFilename.STUDIES.value}.json",
         Body=json.dumps(studies, indent=2),
     )
+
+
+def cache_study_data(s3_client, s3_bucket_name: str, db: str) -> None:
+    """Creates a cache of study metadata information"""
+    manifest_keys = functions.get_s3_keys(
+        s3_bucket_name=s3_bucket_name, prefix=enums.BucketPath.MANIFEST.value, s3_client=s3_client
+    )
+    manifest_keys = [x for x in manifest_keys if x.endswith(".json")]
+    studies = {}
+    for key in manifest_keys:
+        dp = functions.parse_s3_key(key)
+        if dp.study not in studies.keys():
+            studies[dp.study] = {}
+        manifest = functions.get_s3_json_as_dict(
+            bucket=s3_bucket_name, key=key, s3_client=s3_client
+        )
+        # we'll flatten the manifest table metadata for the api
+        manifest["tables"] = {}
+        for stage in manifest.get("stages", []):
+            for action in manifest["stages"][stage]:
+                if "tables" in action.keys():
+                    for table in action["tables"]:
+                        if isinstance(table, dict):
+                            manifest["tables"][table["name"]] = {
+                                "description": table["description"]
+                            }
+        manifest.pop("stages", None)
+        studies[dp.study][dp.version] = manifest
+    s3_client.put_object(
+        Bucket=s3_bucket_name,
+        Key=f"{enums.BucketPath.CACHE.value}/{enums.JsonFilename.STUDIES.value}.json",
+        Body=json.dumps(studies, indent=2),
+    )
+
+
+def cache_api_data(s3_client, s3_bucket_name: str, db: str, target: str) -> None:
+    """Performs caching of API data"""
+    if target == enums.JsonFilename.DATA_PACKAGES.value:
+        cache_data_packages(s3_client, s3_bucket_name, db)
+        cache_study_data(s3_client, s3_bucket_name, db)
+    else:
+        raise KeyError("Invalid API caching target")
 
 
 @decorators.generic_error_handler(msg="Error caching API responses")
