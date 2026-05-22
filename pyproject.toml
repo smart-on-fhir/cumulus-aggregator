@@ -8,7 +8,7 @@ version = "0.3.0"
 dependencies= [
     "arrow >=1.2.3",
     "awswrangler >=3.5, <4",
-    "boto3",
+    "boto3 < 1.43.13", 
     "cumulus-library >=6, < 7",
     "Jinja2 >=3.1.4, <4",
     "pandas >=2.3.3, <3",
