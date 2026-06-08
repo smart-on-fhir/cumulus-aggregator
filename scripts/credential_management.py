@@ -34,11 +34,11 @@ def create_auth(user: str, auth: str, site: str) -> str:
     return f'"{site_id}": {{"user": "{user}", "site":"{site}"}}'
 
 
-def create_meta(client, bucket_name: str, site: str, folder: str) -> None:
+def create_meta(client, bucket_name: str, site: str, folder: str, display: str) -> None:
     """Adds an entry to the metadata dictionary for routing files"""
     file = "metadata.json"
     meta_dict = _get_s3_data(file, bucket_name, client)
-    meta_dict[site] = {"path": folder}
+    meta_dict[site] = {"path": folder, "display": display}
     _put_s3_data(file, bucket_name, client, meta_dict)
 
 
@@ -79,7 +79,7 @@ if __name__ == "__main__":
         "--create-meta",
         action="extend",
         nargs="+",
-        help="Create metadata. Expects: Site Folder",
+        help="Create metadata. Expects: Site Folder Display",
     )
     s3_modification.add_argument("--delete-meta", help="Delete metadata. Expects: Site")
     args = parser.parse_args()
@@ -96,7 +96,9 @@ if __name__ == "__main__":
         )
         print(f"Add the following key/value to secrets manager: \n {id_str}")
     elif args.create_meta:
-        create_meta(s3_client, args.bucket, args.create_meta[0], args.create_meta[1])
+        create_meta(
+            s3_client, args.bucket, args.create_meta[0], args.create_meta[1], args.create_meta[2]
+        )
         print(f"{args.create_meta[0]} mapped to S3 folder {args.create_meta[1]}")
     elif args.delete_meta:
         succeeded = delete_meta(s3_client, args.bucket, args.delete_meta)

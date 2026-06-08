@@ -101,22 +101,45 @@ def test_cache_study_data(mock_bucket):
         s3_bucket_name=s3_bucket_name,
         key=(
             f"{enums.BucketPath.MANIFEST.value}/{mock_utils.EXISTING_STUDY}/"
-            f"{mock_utils.NEW_VERSION}/manifest.json"
+            f"{mock_utils.EXISTING_VERSION}/manifest.json"
         ),
         payload={
-            "study_prefix": "test",
+            "study_prefix": mock_utils.EXISTING_STUDY,
             "description": "latest version",
             "stages": {
                 "default": [
                     {
                         "type": "export:counts",
                         "tables": [
-                            {"name": "test_table", "description": "A test table"},
+                            {"name": "study__encounter", "description": "A test table"},
                         ],
                     }
                 ]
             },
             "study_owner": "princeton_plainsboro_teaching_hospital",
+            "data_dictionary": [
+                {
+                    "name": "cnt",
+                    "display": "Count",
+                    "description": "A count of records matching the table definitions",
+                    "details": "",
+                    "type": "integer",
+                },
+                {
+                    "name": "gender",
+                    "display": "Gender",
+                    "description": "The patient's gender",
+                    "details": "Corresponds to http://hl7.org/fhir/ValueSet/administrative-gender",
+                    "type": "string",
+                },
+                {
+                    "name": "race_display",
+                    "display": "Race",
+                    "description": "The race the patient identified as",
+                    "details": "Corresponds to http://hl7.org/fhir/us/core/StructureDefinition/us-core-race",
+                    "type": "string",
+                },
+            ],
         },
     )
     cache_api.cache_study_data(
@@ -138,21 +161,71 @@ def test_cache_study_data(mock_bucket):
                 "study_owner": "st_elsewhere",
                 "study_prefix": "other_study",
                 "description": "version 099 of other_study",
+                "study_owner_display": "Saint Elsewhere",
                 "tables": {},
             }
         },
         "study": {
             "099": {
-                "study_owner": "princeton_plainsboro_teaching_hospital",
                 "study_prefix": "study",
-                "description": "version 099 of study",
-                "tables": {},
-            },
-            "100": {
-                "study_prefix": "test",
                 "description": "latest version",
                 "study_owner": "princeton_plainsboro_teaching_hospital",
-                "tables": {"test_table": {"description": "A test table"}},
-            },
+                "data_dictionary": [
+                    {
+                        "name": "cnt",
+                        "display": "Count",
+                        "description": "A count of records matching the table definitions",
+                        "details": "",
+                        "type": "integer",
+                    },
+                    {
+                        "name": "gender",
+                        "display": "Gender",
+                        "description": "The patient's gender",
+                        "details": "Corresponds to http://hl7.org/fhir/ValueSet/administrative-gender",
+                        "type": "string",
+                    },
+                    {
+                        "name": "race_display",
+                        "display": "Race",
+                        "description": "The race the patient identified as",
+                        "details": "Corresponds to http://hl7.org/fhir/us/core/StructureDefinition/us-core-race",
+                        "type": "string",
+                    },
+                ],
+                "study_owner_display": "Princeton Plainsboro Teaching Hospital",
+                "tables": {
+                    "study__encounter": {
+                        "description": "A test table",
+                        "columns": {
+                            "cnt": {
+                                "type": "integer",
+                                "name": "cnt",
+                                "display": "Count",
+                                "description": "A count of records matching the table definitions",
+                                "details": "",
+                            },
+                            "gender": {
+                                "type": "string",
+                                "distinct_values_count": 10,
+                                "name": "gender",
+                                "display": "Gender",
+                                "description": "The patient's gender",
+                                "details": "Corresponds to http://hl7.org/fhir/ValueSet/administrative-gender",
+                            },
+                            "age": {"type": "integer", "distinct_values_count": 10},
+                            "race_display": {
+                                "type": "string",
+                                "distinct_values_count": 10,
+                                "name": "race_display",
+                                "display": "Race",
+                                "description": "The race the patient identified as",
+                                "details": "Corresponds to http://hl7.org/fhir/us/core/StructureDefinition/us-core-race",
+                            },
+                            "site": {"type": "string", "distinct_values_count": 10},
+                        },
+                    }
+                },
+            }
         },
     }

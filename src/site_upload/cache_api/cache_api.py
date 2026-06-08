@@ -95,10 +95,34 @@ def cache_data_packages(s3_client, s3_bucket_name: str, db: str):
     )
 
 
+def _get_metadata_from_table(table: dict, study_cols: dict, dp: dict, data_dict: dict) -> dict:
+    output = {"description": table["description"], "columns": {}}
+    # Note: we can't use dp.data_package here - we have the manifest, not
+    # a path to a file
+
+    table_cols = study_cols[table["name"].split("__")[1]][f"{table['name']}__{dp.version}"][
+        "columns"
+    ]
+    for col, details in table_cols.items():
+        output["columns"][col] = table_cols[col]
+        col_type = next((x for x in data_dict if x["name"] == col), {})
+        for key in col_type:
+            output["columns"][col][key] = col_type[key]
+    return output
+
+
 def cache_study_data(s3_client, s3_bucket_name: str, db: str) -> None:
     """Creates a cache of study metadata information"""
     manifest_keys = functions.get_s3_keys(
         s3_bucket_name=s3_bucket_name, prefix=enums.BucketPath.MANIFEST.value, s3_client=s3_client
+    )
+    column_types = functions.get_s3_json_as_dict(
+        os.environ.get("BUCKET_NAME"),
+        f"{enums.BucketPath.META.value}/{enums.JsonFilename.COLUMN_TYPES.value}.json",
+    )
+    site_info = functions.get_s3_json_as_dict(
+        os.environ.get("BUCKET_NAME"),
+        f"{enums.BucketPath.ADMIN.value}/metadata.json",
     )
     manifest_keys = [x for x in manifest_keys if x.endswith(".json")]
     studies = {}
@@ -106,9 +130,22 @@ def cache_study_data(s3_client, s3_bucket_name: str, db: str) -> None:
         dp = functions.parse_s3_key(key)
         if dp.study not in studies.keys():
             studies[dp.study] = {}
+        study_cols = column_types[dp.study]
         manifest = functions.get_s3_json_as_dict(
             bucket=s3_bucket_name, key=key, s3_client=s3_client
         )
+        owning_site_info = next(
+            (
+                site_info[x]
+                for x in site_info.keys()
+                if site_info[x]["path"] == manifest.get("study_owner")
+            ),
+            {"foo": "bar"},
+        )
+        if display := owning_site_info.get("display"):
+            manifest["study_owner_display"] = display
+        else:  # pragma: no cover
+            manifest["study_owner_display"] = manifest["study_owner"]
         # we'll flatten the manifest table metadata for the api
         manifest["tables"] = {}
         for stage in manifest.get("stages", []):
@@ -116,9 +153,10 @@ def cache_study_data(s3_client, s3_bucket_name: str, db: str) -> None:
                 if "tables" in action.keys():
                     for table in action["tables"]:
                         if isinstance(table, dict):
-                            manifest["tables"][table["name"]] = {
-                                "description": table["description"]
-                            }
+                            manifest["tables"][table["name"]] = _get_metadata_from_table(
+                                table, study_cols, dp, manifest.get("data_dictionary", {})
+                            )
+
         manifest.pop("stages", None)
         studies[dp.study][dp.version] = manifest
     s3_client.put_object(

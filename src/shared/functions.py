@@ -339,7 +339,12 @@ class PackageMetadata:
                     f"Files in {subbucket} do not have an expected filename"
                 )
 
-    def get_tablename(self, subbucket: enum.StrEnum):
+    def get_tablename(self, subbucket: enum.StrEnum | None = None):
+        if subbucket is None:
+            if len(self.filename.split("__")) == 4:
+                subbucket = enums.BucketPath.FLAT
+            else:
+                subbucket = enums.BucketPath.AGGREGATE
         match subbucket:
             case enums.BucketPath.AGGREGATE:
                 return f"{self.study}__{self.data_package}__{self.version}"
