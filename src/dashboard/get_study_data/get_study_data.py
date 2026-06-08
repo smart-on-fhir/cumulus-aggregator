@@ -17,13 +17,12 @@ def study_data_handler(event, context):
     if event["pathParameters"] is not None:
         study = event["pathParameters"].get("study")
         version = event["pathParameters"].get("version")
+        table = event["pathParameters"].get("table")
     else:
         study = None
         version = None
+        table = None
 
-    # This is currently focused on just getting the data out from the cached manifests.
-    # In the future, we'll want to cache this data someplace, and hydrate it with other
-    # sources, like data package info.
     payload = functions.get_s3_json_as_dict(
         bucket=s3_bucket,
         key=f"{enums.BucketPath.CACHE}/{enums.JsonFilename.STUDIES.value}.json",
@@ -37,6 +36,13 @@ def study_data_handler(event, context):
                     payload = payload[sorted(payload.keys())[-1]]
                 else:
                     payload = payload[version]
+
+                if "/dictionary" in event["path"]:
+                    payload = payload.get("data_dictionary", [])
+                elif "/tables" in event["path"]:
+                    payload = payload["tables"]
+                    if table:
+                        payload = payload[table]
     except KeyError:
         return functions.http_response(404, "Not found", allow_cors=True)
     res = functions.http_response(200, payload, allow_cors=True)

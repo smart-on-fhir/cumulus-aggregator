@@ -857,6 +857,24 @@ Resources:
             RestApiId: !Ref DashboardApiGateway
             Path: /studies/{study}/versions/{version}
             Method: GET
+        GetStudyVersionDataDictAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /studies/{study}/versions/{version}/dictionary
+            Method: GET
+        GetStudyVersionTablesAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /studies/{study}/versions/{version}/tables
+            Method: GET
+        GetStudyVersionTableAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /studies/{study}/versions/{version}/tables/{table}
+            Method: GET
       Policies:
         - S3ReadPolicy:
             BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
