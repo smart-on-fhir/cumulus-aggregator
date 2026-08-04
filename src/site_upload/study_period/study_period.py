@@ -63,6 +63,8 @@ def update_study_period(s3_client, sqs_client, s3_bucket, site, study, data_pack
         s3_bucket_name=s3_bucket,
         metadata=study_meta,
         meta_type=enums.JsonFilename.STUDY_PERIODS.value,
+        version=version,
+        study=study,
     )
 
 

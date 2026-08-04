@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 import boto3
 import pytest
 
-from src.shared import enums, functions
+from src.shared import consts, enums, functions
 from src.site_upload.update_metadata import update_metadata
 from tests import mock_utils
 
@@ -387,6 +387,7 @@ def test_update_metadata(mock_bucket, mock_env, mock_queue, messages, assertions
                 {
                     "key": f"{enums.BucketPath.META.value}/{dest}.json",
                     "updates": json.dumps(message),
+                    "version": None,
                 },
                 datetime.now(UTC),
             )
@@ -400,3 +401,126 @@ def test_update_metadata(mock_bucket, mock_env, mock_queue, messages, assertions
         for key in assertion[1]:
             metadata = metadata.get(key, {})
         assert metadata == assertion[2]
+
+
+def test_remove_stale_study_metadata_transactions_scopes_to_study():
+    primary_study_dev_key = (
+        f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{consts.RESERVED_DEV_VERSION}"
+    )
+    primary_study_existing_key = (
+        f"{mock_utils.EXISTING_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_VERSION}"
+    )
+    other_study_dev_key = (
+        f"{mock_utils.OTHER_STUDY}__{mock_utils.EXISTING_DATA_P}__{consts.RESERVED_DEV_VERSION}"
+    )
+    other_study_existing_key = (
+        f"{mock_utils.OTHER_STUDY}__{mock_utils.EXISTING_DATA_P}__{mock_utils.EXISTING_VERSION}"
+    )
+    metadata = {
+        mock_utils.EXISTING_SITE: {
+            mock_utils.EXISTING_STUDY: {
+                mock_utils.EXISTING_DATA_P: {
+                    primary_study_dev_key: {"last_upload": "dev"},
+                    primary_study_existing_key: {"last_upload": "primary"},
+                }
+            }
+        },
+        mock_utils.OTHER_SITE: {
+            mock_utils.EXISTING_STUDY: {
+                mock_utils.EXISTING_DATA_P: {
+                    primary_study_existing_key: {"last_upload": "other_existing"},
+                }
+            },
+            mock_utils.OTHER_STUDY: {
+                mock_utils.EXISTING_DATA_P: {
+                    other_study_dev_key: {"last_upload": "other_dev"},
+                    other_study_existing_key: {"last_upload": "other_existing"},
+                }
+            },
+        },
+    }
+    update_metadata.remove_stale_study_metadata(
+        metadata, mock_utils.EXISTING_STUDY, consts.RESERVED_DEV_VERSION
+    )
+    assert metadata[mock_utils.EXISTING_SITE][mock_utils.EXISTING_STUDY][
+        mock_utils.EXISTING_DATA_P
+    ] == {primary_study_dev_key: {"last_upload": "dev"}}
+    assert metadata[mock_utils.OTHER_SITE][mock_utils.EXISTING_STUDY] == {}
+    other_study = metadata[mock_utils.OTHER_SITE][mock_utils.OTHER_STUDY][
+        mock_utils.EXISTING_DATA_P
+    ]
+    assert set(other_study.keys()) == {other_study_dev_key, other_study_existing_key}
+
+
+def test_remove_stale_study_metadata_column_types_scopes_to_study():
+    dp = mock_utils.EXISTING_DATA_P
+    dev_key = f"{mock_utils.EXISTING_STUDY}__{dp}__{consts.RESERVED_DEV_VERSION}"
+    primary_existing_key = f"{mock_utils.EXISTING_STUDY}__{dp}__{mock_utils.EXISTING_VERSION}"
+    other_existing_key = (
+        f"{mock_utils.EXISTING_STUDY}__{dp}__{mock_utils.OTHER_SITE}__{mock_utils.EXISTING_VERSION}"
+    )
+    metadata = {
+        mock_utils.EXISTING_STUDY: {
+            dp: {dev_key: {"last_upload": "dev"}, primary_existing_key: {"last_upload": "existing"}},
+            f"{dp}__{mock_utils.OTHER_SITE}": {other_existing_key: {"last_upload": "other_existing"}},
+        },
+        mock_utils.OTHER_STUDY: {
+            dp: {f"{mock_utils.OTHER_STUDY}__{dp}__{mock_utils.EXISTING_VERSION}": {"x": 1}},
+        },
+    }
+    update_metadata.remove_stale_study_metadata(
+        metadata, mock_utils.EXISTING_STUDY, consts.RESERVED_DEV_VERSION
+    )
+    assert metadata[mock_utils.EXISTING_STUDY][dp] == {dev_key: {"last_upload": "dev"}}
+    assert f"{dp}__{mock_utils.OTHER_SITE}" not in metadata[mock_utils.EXISTING_STUDY]
+    assert metadata[mock_utils.OTHER_STUDY][dp] != {}
+
+def test_process_event_queue_dev_removes_at_study_level(mock_bucket, mock_env, mock_queue):
+    dev_update = {
+        mock_utils.EXISTING_SITE: {
+            mock_utils.EXISTING_STUDY: {
+                mock_utils.EXISTING_DATA_P: {
+                    consts.RESERVED_DEV_VERSION: {
+                        "transaction_format_version": 2,
+                        "last_upload": "dev_upload",
+                        "last_data_update": None,
+                        "last_aggregation": None,
+                        "last_error": None,
+                        "deleted": None,
+                    }
+                }
+            }
+        }
+    }
+    records = [
+        mock_utils.get_mock_sqs_event_record(
+            {
+                "key": (
+                    f"{enums.BucketPath.META.value}/{enums.JsonFilename.TRANSACTIONS.value}.json"
+                ),
+                "updates": json.dumps(dev_update),
+                "meta_type": enums.JsonFilename.TRANSACTIONS.value,
+                "version": consts.RESERVED_DEV_VERSION,
+                "study": mock_utils.EXISTING_STUDY,
+            },
+            datetime.now(UTC),
+        ),
+    ]
+    update_metadata.update_metadata_handler({"Records": records}, {})
+
+    metadata = functions.get_s3_json_as_dict(
+        mock_utils.TEST_BUCKET,
+        f"{enums.BucketPath.META.value}/{enums.JsonFilename.TRANSACTIONS.value}.json",
+    )
+
+    removed = metadata[mock_utils.EXISTING_SITE][mock_utils.EXISTING_STUDY][
+        mock_utils.EXISTING_DATA_P
+    ]
+    assert list(removed.keys()) == [consts.RESERVED_DEV_VERSION]
+
+    assert (
+        mock_utils.EXISTING_VERSION
+        in (metadata[mock_utils.EXISTING_SITE][mock_utils.OTHER_STUDY][mock_utils.EXISTING_DATA_P])
+    )
+
+    assert metadata[mock_utils.OTHER_SITE][mock_utils.EXISTING_STUDY] == {}

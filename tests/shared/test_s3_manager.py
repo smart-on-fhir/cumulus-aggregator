@@ -416,6 +416,8 @@ def test_write_local_metadata(mock_bucket, mock_env, mock_queue):
         "s3_bucket_name": "cumulus-aggregator-site-counts-test",
         "key": "metadata/transactions.json",
         "updates": '{\n  "foo": "bar"\n}',
+        "version": mock_utils.EXISTING_VERSION,
+        "study": mock_utils.EXISTING_STUDY,
     }
 
 

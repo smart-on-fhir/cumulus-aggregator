@@ -8,7 +8,7 @@ import awswrangler
 import pandas
 from pandas.core.indexes.range import RangeIndex
 
-from shared import decorators, enums, functions, pandas_functions, s3_manager
+from shared import consts, decorators, enums, functions, pandas_functions, s3_manager
 
 log_level = os.environ.get("LAMBDA_LOG_LEVEL", "INFO")
 logger = logging.getLogger()
@@ -27,12 +27,12 @@ def get_static_string_series(static_str: str, index: RangeIndex) -> pandas.Serie
 
 
 def expand_and_concat_powersets(
-    df: pandas.DataFrame, file_path: str, site_name: str
+    df: pandas.DataFrame, file_path: str, site_name: str, version: str
 ) -> pandas.DataFrame:
     """Processes and joins dataframes containing powersets.
     :param df: A dataframe to merge with
     :param file_path: An S3 location of an uploaded dataframe
-    :param site: The site name used by the aggregator, for convenience
+    :param site_name: The site name used by the aggregator, for convenience
     :return: expanded and merged dataframe
 
     This function has two steps in terms of business logic:
@@ -43,6 +43,8 @@ def expand_and_concat_powersets(
         columns with the provided in-memory dataframe. We need to preserve N/A
         values since the powerset, by definition, contains lots of them.
 
+    This function has special handling for the RESERVED_DEV_VERSION. If it is
+    the version currently being uploaded, remove all of the pre-existing data.
     """
     site_df = awswrangler.s3.read_parquet(file_path)
     if site_df.empty:
@@ -52,10 +54,19 @@ def expand_and_concat_powersets(
     df_copy["site"] = get_static_string_series(site_name, df_copy.index)
     # Did we change the schema without updating the version?
     if df.empty is False and set(site_df.columns) != set(df.columns):
-        raise MergeError(
-            "Uploaded data has a different schema than last aggregate",
-            filename=file_path,
-        )
+        if version == consts.RESERVED_DEV_VERSION:
+            logging.info(
+                (
+                    "Uploaded data has a different schema than the ",
+                    f"last aggregation, but dev version {consts.RESERVED_DEV_VERSION} ",
+                    "allows for schema changes, proceeding with aggregation.",
+                )
+            )
+        else:
+            raise MergeError(
+                "Uploaded data has a different schema than last aggregate",
+                filename=file_path,
+            )
 
     # concating in this way adds a new column we want to explictly drop
     # from the final set
@@ -89,8 +100,27 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
     logger.info(f"Proccessing data package at {manager.s3_key}")
     # initializing this early in case an empty file causes us to never set it
     df = pandas.DataFrame()
+
+    if manager.version == consts.RESERVED_DEV_VERSION:
+        functions.remove_previous_uploads(
+            s3_client=manager.s3_client,
+            s3_bucket_name=manager.s3_bucket_name,
+            study=manager.study,
+            version=manager.version,
+        )
+
+    last_valid_file_list = []
     latest_file_list = manager.get_data_package_list(enums.BucketPath.LATEST)
-    last_valid_file_list = manager.get_data_package_list(enums.BucketPath.LAST_VALID)
+    if manager.version != consts.RESERVED_DEV_VERSION:
+        last_valid_file_list = manager.get_data_package_list(enums.BucketPath.LAST_VALID)
+    else:
+        latest_file_list = [
+            path
+            for path in latest_file_list
+            if (path.endswith(manager.s3_key) or manager.s3_key in path)
+            and consts.RESERVED_DEV_VERSION in path
+        ]
+
     for last_valid_path in last_valid_file_list:
         if manager.version not in last_valid_path:
             continue
@@ -105,9 +135,12 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
         # one instead
         try:
             if not any(last_valid_subkey in x for x in latest_file_list):
-                df = expand_and_concat_powersets(df, last_valid_path, last_valid_metadata.site)
+                df = expand_and_concat_powersets(
+                    df, last_valid_path, last_valid_metadata.site, manager.version
+                )
                 manager.update_local_metadata(
-                    enums.TransactionKeys.LAST_AGGREGATION, site=last_valid_metadata.site
+                    enums.TransactionKeys.LAST_AGGREGATION,
+                    site=last_valid_metadata.site,
                 )
         except MergeError as e:
             # This is expected to trigger if there's an issue in expand_and_concat_powersets;
@@ -117,6 +150,7 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
                 last_valid_subkey,
                 e,
             )
+
     for latest_path in latest_file_list:
         if manager.version not in latest_path:
             continue
@@ -143,7 +177,7 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
                 temp_files.append((temp_target, match))
             # otherwise, this is the first instance - after it's in the database,
             # we'll generate a new list of valid tables for the dashboard
-            df = expand_and_concat_powersets(df, latest_path, manager.site)
+            df = expand_and_concat_powersets(df, latest_path, manager.site, manager.version)
             manager.move_file(
                 functions.construct_s3_key(
                     subbucket=enums.BucketPath.LATEST,
@@ -156,10 +190,12 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
             )
 
             manager.update_local_metadata(
-                enums.TransactionKeys.LAST_DATA_UPDATE, site=latest_metadata.site
+                enums.TransactionKeys.LAST_DATA_UPDATE,
+                site=latest_metadata.site,
             )
             manager.update_local_metadata(
-                enums.TransactionKeys.LAST_AGGREGATION, site=latest_metadata.site
+                enums.TransactionKeys.LAST_AGGREGATION,
+                site=latest_metadata.site,
             )
         except Exception as e:
             manager.error_handler(
@@ -173,12 +209,10 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
             # if a new file fails, we want to replace it with the last valid
             # for purposes of aggregation
             for match in filter(lambda x: latest_subkey in x, last_valid_file_list):
-                df = expand_and_concat_powersets(
-                    df,
-                    match,
-                    manager.site,
+                df = expand_and_concat_powersets(df, match, manager.site, manager.version)
+                manager.update_local_metadata(
+                    enums.TransactionKeys.LAST_AGGREGATION,
                 )
-                manager.update_local_metadata(enums.TransactionKeys.LAST_AGGREGATION)
 
     if df.empty:
         raise OSError("File not found")
