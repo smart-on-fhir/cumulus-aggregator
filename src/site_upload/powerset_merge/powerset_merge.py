@@ -33,6 +33,7 @@ def expand_and_concat_powersets(
     :param df: A dataframe to merge with
     :param file_path: An S3 location of an uploaded dataframe
     :param site_name: The site name used by the aggregator, for convenience
+    :param version: The version of the new data being merged in.
     :return: expanded and merged dataframe
 
     This function has two steps in terms of business logic:
