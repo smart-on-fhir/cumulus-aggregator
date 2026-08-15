@@ -461,8 +461,14 @@ def test_remove_stale_study_metadata_column_types_scopes_to_study():
     )
     metadata = {
         mock_utils.EXISTING_STUDY: {
-            dp: {dev_key: {"last_upload": "dev"}, primary_existing_key: {"last_upload": "existing"}},
-            f"{dp}__{mock_utils.OTHER_SITE}": {other_existing_key: {"last_upload": "other_existing"}},
+            dp: {
+                dev_key: {"last_upload": "dev"},
+                primary_existing_key: {"last_upload": "existing"},
+            },
+            f"{dp}__{mock_utils.OTHER_SITE}": {
+                other_existing_key: {"last_upload": "other_existing"}
+            },
+            f"{dp}_flat": "dev",
         },
         mock_utils.OTHER_STUDY: {
             dp: {f"{mock_utils.OTHER_STUDY}__{dp}__{mock_utils.EXISTING_VERSION}": {"x": 1}},
@@ -474,6 +480,7 @@ def test_remove_stale_study_metadata_column_types_scopes_to_study():
     assert metadata[mock_utils.EXISTING_STUDY][dp] == {dev_key: {"last_upload": "dev"}}
     assert f"{dp}__{mock_utils.OTHER_SITE}" not in metadata[mock_utils.EXISTING_STUDY]
     assert metadata[mock_utils.OTHER_STUDY][dp] != {}
+
 
 def test_process_event_queue_dev_removes_at_study_level(mock_bucket, mock_env, mock_queue):
     dev_update = {
