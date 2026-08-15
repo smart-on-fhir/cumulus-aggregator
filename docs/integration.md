@@ -49,10 +49,10 @@ If the quick test was successful, you can test your processing pipeline entirely
   includes instructions to deploy with a synthetic dataset.
 - When it's complete, you should be able to view data in athena to verify.
 - In the cumulus library repo, build the Athena tables and export results, with
-  `cumulus-library build` and `cumulus-library export` commands, with
-  (make sure you set the setup guide in the
-  [Cumulus Library documentation](https://docs.smarthealthit.org/cumulus/etl/library/) 
-  the appropriate environment variables/AWS credentials)
+  `cumulus-library build` and `cumulus-library export` commands, with 
+  the appropriate environment variables/AWS credentials
+  (make sure you follow the setup guide in the
+  [Cumulus Library documentation](https://docs.smarthealthit.org/cumulus/etl/library/)).
 - When the export completes, you should have folders in `./library/data_export` corresponding to the currently configured exportable studies (at the time of this writing, `core` and `covid`). 
 - Run the bulk uploader with `cumulus-library upload`.
 
