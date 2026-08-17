@@ -215,23 +215,12 @@ def remove_previous_uploads(
     study: str,
     version: str,
 ) -> None:
-    """Clears all prior-version state for a study when called. This is generally expected
-    to be used only with the RESERVED_DEV_VERSION. When called, this function is part of a
-    process to fully replace the current contents of a study with the new version. Metadata
-    files are separately handled since they are not expected to be deleted but to be appended to.
-    """
-    for prefix in (
-        enums.BucketPath.AGGREGATE,
-        enums.BucketPath.FLAT,
-        enums.BucketPath.LAST_VALID,
-        enums.BucketPath.MANIFEST,
-        enums.BucketPath.STUDY_META,
-    ):
+    """Clears AGGREGATE and LAST VALID prior uploads for the DEV VERSION state for the study."""
+    for prefix in (enums.BucketPath.AGGREGATE, enums.BucketPath.LAST_VALID):
         for key in get_s3_keys(s3_client, s3_bucket_name, prefix):
             parsed_key = parse_s3_key(key)
-            if parsed_key.version == version or parsed_key.study != study:
-                continue
-            delete_s3_file(s3_client, s3_bucket_name, key)
+            if parsed_key.version == version and parsed_key.study == study:
+                delete_s3_file(s3_client, s3_bucket_name, key)
 
 
 # S3 data management

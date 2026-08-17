@@ -444,8 +444,10 @@ def test_remove_stale_study_metadata_transactions_scopes_to_study():
     )
     assert metadata[mock_utils.EXISTING_SITE][mock_utils.EXISTING_STUDY][
         mock_utils.EXISTING_DATA_P
-    ] == {primary_study_dev_key: {"last_upload": "dev"}}
-    assert metadata[mock_utils.OTHER_SITE][mock_utils.EXISTING_STUDY] == {}
+    ] == {primary_study_existing_key: {"last_upload": "primary"}}
+    assert metadata[mock_utils.OTHER_SITE][mock_utils.EXISTING_STUDY][
+        mock_utils.EXISTING_DATA_P
+    ] == {primary_study_existing_key: {"last_upload": "other_existing"}}
     other_study = metadata[mock_utils.OTHER_SITE][mock_utils.OTHER_STUDY][
         mock_utils.EXISTING_DATA_P
     ]
@@ -477,9 +479,15 @@ def test_remove_stale_study_metadata_column_types_scopes_to_study():
     update_metadata.remove_stale_study_metadata(
         metadata, mock_utils.EXISTING_STUDY, consts.RESERVED_DEV_VERSION
     )
-    assert metadata[mock_utils.EXISTING_STUDY][dp] == {dev_key: {"last_upload": "dev"}}
-    assert f"{dp}__{mock_utils.OTHER_SITE}" not in metadata[mock_utils.EXISTING_STUDY]
-    assert metadata[mock_utils.OTHER_STUDY][dp] != {}
+    assert metadata[mock_utils.EXISTING_STUDY][dp] == {
+        primary_existing_key: {"last_upload": "existing"}
+    }
+    assert metadata[mock_utils.EXISTING_STUDY][f"{dp}__{mock_utils.OTHER_SITE}"] == {
+        other_existing_key: {"last_upload": "other_existing"}
+    }
+    assert metadata[mock_utils.OTHER_STUDY][dp] == {
+        f"{mock_utils.OTHER_STUDY}__{dp}__{mock_utils.EXISTING_VERSION}": {"x": 1}
+    }
 
 
 def test_process_event_queue_dev_removes_at_study_level(mock_bucket, mock_env, mock_queue):
@@ -523,11 +531,14 @@ def test_process_event_queue_dev_removes_at_study_level(mock_bucket, mock_env, m
     removed = metadata[mock_utils.EXISTING_SITE][mock_utils.EXISTING_STUDY][
         mock_utils.EXISTING_DATA_P
     ]
-    assert list(removed.keys()) == [consts.RESERVED_DEV_VERSION]
+    assert set(removed.keys()) == {mock_utils.EXISTING_VERSION, consts.RESERVED_DEV_VERSION}
 
     assert (
         mock_utils.EXISTING_VERSION
         in (metadata[mock_utils.EXISTING_SITE][mock_utils.OTHER_STUDY][mock_utils.EXISTING_DATA_P])
     )
 
-    assert metadata[mock_utils.OTHER_SITE][mock_utils.EXISTING_STUDY] == {}
+    assert (
+        mock_utils.EXISTING_VERSION
+        in metadata[mock_utils.OTHER_SITE][mock_utils.EXISTING_STUDY][mock_utils.EXISTING_DATA_P]
+    )

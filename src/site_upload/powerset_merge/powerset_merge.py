@@ -45,7 +45,8 @@ def expand_and_concat_powersets(
         values since the powerset, by definition, contains lots of them.
 
     This function has special handling for the RESERVED_DEV_VERSION. If it is
-    the version currently being uploaded, remove all of the pre-existing data.
+    the version currently being uploaded, schema mismatches are allowed rather
+    than raising an error.
     """
     site_df = awswrangler.s3.read_parquet(file_path)
     if site_df.empty:
@@ -57,11 +58,9 @@ def expand_and_concat_powersets(
     if df.empty is False and set(site_df.columns) != set(df.columns):
         if version == consts.RESERVED_DEV_VERSION:
             logging.info(
-                (
-                    "Uploaded data has a different schema than the ",
-                    f"last aggregation, but dev version {consts.RESERVED_DEV_VERSION} ",
-                    "allows for schema changes, proceeding with aggregation.",
-                )
+                f"Uploaded data has a different schema than the last aggregation, "
+                f"but dev version {consts.RESERVED_DEV_VERSION} allows for schema "
+                "changes, proceeding with aggregation."
             )
         else:
             raise MergeError(
@@ -110,18 +109,8 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
             version=manager.version,
         )
 
-    last_valid_file_list = []
     latest_file_list = manager.get_data_package_list(enums.BucketPath.LATEST)
-    if manager.version != consts.RESERVED_DEV_VERSION:
-        last_valid_file_list = manager.get_data_package_list(enums.BucketPath.LAST_VALID)
-    else:
-        latest_file_list = [
-            path
-            for path in latest_file_list
-            if (path.endswith(manager.s3_key) or manager.s3_key in path)
-            and consts.RESERVED_DEV_VERSION in path
-        ]
-
+    last_valid_file_list = manager.get_data_package_list(enums.BucketPath.LAST_VALID)
     for last_valid_path in last_valid_file_list:
         if manager.version not in last_valid_path:
             continue
@@ -140,8 +129,7 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
                     df, last_valid_path, last_valid_metadata.site, manager.version
                 )
                 manager.update_local_metadata(
-                    enums.TransactionKeys.LAST_AGGREGATION,
-                    site=last_valid_metadata.site,
+                    enums.TransactionKeys.LAST_AGGREGATION, site=last_valid_metadata.site
                 )
         except MergeError as e:
             # This is expected to trigger if there's an issue in expand_and_concat_powersets;
@@ -151,7 +139,6 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
                 last_valid_subkey,
                 e,
             )
-
     for latest_path in latest_file_list:
         if manager.version not in latest_path:
             continue
@@ -191,12 +178,10 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
             )
 
             manager.update_local_metadata(
-                enums.TransactionKeys.LAST_DATA_UPDATE,
-                site=latest_metadata.site,
+                enums.TransactionKeys.LAST_DATA_UPDATE, site=latest_metadata.site
             )
             manager.update_local_metadata(
-                enums.TransactionKeys.LAST_AGGREGATION,
-                site=latest_metadata.site,
+                enums.TransactionKeys.LAST_AGGREGATION, site=latest_metadata.site
             )
         except Exception as e:
             manager.error_handler(
@@ -210,10 +195,13 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
             # if a new file fails, we want to replace it with the last valid
             # for purposes of aggregation
             for match in filter(lambda x: latest_subkey in x, last_valid_file_list):
-                df = expand_and_concat_powersets(df, match, manager.site, manager.version)
-                manager.update_local_metadata(
-                    enums.TransactionKeys.LAST_AGGREGATION,
+                df = expand_and_concat_powersets(
+                    df,
+                    match,
+                    manager.site,
+                    manager.version,
                 )
+                manager.update_local_metadata(enums.TransactionKeys.LAST_AGGREGATION)
 
     if df.empty:
         raise OSError("File not found")

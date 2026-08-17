@@ -46,14 +46,14 @@ def remove_stale_study_metadata(node: dict, study: str, version: str) -> None:
 def remove_stale_version_metadata(node: dict, version: str) -> None:
     """
     Given a metadata dictionary and version, removes all instance of data
-    which are NOT of the specified version from the dictionary.
+    which ARE the specified version from the dictionary.
     """
     for key in list(node.keys()):
         versions = node[key]
         if not isinstance(versions, dict):
             continue
         for version_key in list(versions.keys()):
-            if version_key != version and not version_key.endswith(f"__{version}"):
+            if version_key == version or version_key.endswith(f"__{version}"):
                 del versions[version_key]
         if not versions:
             del node[key]
