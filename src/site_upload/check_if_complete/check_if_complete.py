@@ -63,7 +63,7 @@ def check_if_complete(message) -> (bool, dict):
 
 def has_new_packages(message, transaction) -> bool:
     # In the case of the reserved dev version, even if it exists,
-    # run the crawler as it is possible to have deleted versions.
+    # run the crawler as it is possible to have schema changes.
     if transaction["version"] == consts.RESERVED_DEV_VERSION:
         return True
     db = os.environ.get("GLUE_DB_NAME")
