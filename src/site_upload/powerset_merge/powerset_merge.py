@@ -100,15 +100,6 @@ def merge_powersets(manager: s3_manager.S3Manager) -> None:
     logger.info(f"Proccessing data package at {manager.s3_key}")
     # initializing this early in case an empty file causes us to never set it
     df = pandas.DataFrame()
-
-    if manager.version == consts.RESERVED_DEV_VERSION:
-        functions.remove_previous_uploads(
-            s3_client=manager.s3_client,
-            s3_bucket_name=manager.s3_bucket_name,
-            study=manager.study,
-            version=manager.version,
-        )
-
     latest_file_list = manager.get_data_package_list(enums.BucketPath.LATEST)
     last_valid_file_list = manager.get_data_package_list(enums.BucketPath.LAST_VALID)
     for last_valid_path in last_valid_file_list:

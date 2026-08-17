@@ -7,7 +7,7 @@ from io import BytesIO
 
 import boto3
 
-from shared import decorators, enums, functions, s3_manager
+from shared import consts, decorators, enums, functions, s3_manager
 
 log_level = os.environ.get("LAMBDA_LOG_LEVEL", "INFO")
 logger = logging.getLogger()
@@ -19,6 +19,15 @@ def unzip_upload(s3_client, sns_client, s3_bucket_name: str, s3_key: str) -> Non
     buffer = BytesIO(s3_client.get_object(Bucket=s3_bucket_name, Key=s3_key)["Body"].read())
     archive = zipfile.ZipFile(buffer)
     files = archive.namelist()
+
+    version = f"{metadata.data_package}__{metadata.version}"
+    if version == consts.RESERVED_DEV_VERSION:
+        functions.remove_previous_uploads(
+            s3_client=s3_client,
+            s3_bucket_name=s3_bucket_name,
+            study=metadata.study,
+            version=version,
+        )
 
     # We'll update the transaction data with the files we're going to process
     # (we can't use the manifest, because empty tables will not get uploaded),
