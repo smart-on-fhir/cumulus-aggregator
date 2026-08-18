@@ -26,6 +26,54 @@ Parameters:
 
 Resources:
 
+  SiteApiHeartbeatFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggSiteApiHeartbeat-${DeployStage}'
+      CodeUri: ./src/shared
+      Handler: heartbeat.heartbeat_handler
+      Runtime: "python3.11"
+      MemorySize: 128
+      Timeout: 100
+      Description: Provides a static response for testing availability of the API proxy
+      Environment:
+        Variables:
+          DISPLAY_NAME: !Sub 'Cumulus Site API proxy - ${DeployStage}'
+          DOC_URL: https://docs.smarthealthit.org/cumulus/library/sharing-data.html#uploading-data-to-cumulus-aggregator
+      Events:
+        SiteApiProxy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SiteApiProxy
+            Path: /
+            Method: GET
+
+  # TODO: It would be good to bind the lambda to the root resource directly,
+  # but this is surprisinly fussy to do given all the fiddly bits for 'extract
+  # part of a json payload and convert it to HTML'. We'll last mile that bit
+  # by hand for now just to unblock integration. Some WIP is below for future
+  # reference
+  
+  # SiteApiHeartbeatMethod:
+  #   Type: AWS::ApiGateway::Method
+  #   Properties:
+  #     RestApiId: !Ref SiteApiProxy
+  #     ResourceId: !GetAtt SiteApiProxy.RootResourceId
+  #     HttpMethod: GET
+  #     AuthorizationType: NONE
+  #     Integration:
+  #       IntegrationResponses:
+  #         - StatusCode: 200
+  #           ResponseTemplates:
+  #             text/html: "$input.path('body')"
+  #       IntegrationHttpMethod: POST
+  #       Type: AWS_PROXY
+  #     # MethodResponses:
+  #     #   - StatusCode: 200
+  #     #     ResponseParameters:
+  #     #       text/html: Empty
+
+
   SiteApiProxy:
     Type: AWS::ApiGateway::RestApi
     Properties:
@@ -80,6 +128,30 @@ Resources:
       LogGroupName: !Sub "/aws/apigateway/${SiteApiProxy}"
 
       RetentionInDays: !Ref RetentionTime
+
+  DashboardApiHeartbeatFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggDashboardApiHeartbeat-${DeployStage}'
+      CodeUri: ./src/shared
+      Handler: heartbeat.heartbeat_handler
+      Runtime: "python3.11"
+      MemorySize: 128
+      Timeout: 100
+      Description: Provides a static response for testing availability of the API proxy
+      Environment:
+        Variables:
+          DISPLAY_NAME: !Sub 'Cumulus Dashboard API proxy - ${DeployStage}'
+          DOC_URL: https://docs.smarthealthit.org/cumulus/aggregator/dashboard-api.html
+      Events:
+        DashboardApiProxy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiProxy
+            Path: /
+            Method: GET
+
+
 
   DashboardApiProxy:
     Type: AWS::ApiGateway::RestApi
