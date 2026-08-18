@@ -9,7 +9,7 @@ import pytest
 import time_machine
 from pandas import read_parquet
 
-from src.shared import enums, functions
+from src.shared import consts, enums, functions
 from src.site_upload.powerset_merge import powerset_merge
 from tests import mock_utils
 
@@ -24,6 +24,21 @@ from tests import mock_utils
             mock_utils.EXISTING_SITE,
             mock_utils.EXISTING_DATA_P,
             mock_utils.EXISTING_VERSION,
+            "encounter.parquet",
+            False,
+            False,
+            200,
+            mock_utils.ITEM_COUNT + 2,
+            506,
+            [1103, pandas.NA, pandas.NA, pandas.NA, pandas.NA],
+            [10, pandas.NA, 78, "Not Hispanic or Latino", "princeton_plainsboro_teaching_hospital"],
+        ),
+        (  # Adding a dev data package to a site with uploads
+            "./tests/test_data/count_synthea_patient.parquet",
+            mock_utils.NEW_STUDY,
+            mock_utils.EXISTING_SITE,
+            mock_utils.EXISTING_DATA_P,
+            consts.RESERVED_DEV_VERSION,
             "encounter.parquet",
             False,
             False,
@@ -377,5 +392,35 @@ def test_expand_and_concat(mock_bucket, upload_file, load_empty, raises):
             s3_path,
         )
         powerset_merge.expand_and_concat_powersets(
-            df, f"s3://{mock_utils.TEST_BUCKET}/{s3_path}", mock_utils.EXISTING_STUDY
+            df,
+            f"s3://{mock_utils.TEST_BUCKET}/{s3_path}",
+            mock_utils.EXISTING_STUDY,
+            mock_utils.EXISTING_VERSION,
         )
+
+
+@pytest.mark.parametrize(
+    "version,raises",
+    [
+        (mock_utils.EXISTING_VERSION, pytest.raises(powerset_merge.MergeError)),
+        (
+            consts.RESERVED_DEV_VERSION,
+            does_not_raise(),
+        ),
+    ],
+)
+def test_expand_and_concat_dev_version_allows_schema_mismatch(mock_bucket, version, raises):
+    df = read_parquet("./tests/test_data/count_synthea_patient_agg.parquet")
+    s3_path = f"test/{consts.RESERVED_DEV_VERSION}/uploaded.parquet"
+    s3_client = boto3.client("s3", region_name="us-east-1")
+    s3_client.upload_file("./tests/test_data/other_schema.parquet", mock_utils.TEST_BUCKET, s3_path)
+
+    with raises:
+        result = powerset_merge.expand_and_concat_powersets(
+            df,
+            f"s3://{mock_utils.TEST_BUCKET}/{s3_path}",
+            mock_utils.EXISTING_SITE,
+            version,
+        )
+
+        assert not result.empty

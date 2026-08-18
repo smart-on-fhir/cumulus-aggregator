@@ -305,6 +305,8 @@ class S3Manager:
             s3_bucket_name=self.s3_bucket_name,
             metadata=metadata,
             meta_type=meta_type,
+            version=self.version,
+            study=self.study,
         )
 
     # transaction management

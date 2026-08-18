@@ -8,7 +8,7 @@ from time import sleep
 import awswrangler
 import boto3
 
-from shared import enums, errors, functions
+from shared import consts, enums, errors, functions
 
 logger = logging.getLogger()
 logger.setLevel("INFO")
@@ -62,6 +62,10 @@ def check_if_complete(message) -> (bool, dict):
 
 
 def has_new_packages(message, transaction) -> bool:
+    # In the case of the reserved dev version, even if it exists,
+    # run the crawler as it is possible to have schema changes.
+    if transaction["version"] == consts.RESERVED_DEV_VERSION:
+        return True
     db = os.environ.get("GLUE_DB_NAME")
     s3_bucket_name = os.environ.get("BUCKET_NAME")
     if not re.fullmatch("^[a-zA-Z0-9_]+$", message["study"]):  # pragma: no cover
