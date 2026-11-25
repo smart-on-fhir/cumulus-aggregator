@@ -5,6 +5,7 @@ This is intended to provide an implementation of the logic described in docs/api
 import logging
 import os
 import pathlib
+import urllib
 
 import awswrangler
 import boto3
@@ -160,6 +161,7 @@ def _build_query(
         none_params = []
         for filter_config in filter_group:
             filter_config = filter_config.split(":")
+            filter_config = [urllib.parse.unquote(x) for x in filter_config]
             if filter_config[1] == "isNone" and filter_config[0] == query_params["column"]:
                 is_none = True
             elif filter_config[1] == "isNotNone" and filter_config[0] == query_params["column"]:
