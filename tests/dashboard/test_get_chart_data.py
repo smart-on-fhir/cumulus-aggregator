@@ -63,7 +63,6 @@ def test_format_payload(query_params, filter_groups, expected_payload):
     else:
         total_df = None
     payload = get_chart_data._format_payload(df, total_df, query_params, filter_groups, "cnt")
-    print(payload)
     assert payload == expected_payload
 
 
@@ -248,13 +247,14 @@ def test_get_data_cols_err(mock_client):
             {
                 "column": "nato",
                 "filters": ["greek:isNotNone"],
-                "rowCount": 3,
-                "totalCount": 60,
+                "rowCount": 4,
+                "totalCount": 65,
                 "stratifier": "greek",
-                "counts": {"alfa": 50, "bravo": 10},
+                "counts": {"alfa": 50, "bravo": 10, "comma,": 5},
                 "data": [
                     {"stratifier": "alpha", "rows": [["alfa", 40], ["bravo", 10]]},
                     {"stratifier": "beta", "rows": [["alfa", 10]]},
+                    {"stratifier": "colon:", "rows": [["comma,", 5]]},
                 ],
             },
         ),
@@ -272,6 +272,25 @@ def test_get_data_cols_err(mock_client):
                 "stratifier": "greek",
                 "counts": {"alfa": 5},
                 "data": [{"stratifier": "cumulus__none", "rows": [["alfa", 5]]}],
+            },
+        ),
+        # test filter quoting
+        (
+            {
+                "queryStringParameters": {"column": "nato", "stratifier": "greek"},
+                "multiValueQueryStringParameters": {
+                    "filter": ["nato:strEq:comma%2C,greek:strEq:colon%3A"]
+                },
+                "pathParameters": {"data_package_id": "test__cube__001"},
+            },
+            {
+                "column": "nato",
+                "filters": ["nato:strEq:comma%2C,greek:strEq:colon%3A"],
+                "rowCount": 1,
+                "totalCount": 5,
+                "stratifier": "greek",
+                "counts": {"comma,": 5},
+                "data": [{"stratifier": "colon:", "rows": [["comma,", 5]]}],
             },
         ),
     ],
@@ -387,7 +406,7 @@ def mock_get_table_cols_results(name):
         ({"column": "nato"}, ["bool:isNull"], [("alfa", 50), ("bravo", 10)]),
         ({"column": "nato"}, ["bool:isNotNull"], [("alfa", 50), ("bravo", 10)]),
         ({"column": "nato"}, ["greek:isNone"], [("alfa", 5)]),
-        ({"column": "nato"}, ["greek:isNotNone"], [("alfa", 50), ("bravo", 10)]),
+        ({"column": "nato"}, ["greek:isNotNone"], [("alfa", 50), ("bravo", 10), ("comma,", 5)]),
     ],
 )
 @mock.patch(

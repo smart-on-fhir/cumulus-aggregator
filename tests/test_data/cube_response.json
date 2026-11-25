@@ -1,8 +1,7 @@
 {
     "column": "nato",
     "filters": [],
-    "rowCount": 114,
-    "totalCount": 1930,
+    "rowCount": 115,
     "data": [
         {
             "rows": [
@@ -461,8 +460,13 @@
                 [
                     5,
                     ""
+                ],
+                [
+                    5,
+                    "comma,"
                 ]
             ]
         }
-    ]
+    ],
+    "totalCount": 1935
 }

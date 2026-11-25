@@ -1,14 +1,15 @@
 {
     "column": "nato",
     "filters": [],
-    "rowCount": 114,
-    "totalCount": 1930,
+    "rowCount": 115,
     "stratifier": "bool",
     "counts": {
         "": 965,
         "alfa": 805,
-        "bravo": 160
+        "bravo": 160,
+        "comma,": 5
     },
+    "totalCount": 1935,
     "data": [
         {
             "stratifier": "",
@@ -24,6 +25,10 @@
                 [
                     "bravo",
                     80
+                ],
+                [
+                    "comma,",
+                    5
                 ]
             ]
         },
