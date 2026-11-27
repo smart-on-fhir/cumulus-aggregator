@@ -129,17 +129,17 @@ def mock_bucket():
     for param_list in aggregate_params:
         _init_mock_data(s3_client, bucket, *param_list)
 
-    credential_management.create_meta(
+    credential_management.create_site(
         s3_client,
         bucket,
         "ppth",
         "princeton_plainsboro_teaching_hospital",
         "Princeton Plainsboro Teaching Hospital",
     )
-    credential_management.create_meta(
+    credential_management.create_site(
         s3_client, bucket, "elsewhere", "st_elsewhere", "Saint Elsewhere"
     )
-    credential_management.create_meta(s3_client, bucket, "hope", "chicago_hope", "Chicago Hope")
+    credential_management.create_site(s3_client, bucket, "hope", "chicago_hope", "Chicago Hope")
 
     for meta_type, source in [
         [enums.JsonFilename.TRANSACTIONS.value, mock_utils.get_mock_metadata()],

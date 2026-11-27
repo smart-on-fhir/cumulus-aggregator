@@ -47,14 +47,15 @@ def upload_url_handler(event, context):
     """Processes event from API Gateway"""
     del context
     try:
-        metadata_db = functions.get_s3_json_as_dict(
-            os.environ.get("BUCKET_NAME"), f"{enums.BucketPath.ADMIN.value}/metadata.json"
+        site_db = functions.get_s3_json_as_dict(
+            os.environ.get("BUCKET_NAME"),
+            f"{enums.BucketPath.ADMIN.value}/{enums.JsonFilename.SITES.value}.json",
         )
     except Exception:
         return functions.http_response(
             500, "Stack configuration error - check bucket name & metadata."
         )
-    user = event["requestContext"]["authorizer"]["principalId"]
+    site = event["requestContext"]["authorizer"]["principalId"]
     body = json.loads(event["body"])
     for key in ["study", "filename"]:
         if key not in body.keys() or body[key] is None:
@@ -71,7 +72,7 @@ def upload_url_handler(event, context):
     try:
         manager = s3_manager.S3Manager(
             event,
-            site=metadata_db[user]["path"],
+            site=site_db[site]["path"],
             study=body["study"],
             data_package=None,
             version=version,
@@ -82,7 +83,7 @@ def upload_url_handler(event, context):
         res = create_presigned_post(
             os.environ.get("BUCKET_NAME"),
             f"{enums.BucketPath.UPLOAD_STAGING.value}/{body['study']}/"
-            f"{metadata_db[user]['path']}/{int(version):03d}/{body['filename']}",
+            f"{site_db[site]['path']}/{int(version):03d}/{body['filename']}",
             transaction_id,
         )
         return res

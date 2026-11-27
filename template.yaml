@@ -815,6 +815,48 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${DashboardGetMetadataFunction}"
       RetentionInDays: !Ref RetentionTime
 
+  DashboardGetSitesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CumulusAggDashboardGetSites-${DeployStage}-${NetworkName}'
+      CodeUri: ./src/dashboard/get_Sites
+      Handler: get_sites.sites_handler
+      Runtime: "python3.11"
+      LoggingConfig:
+        ApplicationLogLevel: !Ref LogLevel
+        LogFormat: !Ref LogFormat
+        LogGroup: !Sub "/aws/lambda/CumulusAggDashboardGetSites-${DeployStage}-${NetworkName}"
+      MemorySize: 128
+      Timeout: 100
+      Description: Retrieve data about site uploads
+      Environment:
+        Variables:
+          BUCKET_NAME: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+      Events:
+        GetSitesAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DashboardApiGateway
+            Path: /sites/
+            Method: GET
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub '${BucketNameParameter}-${AWS::AccountId}-${DeployStage}-${NetworkName}'
+        - Statement:
+          - Sid: KMSDecryptPolicy
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+            Resource:
+              - !ImportValue cumulus-kms-KMSKeyArn
+
+  DashboardGetSitesLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${DashboardGetSitesFunction}"
+      RetentionInDays: !Ref RetentionTime
+
+
   DashboardGetStudyDataFunction:
     Type: AWS::Serverless::Function
     Properties:

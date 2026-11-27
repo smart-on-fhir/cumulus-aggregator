@@ -122,7 +122,7 @@ def cache_study_data(s3_client, s3_bucket_name: str, db: str) -> None:
     )
     site_info = functions.get_s3_json_as_dict(
         os.environ.get("BUCKET_NAME"),
-        f"{enums.BucketPath.ADMIN.value}/metadata.json",
+        f"{enums.BucketPath.ADMIN.value}/{enums.JsonFilename.SITES.value}.json",
     )
     manifest_keys = [x for x in manifest_keys if x.endswith(".json")]
     studies = {}
