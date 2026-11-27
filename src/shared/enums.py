@@ -40,6 +40,7 @@ class JsonFilename(enum.StrEnum):
     DATA_PACKAGES = "data_packages"
     FLAT_PACKAGES = "flat_packages"
     STUDY_PERIODS = "study_periods"
+    SITES = "sites"
     STUDIES = "studies"
 
 

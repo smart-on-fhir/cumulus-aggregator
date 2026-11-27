@@ -87,9 +87,14 @@ def http_response(
 
 
 def check_meta_type(meta_type: str) -> None:
-    """helper for ensuring specified metadata types"""
+    """Alias for check_json_type"""
+    check_json_type(meta_type)
+
+
+def check_json_type(json_type: str) -> None:
+    """helper for ensuring specified json filenames are valid"""
     types = [item for item in enums.JsonFilename]
-    if meta_type not in types:
+    if json_type not in types:
         raise ValueError("invalid metadata type specified")
 
 
@@ -98,11 +103,24 @@ def read_metadata(
     s3_bucket_name: str,
     *,
     meta_type: str = enums.JsonFilename.TRANSACTIONS,
+):
+    """Reads expected json files from the metadata folder"""
+    return read_json_config(
+        s3_client, s3_bucket_name, subfolder=enums.BucketPath.META, json_type=meta_type
+    )
+
+
+def read_json_config(
+    s3_client,
+    s3_bucket_name: str,
+    *,
+    subfolder: str,
+    json_type: str,
 ) -> dict:
-    """Reads transaction information from an s3 bucket as a dictionary"""
-    check_meta_type(meta_type)
-    s3_path = f"{enums.BucketPath.META}/{meta_type}.json"
-    res = s3_client.list_objects_v2(Bucket=s3_bucket_name, Prefix=s3_path)
+    """Reads expected json files from an s3 bucket as a dictionary"""
+    check_json_type(json_type)
+    s3_path = f"{subfolder}/{json_type}.json"
+    res = s3_client.list_objects_v2(Bucket=s3_bucket_name, Prefix=subfolder)
     if "Contents" in res:
         res = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_path)
         doc = res["Body"].read()
@@ -136,7 +154,7 @@ def update_metadata(
     if extra_items is None:
         extra_items = {}
 
-    check_meta_type(meta_type)
+    check_json_type(meta_type)
     match meta_type:
         case enums.JsonFilename.TRANSACTIONS:
             site_metadata = metadata.setdefault(site, {})
@@ -190,7 +208,7 @@ def write_metadata(
     meta_type: str = enums.JsonFilename.TRANSACTIONS,
 ) -> None:
     """Queues transaction deltas to be written to an S3 bucket"""
-    check_meta_type(meta_type)
+    check_json_type(meta_type)
     sqs_client.send_message(
         QueueUrl=os.environ.get("QUEUE_METADATA_UPDATE"),
         MessageBody=json.dumps(

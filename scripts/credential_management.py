@@ -9,6 +9,8 @@ import sys
 import boto3
 from requests.auth import _basic_auth_str
 
+SITE_FILE = "sites.json"
+
 
 def _get_s3_data(name: str, bucket_name: str, client, path: str = "admin") -> dict:
     """Convenience class for retrieving a dict from S3"""
@@ -34,21 +36,19 @@ def create_auth(user: str, auth: str, site: str) -> str:
     return f'"{site_id}": {{"user": "{user}", "site":"{site}"}}'
 
 
-def create_meta(client, bucket_name: str, site: str, folder: str, display: str) -> None:
-    """Adds an entry to the metadata dictionary for routing files"""
-    file = "metadata.json"
-    meta_dict = _get_s3_data(file, bucket_name, client)
-    meta_dict[site] = {"path": folder, "display": display}
-    _put_s3_data(file, bucket_name, client, meta_dict)
+def create_site(client, bucket_name: str, site: str, folder: str, display: str) -> None:
+    """Adds an entry to the site dictionary"""
+    site_dict = _get_s3_data(SITE_FILE, bucket_name, client)
+    site_dict[site] = {"path": folder, "display": display}
+    _put_s3_data(SITE_FILE, bucket_name, client, site_dict)
 
 
-def delete_meta(client, bucket_name: str, site: str) -> bool:
-    """Removes an entry to the metadata dictionary for routing files"""
-    file = "metadata.json"
-    meta_dict = _get_s3_data(file, bucket_name, client)
-    if site in meta_dict.keys():
-        meta_dict.pop(site)
-        _put_s3_data(file, bucket_name, client, meta_dict)
+def delete_site(client, bucket_name: str, site: str) -> bool:
+    """Removes an entry to the site dictionary"""
+    site_dict = _get_s3_data(SITE_FILE, bucket_name, client)
+    if site in site_dict.keys():
+        site_dict.pop(site)
+        _put_s3_data(SITE_FILE, bucket_name, client, site_dict)
         return True
     else:
         return False
@@ -76,12 +76,12 @@ if __name__ == "__main__":
     )
     s3_modification.add_argument("--delete-auth", help="Delete auth. Expects: SiteId")
     s3_modification.add_argument(
-        "--create-meta",
+        "--create-site",
         action="extend",
         nargs="+",
-        help="Create metadata. Expects: Site Folder Display",
+        help="Create site data. Expects: Site Folder Display",
     )
-    s3_modification.add_argument("--delete-meta", help="Delete metadata. Expects: Site")
+    s3_modification.add_argument("--delete-site", help="Delete a specific site. Expects: Site")
     args = parser.parse_args()
     if "-prod-" in args.bucket:
         response = input("🚨🚨 Modifying production, are you sure? (y/N) 🚨🚨\n")
@@ -95,14 +95,14 @@ if __name__ == "__main__":
             args.create_auth[2],
         )
         print(f"Add the following key/value to secrets manager: \n {id_str}")
-    elif args.create_meta:
-        create_meta(
-            s3_client, args.bucket, args.create_meta[0], args.create_meta[1], args.create_meta[2]
+    elif args.create_site:
+        create_site(
+            s3_client, args.bucket, args.create_site[0], args.create_site[1], args.create_site[2]
         )
-        print(f"{args.create_meta[0]} mapped to S3 folder {args.create_meta[1]}")
-    elif args.delete_meta:
-        succeeded = delete_meta(s3_client, args.bucket, args.delete_meta)
+        print(f"{args.create_site[0]} mapped to S3 folder {args.create_site[1]}")
+    elif args.delete_site:
+        succeeded = delete_site(s3_client, args.bucket, args.delete_site)
         if succeeded:
-            print(f"Unmapped {args.delete_meta}")
+            print(f"Unmapped {args.delete_site}")
         else:
-            print(f"{args.delete_meta} not found")
+            print(f"{args.delete_site} not found")
